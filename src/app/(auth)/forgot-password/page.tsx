@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { forgotPassword } from '../actions';
+import { useRouter } from 'next/navigation';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -26,6 +27,7 @@ function SubmitButton() {
 }
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [state, formAction] = useActionState(forgotPassword, {
     message: '',
     success: false,
@@ -40,6 +42,7 @@ export default function ForgotPasswordPage() {
         title: 'Check your email',
         description: state.message,
       });
+      router.push('/login');
     } else {
       toast({
         variant: 'destructive',
@@ -47,7 +50,7 @@ export default function ForgotPasswordPage() {
         description: state.message,
       });
     }
-  }, [state, toast]);
+  }, [state, toast, router]);
 
   return (
     <Card className="mx-auto max-w-sm">
