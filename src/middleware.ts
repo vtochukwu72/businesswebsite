@@ -1,80 +1,85 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getSdks, initializeFirebase } from '@/firebase';
+import { initializeApp, getApp, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import { firebaseAdminConfig } from './firebase/admin-config';
 
-async function getRoleFromSession(sessionCookie: string | undefined) {
+// Initialize Firebase Admin SDK
+try {
+  if (!getApps().length) {
+    initializeApp({
+      credential: {
+        projectId: firebaseAdminConfig.projectId,
+        clientEmail: firebaseAdminConfig.clientEmail,
+        privateKey: firebaseAdminConfig.privateKey.replace(/\\n/g, '\n'),
+      },
+    });
+  }
+} catch (error: any) {
+  console.error('Firebase Admin Initialization Error in Middleware:', error.message);
+}
+
+async function getRoleFromSession(sessionCookie: string | undefined): Promise<string | null> {
   if (!sessionCookie) return null;
+
   try {
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${process.env.FIREBASE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': process.env.FIREBASE_API_KEY!,
-          'Authorization': `Bearer ${sessionCookie}`
-        },
-         body: JSON.stringify({ idToken: sessionCookie }),
-      }
-    );
-
-    if (!res.ok) {
-      return null;
+    const decodedToken = await getAuth().verifySessionCookie(sessionCookie, true);
+    const userDoc = await getFirestore().collection('users').doc(decodedToken.uid).get();
+    
+    if (userDoc.exists) {
+      return userDoc.data()?.role || null;
     }
-    
-    const { users } = await res.json();
-    const user = users?.[0];
-
-    if (!user) return null;
-    
-    const { firestore } = getSdks(initializeFirebase().firebaseApp);
-    const userDoc = await firestore.collection('users').doc(user.localId).get();
-    
-    return userDoc.exists ? userDoc.data()?.role : null;
+    return null;
   } catch (error) {
-    console.error("Middleware session error:", error);
+    // Session cookie is invalid or expired.
     return null;
   }
 }
 
 export async function middleware(request: NextRequest) {
-  const session = request.cookies.get('session');
-  
-  const isAuthenticated = !!session;
-
+  const session = request.cookies.get('session')?.value;
   const { pathname } = request.nextUrl;
 
-  // Allow seller registration page to be public
-  if (pathname === '/seller-register') {
-      return NextResponse.next();
-  }
+  const userRole = await getRoleFromSession(session);
+  const isAuthenticated = !!userRole;
 
-  // If trying to access a seller route
+  // --- Seller Route Protection ---
   if (pathname.startsWith('/seller')) {
-    if (!isAuthenticated) {
-       // Allow access to the base /seller route which will handle its own auth check
-       if (pathname === '/seller') {
-         return NextResponse.next();
-       }
+     if (!isAuthenticated || userRole !== 'seller') {
        return NextResponse.redirect(new URL('/seller', request.url));
+     }
+  }
+
+  // --- Admin Route Protection ---
+  if (pathname.startsWith('/admin')) {
+    const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+    if (!isAuthenticated || !isAdmin) {
+      // Redirect non-admins to the admin login page
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+     // If they are an admin and trying to access the login page, redirect to dashboard
+    if (isAdmin && pathname === '/admin/login') {
+       return NextResponse.redirect(new URL('/admin', request.url));
     }
   }
 
-  if (pathname.startsWith('/admin')) {
-     if (!isAuthenticated) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-  }
-  
+  // --- Account Route Protection ---
   if (pathname.startsWith('/account')) {
     if (!isAuthenticated) {
        return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 
+  // --- Public Auth Pages ---
+  // Allow access to seller registration and main login/register pages
+  if (pathname === '/seller-register' || pathname === '/login' || pathname === '/register') {
+      return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/seller/:path*', '/account/:path*', '/seller-register'],
+  matcher: ['/admin/:path*', '/seller/:path*', '/account/:path*'],
 };

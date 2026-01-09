@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { use, type ReactNode } from 'react';
 import {
   Home,
   Package,
@@ -21,6 +22,9 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AuthContext } from '@/context/auth-context';
+import AdminLoginPage from './login/page';
+
 
 const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: Home },
@@ -36,10 +40,9 @@ const adminNavItems = [
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminDashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <FirebaseClientProvider>
-      <SidebarProvider>
+     <SidebarProvider>
         <Sidebar>
           <SidebarHeader>
             <Link
@@ -72,6 +75,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <main className="flex-1 p-6">{children}</main>
         </SidebarInset>
       </SidebarProvider>
+  );
+}
+
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  const authContext = use(AuthContext);
+
+  if (authContext?.loading) {
+    return null; // Or a loading skeleton for the whole layout
+  }
+  
+  const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
+
+  if (!authContext?.isAuthenticated || !isAdmin) {
+    // Render a minimal layout for the login page
+    return (
+       <FirebaseClientProvider>
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+          <AdminLoginPage />
+        </div>
+      </FirebaseClientProvider>
+    );
+  }
+
+  // Render the full dashboard layout for authenticated admins
+  return (
+    <FirebaseClientProvider>
+      <AdminDashboardLayout>{children}</AdminDashboardLayout>
     </FirebaseClientProvider>
   );
 }
