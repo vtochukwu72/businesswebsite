@@ -23,9 +23,9 @@ import { Icons } from '@/components/icons';
 
 const navLinks = [
   { href: '/products', label: 'Shop' },
-  { href: '#', label: 'Deals' },
-  { href: '#', label: 'Categories' },
-  { href: '#', label: 'Contact' },
+  { href: '#deals', label: 'Deals' },
+  { href: '#categories', label: 'Categories' },
+  { href: '#contact', label: 'Contact' },
 ];
 
 export function Header() {
@@ -129,3 +129,5 @@ export function Header() {
     </header>
   );
 }
+
+    
