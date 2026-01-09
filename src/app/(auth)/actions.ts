@@ -77,7 +77,6 @@ export async function signup(prevState: any, formData: FormData) {
         return { success: false, message: 'Invalid seller registration code' };
     }
     if (userType === 'admin') {
-      if (!nin) return { success: false, message: 'NIN is required' };
       if (adminCode !== 'ADMIN_SECRET_2024')
         return { success: false, message: 'Invalid admin registration code' };
     }

@@ -95,25 +95,6 @@ export default function AdminRegisterPage() {
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                name="phone"
-                placeholder="+234 800 000 0000"
-              />
-               {state.errors?.phone && (
-                <p className="text-destructive text-sm">{state.errors.phone}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="nin">NIN (National ID)</Label>
-              <Input id="nin" name="nin" placeholder="12345678901" required />
-              {state.errors?.nin && (
-                <p className="text-destructive text-sm">{state.errors.nin}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
                 <Label htmlFor="adminCode">Admin Code</Label>
                 <Input id="adminCode" name="adminCode" type="password" required />
                 {state.errors?.adminCode && (
