@@ -1,3 +1,4 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { initAdmin } from '@/firebase/admin-init';
 
@@ -20,14 +21,20 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith('/admin')) {
-    if (role !== 'admin' && role !== 'super_admin') {
-      return NextResponse.redirect(new URL('/login', request.url));
+  // If trying to access a seller route
+  if (pathname.startsWith('/seller')) {
+    // If it's the seller login page, let them proceed
+    if (pathname === '/seller/login') {
+      return NextResponse.next();
+    }
+    // If not logged in or not a seller, redirect to seller login
+    if (role !== 'seller') {
+      return NextResponse.redirect(new URL('/seller/login', request.url));
     }
   }
 
-  if (pathname.startsWith('/seller')) {
-    if (role !== 'seller') {
+  if (pathname.startsWith('/admin')) {
+    if (role !== 'admin' && role !== 'super_admin') {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
