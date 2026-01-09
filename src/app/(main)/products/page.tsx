@@ -105,6 +105,12 @@ export default function ProductListingPage() {
           );
         }
         break;
+      case 'stock-desc':
+        filtered.sort((a, b) => b.stockQuantity - a.stockQuantity);
+        break;
+      case 'stock-asc':
+        filtered.sort((a, b) => a.stockQuantity - b.stockQuantity);
+        break;
       case 'featured':
       default:
         // You could add a 'isFeatured' flag to your product data
@@ -187,7 +193,7 @@ export default function ProductListingPage() {
               {filteredAndSortedProducts.length} products
             </div>
             <Select value={sortOption} onValueChange={setSortOption}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[220px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -195,6 +201,8 @@ export default function ProductListingPage() {
                 <SelectItem value="price-asc">Price: Low to High</SelectItem>
                 <SelectItem value="price-desc">Price: High to Low</SelectItem>
                 <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="stock-desc">Stock: High to Low</SelectItem>
+                <SelectItem value="stock-asc">Stock: Low to High</SelectItem>
               </SelectContent>
             </Select>
           </div>
