@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { Github, Twitter, Facebook } from 'lucide-react';
+import { NewsletterForm } from '../newsletter-form';
 
 export function Footer() {
   return (
@@ -48,10 +49,9 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <h4 className="font-semibold">Stay Connected</h4>
             <p className="mt-4 text-sm text-muted-foreground">Subscribe to our newsletter for the latest updates and deals.</p>
-            <form className="mt-4 flex gap-2">
-              <Input type="email" placeholder="Enter your email" className="flex-1" />
-              <Button type="submit">Subscribe</Button>
-            </form>
+            <div className="mt-4">
+              <NewsletterForm />
+            </div>
           </div>
         </div>
         <div className="flex flex-col items-center justify-between gap-4 border-t py-6 sm:flex-row">
@@ -68,3 +68,5 @@ export function Footer() {
     </footer>
   );
 }
+
+    

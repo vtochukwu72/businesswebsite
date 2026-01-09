@@ -283,6 +283,34 @@ service cloud.firestore {
       allow update: if isExistingDocument() && (isOwner(vendorId) || canManageOrders());
       allow delete: if isExistingDocument() && isSuperAdmin();
     }
+    
+    // --------------------------------------------------------------------------
+    // Public Collections
+    // --------------------------------------------------------------------------
+
+    /**
+     * @description Allows anyone to submit a message through the contact form.
+     * @path /contacts/{contactId}
+     * @allow Any user (create) submits the contact form.
+     * @deny A user (read) tries to read other users' messages.
+     * @principle Open write for public forms, but restricted reads.
+     */
+    match /contacts/{contactId} {
+      allow create: if true;
+      allow read, update, delete: if canManageSupport();
+    }
+    
+    /**
+     * @description Allows anyone to subscribe to the newsletter.
+     * @path /newsletterSubscribers/{subscriberId}
+     * @allow Any user (create) submits their email to subscribe.
+     * @deny A user (read) tries to see the list of subscribers.
+     * @principle Open write for public forms, but restricted reads.
+     */
+    match /newsletterSubscribers/{subscriberId} {
+      allow create: if true;
+      allow read, update, delete: if canManageContent();
+    }
   }
 }
     

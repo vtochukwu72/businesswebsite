@@ -18,6 +18,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NewsletterForm } from '@/components/newsletter-form';
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image');
 const categories = [
@@ -226,12 +227,13 @@ export default function HomePage() {
           <p className="mt-2 text-muted-foreground">
             Sign up to get the latest on sales, new releases and more.
           </p>
-          <form className="mx-auto mt-6 flex max-w-md gap-2">
-            <Input type="email" placeholder="Enter your email" />
-            <Button type="submit">Subscribe</Button>
-          </form>
+          <div className="mx-auto mt-6 max-w-md">
+            <NewsletterForm />
+          </div>
         </div>
       </section>
     </>
   );
 }
+
+    
