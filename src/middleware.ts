@@ -1,5 +1,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { initializeApp, getApp, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { firebaseAdminConfig } from './firebase/admin-config';
 
 // This middleware is now simplified to only handle basic redirects for logged-in
 // users trying to access login pages. The core role-based protection is moved
