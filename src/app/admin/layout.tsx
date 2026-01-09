@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { use, type ReactNode } from 'react';
+import { use, type ReactNode, useEffect } from 'react';
 import {
   Home,
   Package,
@@ -23,7 +23,8 @@ import {
 } from '@/components/ui/sidebar';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthContext } from '@/context/auth-context';
-import AdminLoginPage from './login/page';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const adminNavItems = [
@@ -78,25 +79,39 @@ function AdminDashboardLayout({ children }: { children: ReactNode }) {
   );
 }
 
+const FullScreenLoader = () => (
+    <div className="flex h-screen items-center justify-center">
+        <div className="w-full h-full">
+            <Skeleton className="w-full h-full" />
+        </div>
+    </div>
+);
+
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const authContext = use(AuthContext);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authContext?.loading) {
+      const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
+      if (!authContext.isAuthenticated || !isAdmin) {
+        router.push('/admin/login');
+      }
+    }
+  }, [authContext, router]);
+
 
   if (authContext?.loading) {
-    return null; // Or a loading skeleton for the whole layout
+    return <FullScreenLoader />;
   }
   
   const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
 
   if (!authContext?.isAuthenticated || !isAdmin) {
-    // Render a minimal layout for the login page
-    return (
-       <FirebaseClientProvider>
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
-          <AdminLoginPage />
-        </div>
-      </FirebaseClientProvider>
-    );
+    // While redirecting, show loader or nothing.
+    // The actual login page is rendered by its own route.
+    return <FullScreenLoader />;
   }
 
   // Render the full dashboard layout for authenticated admins

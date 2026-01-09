@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { use, type ReactNode } from 'react';
+import { use, type ReactNode, useEffect } from 'react';
 import {
   Home,
   Package,
@@ -8,7 +8,6 @@ import {
   Users,
   LineChart,
   Settings,
-  PanelLeft,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -23,7 +22,8 @@ import {
 } from '@/components/ui/sidebar';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthContext } from '@/context/auth-context';
-import SellerLoginPage from './login/page';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const sellerNavItems = [
   { href: '/seller', label: 'Dashboard', icon: Home },
@@ -72,22 +72,32 @@ function SellerDashboardLayout({ children }: { children: ReactNode }) {
   );
 }
 
+const FullScreenLoader = () => (
+    <div className="flex h-screen items-center justify-center">
+        <div className="w-full h-full">
+            <Skeleton className="w-full h-full" />
+        </div>
+    </div>
+);
+
 export default function SellerLayout({ children }: { children: ReactNode }) {
   const authContext = use(AuthContext);
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (!authContext?.loading) {
+      if (!authContext.isAuthenticated || authContext.userData?.role !== 'seller') {
+        router.push('/seller/login');
+      }
+    }
+  }, [authContext, router]);
 
   if (authContext?.loading) {
-    return null; // Or a loading skeleton for the whole layout
+    return <FullScreenLoader />;
   }
 
   if (!authContext?.isAuthenticated || authContext.userData?.role !== 'seller') {
-    // Render a minimal layout for the login page
-    return (
-       <FirebaseClientProvider>
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
-          <SellerLoginPage />
-        </div>
-      </FirebaseClientProvider>
-    );
+    return <FullScreenLoader />;
   }
 
   // Render the full dashboard layout for authenticated sellers

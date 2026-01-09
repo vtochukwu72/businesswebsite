@@ -195,28 +195,33 @@ export async function login(prevState: any, formData: FormData) {
   const { idToken } = parsed.data;
 
   try {
-     const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:createSessionCookie?key=${process.env.FIREBASE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, expiresIn: 60 * 60 * 24 * 5 }),
-      }
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    // The session cookie creation should be handled in a secure environment, like a Cloud Function or a dedicated backend.
+    // For this environment, we'll set the cookie from the server action.
+    // In a real-world scenario, you would call a secure endpoint here.
+    // We are simulating creating a session cookie. For a real app, use Firebase Admin SDK in a trusted server environment.
+    const res = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:createSessionCookie?key=${process.env.FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken, expiresIn: expiresIn / 1000 }), // expiresIn is in seconds
+        }
     );
 
     if (!res.ok) {
         const errorBody = await res.json();
         throw new Error(errorBody.error.message || 'Failed to create session cookie.');
     }
-
+    
     const { sessionCookie } = await res.json();
 
     cookies().set('session', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      maxAge: expiresIn, // maxAge is in seconds
       path: '/',
-      maxAge: 60 * 60 * 24 * 5,
+      sameSite: 'lax'
     });
     
     revalidatePath('/', 'layout');
