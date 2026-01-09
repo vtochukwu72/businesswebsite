@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,13 +14,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { signup } from '../actions';
 
@@ -36,7 +29,6 @@ function SubmitButton() {
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [userType, setUserType] = useState('customer');
 
   const [state, formAction] = useActionState(signup, {
     message: '',
@@ -70,24 +62,7 @@ export default function RegisterPage() {
       </CardHeader>
       <CardContent>
         <form action={formAction} className="grid gap-4">
-          <input type="hidden" name="userType" value={userType} />
-          <div className="grid gap-2">
-            <Label htmlFor="role">Sign up as a</Label>
-            <Select
-              name="userType"
-              required
-              onValueChange={setUserType}
-              defaultValue="customer"
-            >
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="customer">Customer</SelectItem>
-                <SelectItem value="vendor">Seller</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <input type="hidden" name="userType" value="customer" />
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="fname">First name</Label>
@@ -129,52 +104,6 @@ export default function RegisterPage() {
               <p className="text-destructive text-sm">{state.errors.phone}</p>
             )}
           </div>
-
-          {userType === 'vendor' && (
-            <>
-              <div className="grid gap-2">
-                <Label htmlFor="storeName">Store Name</Label>
-                <Input
-                  id="storeName"
-                  name="storeName"
-                  placeholder="My Awesome Store"
-                  required
-                />
-                 {state.errors?.storeName && (
-                  <p className="text-destructive text-sm">{state.errors.storeName}</p>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="grid gap-2">
-                    <Label htmlFor="accountNumber">Account Number</Label>
-                    <Input
-                      id="accountNumber"
-                      name="accountNumber"
-                      placeholder="1234567890"
-                      maxLength={10}
-                      required
-                    />
-                    {state.errors?.accountNumber && (
-                      <p className="text-destructive text-sm">{state.errors.accountNumber}</p>
-                    )}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="nin">NIN</Label>
-                    <Input
-                      id="nin"
-                      name="nin"
-                      placeholder="12345678901"
-                      maxLength={11}
-                      required
-                    />
-                    {state.errors?.nin && (
-                      <p className="text-destructive text-sm">{state.errors.nin}</p>
-                    )}
-                  </div>
-              </div>
-            </>
-          )}
-
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <Input id="password" name="password" type="password" required />
