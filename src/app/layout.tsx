@@ -1,9 +1,9 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import '../styles/auth.css';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/context/auth-context';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AppProviders } from './providers';
 
 export const metadata: Metadata = {
   title: 'E-Commerce Platform',
@@ -30,12 +30,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <FirebaseClientProvider>
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </FirebaseClientProvider>
+        <AppProviders>
+          {children}
+          <Toaster />
+        </AppProviders>
       </body>
     </html>
   );
