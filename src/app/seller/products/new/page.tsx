@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -27,7 +27,7 @@ export default function NewProductPage() {
   const { user } = useUser();
   const addProductWithUserId = addProduct.bind(null, user?.uid ?? '');
 
-  const [state, formAction] = useFormState(addProductWithUserId, {
+  const [state, formAction] = useActionState(addProductWithUserId, {
     errors: {},
     success: false,
   });
@@ -103,4 +103,3 @@ export default function NewProductPage() {
     </div>
   );
 }
-    
