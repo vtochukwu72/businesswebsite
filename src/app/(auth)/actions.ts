@@ -89,6 +89,8 @@ export async function signup(prevState: any, formData: FormData) {
       password
     );
     const userRecord = userCredential.user;
+    
+    const idToken = await userRecord.getIdToken();
 
     await updateAuthProfile(userRecord, {
         displayName: `${fname} ${lname}`
@@ -148,6 +150,19 @@ export async function signup(prevState: any, formData: FormData) {
       userData.lastActivity = new Date();
       userData.ipWhitelist = [];
       userData.twoFactorEnabled = false;
+
+      // Also create a session cookie for immediate login
+      const adminAuth = getAdminAuth();
+      const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+      const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+
+      cookies().set('session', sessionCookie, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: expiresIn / 1000,
+        path: '/',
+        sameSite: 'lax'
+      });
     }
 
     await setDoc(doc(firestore, 'users', userRecord.uid), userData);

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -41,9 +40,13 @@ export default function AdminRegisterPage() {
     if (state.success) {
       toast({
         title: 'Success!',
-        description: state.message,
+        description: 'Admin account created. Logging you in...',
       });
-      router.push('/admin/login');
+      // Redirect to the admin dashboard after a short delay
+      setTimeout(() => {
+        router.push('/admin');
+        router.refresh();
+      }, 1000);
     } else if (state.message) {
       toast({
         variant: 'destructive',
