@@ -160,3 +160,14 @@ export type Vendor = {
   address?: string;
   status: 'pending' | 'approved' | 'suspended';
 };
+
+export type ContactMessage = {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+};

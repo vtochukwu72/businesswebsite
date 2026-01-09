@@ -1,5 +1,5 @@
+'use client';
 
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -7,9 +7,6 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Mail,
   Phone,
@@ -20,8 +17,15 @@ import {
   Github,
 } from 'lucide-react';
 import Link from 'next/link';
+import { ContactForm } from '@/components/contact/contact-form';
 
 export default function ContactPage() {
+  const officeAddress =
+    'Faculty of management sciences department of business administration';
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    officeAddress
+  )}`;
+
   return (
     <div className="container py-12 md:py-16">
       <div className="mb-12 text-center">
@@ -46,37 +50,7 @@ export default function ContactPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="Enter your name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="subject">Subject</Label>
-                <Input id="subject" placeholder="How can we help?" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea
-                  id="message"
-                  placeholder="Your message"
-                  className="min-h-[120px]"
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Send Message
-              </Button>
-            </form>
+            <ContactForm />
           </CardContent>
         </Card>
 
@@ -94,28 +68,41 @@ export default function ContactPage() {
                 <Mail className="h-6 w-6 text-primary mt-1" />
                 <div>
                   <h3 className="font-semibold">Email</h3>
-                  <p className="text-muted-foreground">
+                  <a
+                    href="mailto:vtochukwu72@gmail.com"
+                    className="text-muted-foreground hover:underline"
+                  >
                     General Inquiries: vtochukwu72@gmail.com
-                  </p>
+                  </a>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <Phone className="h-6 w-6 text-primary mt-1" />
                 <div>
                   <h3 className="font-semibold">Phone</h3>
-                  <p className="text-muted-foreground">
+                  <a
+                    href="tel:09120461528"
+                    className="text-muted-foreground hover:underline"
+                  >
                     Customer Service: 09120461528
-                  </p>
+                  </a>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <MapPin className="h-6 w-6 text-primary mt-1" />
                 <div>
                   <h3 className="font-semibold">Office</h3>
-                  <p className="text-muted-foreground">
-                    123 E-Commerce St, Suite 100
-                  </p>
-                  <p className="text-muted-foreground">Webville, Internet 54321</p>
+                  <a
+                    href={googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:underline"
+                  >
+                    <p>
+                      Faculty of management sciences department of business
+                      administration
+                    </p>
+                  </a>
                 </div>
               </div>
             </CardContent>
@@ -125,21 +112,26 @@ export default function ContactPage() {
             <CardHeader className="flex-row items-center gap-4">
               <MessageSquare className="h-10 w-10 text-primary" />
               <div>
-                <CardTitle>Live Chat</CardTitle>
+                <CardTitle>Quick Help</CardTitle>
                 <CardDescription>
-                  Chat with a member of our team in real-time.
+                  Have a question? Fill out our contact form.
                 </CardDescription>
               </div>
             </CardHeader>
             <CardContent>
-              <Button className="w-full">Start Live Chat</Button>
+              <a
+                href="#contact-form"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 w-full"
+              >
+                Send a Message
+              </a>
               <p className="text-xs text-center mt-2 text-muted-foreground">
-                Available Mon-Fri, 9am-5pm
+                We typically respond within 24 hours.
               </p>
             </CardContent>
           </Card>
 
-           <div className="text-center">
+          <div className="text-center">
             <h3 className="font-semibold mb-4">Follow us on Social Media</h3>
             <div className="flex items-center justify-center gap-4">
               <Link href="#" aria-label="Twitter">
@@ -152,7 +144,7 @@ export default function ContactPage() {
                 <Github className="h-6 w-6 text-muted-foreground hover:text-primary" />
               </Link>
             </div>
-           </div>
+          </div>
         </div>
       </div>
     </div>

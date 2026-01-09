@@ -7,9 +7,8 @@ import {
   Users,
   LineChart,
   Settings,
-  PanelLeft,
+  MessageCircleQuestion,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   SidebarProvider,
   Sidebar,
@@ -28,6 +27,11 @@ const adminNavItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/customers', label: 'Customers', icon: Users },
+  {
+    href: '/admin/contact-messages',
+    label: 'Contact Messages',
+    icon: MessageCircleQuestion,
+  },
   { href: '/admin/analytics', label: 'Analytics', icon: LineChart },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
