@@ -24,6 +24,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthContext } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import SellerLoginPage from './login/page';
 
 const sellerNavItems = [
   { href: '/seller', label: 'Dashboard', icon: Home },
@@ -82,22 +83,17 @@ const FullScreenLoader = () => (
 
 export default function SellerLayout({ children }: { children: ReactNode }) {
   const authContext = use(AuthContext);
-  const router = useRouter();
   
-  useEffect(() => {
-    if (!authContext?.loading) {
-      if (!authContext.isAuthenticated || authContext.userData?.role !== 'seller') {
-        router.push('/seller/login');
-      }
-    }
-  }, [authContext, router]);
-
   if (authContext?.loading) {
     return <FullScreenLoader />;
   }
 
   if (!authContext?.isAuthenticated || authContext.userData?.role !== 'seller') {
-    return <FullScreenLoader />;
+     return (
+       <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <SellerLoginPage />
+      </div>
+    );
   }
 
   // Render the full dashboard layout for authenticated sellers

@@ -25,6 +25,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthContext } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import AdminLoginPage from './login/page';
 
 
 const adminNavItems = [
@@ -90,17 +91,6 @@ const FullScreenLoader = () => (
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const authContext = use(AuthContext);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!authContext?.loading) {
-      const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
-      if (!authContext.isAuthenticated || !isAdmin) {
-        router.push('/admin/login');
-      }
-    }
-  }, [authContext, router]);
-
 
   if (authContext?.loading) {
     return <FullScreenLoader />;
@@ -109,9 +99,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
 
   if (!authContext?.isAuthenticated || !isAdmin) {
-    // While redirecting, show loader or nothing.
-    // The actual login page is rendered by its own route.
-    return <FullScreenLoader />;
+    return (
+       <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <AdminLoginPage />
+      </div>
+    );
   }
 
   // Render the full dashboard layout for authenticated admins
