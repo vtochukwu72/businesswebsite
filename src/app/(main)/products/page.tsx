@@ -192,19 +192,21 @@ export default function ProductListingPage() {
              <div className="text-muted-foreground">
               {filteredAndSortedProducts.length} products
             </div>
-            <Select value={sortOption} onValueChange={setSortOption}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="stock-desc">Stock: High to Low</SelectItem>
-                <SelectItem value="stock-asc">Stock: Low to High</SelectItem>
-              </SelectContent>
-            </Select>
+            {isClient && (
+              <Select value={sortOption} onValueChange={setSortOption}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                  <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="stock-desc">Stock: High to Low</SelectItem>
+                  <SelectItem value="stock-asc">Stock: Low to High</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading &&
