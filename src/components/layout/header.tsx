@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
+import { useEffect, useState } from 'react';
 
 const navLinks = [
   { href: '/products', label: 'Shop' },
@@ -29,6 +30,16 @@ const navLinks = [
 ];
 
 export function Header() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return null;
+  }
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -57,7 +68,11 @@ export function Header() {
                   <span className="sr-only">E-Commerce</span>
                 </Link>
                 {navLinks.map((link) => (
-                  <Link href={link.href} key={link.href + link.label} className="hover:text-foreground">
+                  <Link
+                    href={link.href}
+                    key={link.href + link.label}
+                    className="hover:text-foreground"
+                  >
                     {link.label}
                   </Link>
                 ))}
@@ -115,12 +130,22 @@ export function Header() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <Link href="/account"><DropdownMenuItem>Profile</DropdownMenuItem></Link>
-              <Link href="/account/orders"><DropdownMenuItem>Orders</DropdownMenuItem></Link>
-              <Link href="/seller"><DropdownMenuItem>Seller Dashboard</DropdownMenuItem></Link>
+              <Link href="/account">
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+              </Link>
+              <Link href="/account/orders">
+                <DropdownMenuItem>Orders</DropdownMenuItem>
+              </Link>
+              <Link href="/seller">
+                <DropdownMenuItem>Seller Dashboard</DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
-              <Link href="/login"><DropdownMenuItem>Login</DropdownMenuItem></Link>
-              <Link href="/register"><DropdownMenuItem>Register</DropdownMenuItem></Link>
+              <Link href="/login">
+                <DropdownMenuItem>Login</DropdownMenuItem>
+              </Link>
+              <Link href="/register">
+                <DropdownMenuItem>Register</DropdownMenuItem>
+              </Link>
               <DropdownMenuItem>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -129,5 +154,3 @@ export function Header() {
     </header>
   );
 }
-
-    
