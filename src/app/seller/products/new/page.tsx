@@ -88,7 +88,11 @@ export default function NewProductPage() {
                  {state.errors?.sku && <p className="text-sm text-destructive">{state.errors.sku.join(', ')}</p>}
               </div>
             </div>
-             {/* TODO: Add image upload */}
+            <div className="space-y-2">
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input id="imageUrl" name="imageUrl" placeholder="https://example.com/image.png" />
+              {state.errors?.imageUrl && <p className="text-sm text-destructive">{state.errors.imageUrl.join(', ')}</p>}
+            </div>
             <div className="flex justify-end gap-4">
                <Button variant="outline" asChild>
                 <Link href="/seller/products">Cancel</Link>

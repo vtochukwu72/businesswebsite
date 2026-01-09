@@ -12,16 +12,13 @@ const productSchema = z.object({
   price: z.coerce.number().positive('Price must be positive'),
   category: z.string().min(1, 'Category is required'),
   stockQuantity: z.coerce.number().int().min(0, 'Stock cannot be negative'),
-  images: z.array(z.string().url()).min(1, 'At least one image is required'),
+  imageUrl: z.string().url('Must be a valid image URL'),
   brand: z.string().min(1, 'Brand is required'),
   sku: z.string().min(1, 'SKU is required'),
 });
 
 export async function addProduct(userId: string, formData: FormData) {
   const values = Object.fromEntries(formData.entries());
-  
-  // Hardcoded for now, will be dynamic later
-  values.images = ['https://picsum.photos/seed/1/400/300'];
 
   const parsed = productSchema.safeParse(values);
 
@@ -35,9 +32,12 @@ export async function addProduct(userId: string, formData: FormData) {
   try {
     const { firestore } = getSdks();
     const productsCollection = collection(firestore, 'products');
+    
+    const { imageUrl, ...productData } = parsed.data;
 
     await addDocumentNonBlocking(productsCollection, {
-      ...parsed.data,
+      ...productData,
+      images: [imageUrl],
       sellerId: userId,
       isActive: true,
       currency: 'USD', // Default currency
@@ -60,4 +60,3 @@ export async function addProduct(userId: string, formData: FormData) {
     };
   }
 }
-    
