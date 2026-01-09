@@ -95,10 +95,7 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold">Email</h3>
                   <p className="text-muted-foreground">
-                    General Inquiries: info@ecommerce.com
-                  </p>
-                  <p className="text-muted-foreground">
-                    Support: support@ecommerce.com
+                    General Inquiries: vtochukwu72@gmail.com
                   </p>
                 </div>
               </div>
@@ -107,7 +104,7 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold">Phone</h3>
                   <p className="text-muted-foreground">
-                    Customer Service: +1 (234) 567-890
+                    Customer Service: 09120461528
                   </p>
                 </div>
               </div>
