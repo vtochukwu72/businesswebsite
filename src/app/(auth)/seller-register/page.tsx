@@ -42,7 +42,7 @@ export default function SellerRegisterPage() {
         title: 'Success!',
         description: state.message,
       });
-      router.push('/login');
+      router.push('/seller/login');
     } else if (state.message) {
       toast({
         variant: 'destructive',
@@ -163,7 +163,7 @@ export default function SellerRegisterPage() {
         </form>
         <div className="mt-4 text-center text-sm">
           Already have an account?{' '}
-          <Link href="/login" className="underline">
+          <Link href="/seller/login" className="underline">
             Sign in
           </Link>
         </div>
