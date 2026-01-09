@@ -88,7 +88,9 @@ export default function SellerLayout({ children }: { children: ReactNode }) {
     return <FullScreenLoader />;
   }
 
-  if (!authContext?.isAuthenticated || authContext.userData?.role !== 'seller') {
+  const isSeller = authContext?.userData?.role === 'seller';
+
+  if (!authContext?.isAuthenticated || !isSeller) {
      return (
        <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <SellerLoginPage />
