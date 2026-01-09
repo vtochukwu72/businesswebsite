@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -82,7 +83,10 @@ export function Header() {
   );
   const { data: wishlist } = useDoc<Wishlist>(wishlistRef);
 
-  const cartItemCount = cart?.items?.length || 0;
+  const cartItemCount = cart?.items?.reduce(
+    (count, item) => count + item.quantity,
+    0
+  );
   const wishlistItemCount = wishlist?.items?.length || 0;
 
   useEffect(() => {
@@ -178,13 +182,12 @@ export function Header() {
               </NavigationMenuItem>
               {otherLinks.map((link) => (
                 <NavigationMenuItem key={link.href}>
-                  <Link href={link.href} passHref>
                     <NavigationMenuLink
+                      asChild
                       className={navigationMenuTriggerStyle()}
                     >
-                      {link.label}
+                      <Link href={link.href}>{link.label}</Link>
                     </NavigationMenuLink>
-                  </Link>
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
