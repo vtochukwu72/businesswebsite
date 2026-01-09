@@ -67,14 +67,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
       <CardFooter className="flex items-center justify-between p-4 pt-0">
         <div className="flex items-baseline gap-2">
           <span className="text-xl font-bold">
-            $
+            ₦
             {(hasDiscount ? product.discountedPrice : product.price)?.toFixed(
               2
             )}
           </span>
           {hasDiscount && (
             <span className="text-sm text-muted-foreground line-through">
-              ${product.price.toFixed(2)}
+              ₦{product.price.toFixed(2)}
             </span>
           )}
         </div>

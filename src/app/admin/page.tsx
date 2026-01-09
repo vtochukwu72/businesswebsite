@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Activity, CreditCard, DollarSign, Users } from "lucide-react";
+import { Activity, CreditCard, Users } from "lucide-react";
+import { FaNairaSign } from 'react-icons/fa6';
 
 export default function AdminDashboardPage() {
   return (
@@ -12,10 +13,10 @@ export default function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium">
               Total Revenue
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <FaNairaSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">₦45,231.89</div>
             <p className="text-xs text-muted-foreground">
               +20.1% from last month
             </p>
@@ -87,7 +88,7 @@ export default function AdminDashboardPage() {
                   </TableCell>
                   <TableCell><Badge>Fulfilled</Badge></TableCell>
                   <TableCell>2023-11-23</TableCell>
-                  <TableCell className="text-right">$250.00</TableCell>
+                  <TableCell className="text-right">₦250.00</TableCell>
                 </TableRow>
               ))}
             </TableBody>

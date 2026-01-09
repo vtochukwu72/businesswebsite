@@ -40,7 +40,7 @@ export async function addProduct(userId: string, formData: FormData) {
       images: [imageUrl],
       sellerId: userId,
       isActive: true,
-      currency: 'USD', // Default currency
+      currency: 'NGN', // Default currency
       ratings: {
         average: 0,
         count: 0,

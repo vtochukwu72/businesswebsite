@@ -2,7 +2,8 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Package, ShoppingCart, Users } from 'lucide-react';
+import { Package, ShoppingCart, Users } from 'lucide-react';
+import { FaNairaSign } from 'react-icons/fa6';
 
 const data = [
   { name: 'Jan', total: Math.floor(Math.random() * 5000) + 1000 },
@@ -27,10 +28,10 @@ export default function SellerAnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <FaNairaSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$15,231.89</div>
+            <div className="text-2xl font-bold">₦15,231.89</div>
             <p className="text-xs text-muted-foreground">
               +15.1% from last month
             </p>
@@ -92,7 +93,7 @@ export default function SellerAnalyticsPage() {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `₦${value}`}
               />
               <Bar dataKey="total" fill="currentColor" radius={[4, 4, 0, 0]} className="fill-primary" />
             </BarChart>

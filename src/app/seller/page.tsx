@@ -15,7 +15,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Activity, CreditCard, DollarSign, Package } from 'lucide-react';
+import { Activity, CreditCard, Package } from 'lucide-react';
+import { FaNairaSign } from 'react-icons/fa6';
 import {
   useUser,
   useCollection,
@@ -23,8 +24,8 @@ import {
   useMemoFirebase,
   type WithId,
 } from '@/firebase';
-import { collection, query, limit, orderBy } from 'firebase/firestore';
-import type { Order } from '@/lib/types';
+import { collection, query, limit, orderBy, where } from 'firebase/firestore';
+import type { Order, Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SellerDashboardPage() {
@@ -42,8 +43,41 @@ export default function SellerDashboardPage() {
         : null,
     [firestore, user]
   );
-  const { data: recentOrders, isLoading } =
+  const { data: recentOrders, isLoading: isLoadingOrders } =
     useCollection<Order>(recentOrdersQuery);
+
+  const productsQuery = useMemoFirebase(
+    () =>
+      firestore && user
+        ? query(
+            collection(firestore, 'products'),
+            where('sellerId', '==', user.uid)
+          )
+        : null,
+    [firestore, user]
+  );
+  const { data: products, isLoading: isLoadingProducts } =
+    useCollection<Product>(productsQuery);
+
+  const allOrdersQuery = useMemoFirebase(
+    () =>
+      firestore && user
+        ? query(collection(firestore, 'vendors', user.uid, 'orders'))
+        : null,
+    [firestore, user]
+  );
+  const { data: allOrders, isLoading: isLoadingAllOrders } =
+    useCollection<Order>(allOrdersQuery);
+
+  const totalRevenue =
+    allOrders
+      ?.filter((order) => order.orderStatus === 'delivered')
+      .reduce((sum, order) => sum + order.totalAmount, 0) || 0;
+
+  const totalSales = allOrders?.length || 0;
+  const totalProducts = products?.length || 0;
+  const pendingOrders =
+    allOrders?.filter((order) => order.orderStatus === 'pending').length || 0;
 
   return (
     <div className="space-y-6">
@@ -51,12 +85,18 @@ export default function SellerDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <FaNairaSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$15,231.89</div>
+            {isLoadingAllOrders ? (
+              <Skeleton className="h-8 w-2/3" />
+            ) : (
+              <div className="text-2xl font-bold">
+                ₦{totalRevenue.toFixed(2)}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              +15.1% from last month
+              Based on completed orders
             </p>
           </CardContent>
         </Card>
@@ -66,9 +106,13 @@ export default function SellerDashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+150</div>
+            {isLoadingProducts ? (
+              <Skeleton className="h-8 w-1/2" />
+            ) : (
+              <div className="text-2xl font-bold">{totalProducts}</div>
+            )}
             <p className="text-xs text-muted-foreground">
-              +20 since last month
+              Total products in your store
             </p>
           </CardContent>
         </Card>
@@ -78,9 +122,13 @@ export default function SellerDashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+1,234</div>
+            {isLoadingAllOrders ? (
+              <Skeleton className="h-8 w-1/2" />
+            ) : (
+              <div className="text-2xl font-bold">+{totalSales}</div>
+            )}
             <p className="text-xs text-muted-foreground">
-              +19% from last month
+              Total orders received
             </p>
           </CardContent>
         </Card>
@@ -92,9 +140,13 @@ export default function SellerDashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+5</div>
+            {isLoadingAllOrders ? (
+              <Skeleton className="h-8 w-1/2" />
+            ) : (
+              <div className="text-2xl font-bold">+{pendingOrders}</div>
+            )}
             <p className="text-xs text-muted-foreground">
-              2 waiting for shipment
+              Orders awaiting processing
             </p>
           </CardContent>
         </Card>
@@ -116,7 +168,7 @@ export default function SellerDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading &&
+              {isLoadingOrders &&
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>
@@ -150,18 +202,18 @@ export default function SellerDashboardPage() {
                     ).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    ${order.totalAmount.toFixed(2)}
+                    ₦{order.totalAmount.toFixed(2)}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-           {!isLoading && recentOrders?.length === 0 && (
-          <div className="py-12 text-center text-muted-foreground">
-            <h3 className="text-lg font-semibold">No recent orders.</h3>
-            <p>New orders from your customers will appear here.</p>
-          </div>
-        )}
+          {!isLoadingOrders && recentOrders?.length === 0 && (
+            <div className="py-12 text-center text-muted-foreground">
+              <h3 className="text-lg font-semibold">No recent orders.</h3>
+              <p>New orders from your customers will appear here.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

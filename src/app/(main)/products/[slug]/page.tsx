@@ -113,10 +113,10 @@ export default function ProductDetailPage({
             </span>
           </div>
           <div className="mt-4 text-3xl font-bold">
-            ${product.discountedPrice?.toFixed(2) || product.price.toFixed(2)}
+            ₦{product.discountedPrice?.toFixed(2) || product.price.toFixed(2)}
             {product.discountedPrice && (
               <span className="ml-4 text-xl text-muted-foreground line-through">
-                ${product.price.toFixed(2)}
+                ₦{product.price.toFixed(2)}
               </span>
             )}
           </div>
