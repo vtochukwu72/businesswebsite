@@ -1,0 +1,68 @@
+import Link from 'next/link';
+import {
+  Home,
+  Package,
+  ShoppingCart,
+  Users,
+  LineChart,
+  Settings,
+  PanelLeft,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  SidebarInset,
+} from '@/components/ui/sidebar';
+
+const sellerNavItems = [
+  { href: '/seller', label: 'Dashboard', icon: Home },
+  { href: '/seller/products', label: 'Products', icon: Package },
+  { href: '/seller/orders', label: 'Orders', icon: ShoppingCart },
+  { href: '/seller/reviews', label: 'Reviews', icon: Users },
+  { href: '/seller/analytics', label: 'Analytics', icon: LineChart },
+  { href: '/seller/settings', label: 'Store Settings', icon: Settings },
+];
+
+export default function SellerLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader>
+          <Link href="/seller" className="flex items-center gap-2 font-bold text-lg">
+            Seller Dashboard
+          </Link>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            {sellerNavItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href} legacyBehavior passHref>
+                  <SidebarMenuButton asChild tooltip={{ children: item.label }}>
+                    <a>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
+           <SidebarTrigger/>
+          <h1 className="text-lg font-semibold">Dashboard</h1>
+        </header>
+        <main className="flex-1 p-6">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}

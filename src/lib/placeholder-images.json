@@ -1,3 +1,94 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "Modern living room with a large sofa and stylish decor.",
+      "imageUrl": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtb2Rlcm4lMjBsaXZpbmclMjByb29tfGVufDB8fHx8MTc2Nzg5MzMyMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "modern living room"
+    },
+    {
+      "id": "category-electronics",
+      "description": "A collection of modern electronic gadgets on a desk.",
+      "imageUrl": "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxlbGVjdHJvbmljJTIwZ2FkZ2V0c3xlbnwwfHx8fDE3Njc5MDMzMzR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "electronic gadgets"
+    },
+    {
+      "id": "category-fashion",
+      "description": "Stylish clothes hanging on a rack.",
+      "imageUrl": "https://images.unsplash.com/photo-1483985988355-763728e1935b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmYXNoaW9uJTIwY2xvdGhlc3xlbnwwfHx8fDE3Njc5NjA1MjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fashion clothes"
+    },
+    {
+      "id": "category-homegoods",
+      "description": "A cozy home interior with decorative items.",
+      "imageUrl": "https://images.unsplash.com/photo-1615873968403-89e068629265?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxob21lJTIwZGVjb3J8ZW58MHx8fHwxNzY3ODkzNDY5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "home decor"
+    },
+    {
+      "id": "category-books",
+      "description": "A stack of old books on a wooden table.",
+      "imageUrl": "https://images.unsplash.com/photo-1610116306796-6fea9f4fae38?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxib29rc3xlbnwwfHx8fDE3Njc5NjA1MjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "books"
+    },
+    {
+      "id": "product-smartwatch",
+      "description": "A sleek and modern smartwatch displaying the time.",
+      "imageUrl": "https://images.unsplash.com/photo-1517502474097-f9b30659dadb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c21hcnR3YXRjaHxlbnwwfHx8fDE3Njc4NjI3MjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartwatch"
+    },
+    {
+      "id": "product-headphones",
+      "description": "High-quality wireless headphones on a dark background.",
+      "imageUrl": "https://images.unsplash.com/photo-1598331668826-20cecc596b86?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8d2lyZWxlc3MlMjBoZWFkcGhvbmVzfGVufDB8fHx8MTc2NzkxNDYzMnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "wireless headphones"
+    },
+    {
+      "id": "product-sneakers",
+      "description": "A pair of stylish and colorful athletic sneakers.",
+      "imageUrl": "https://images.unsplash.com/photo-1767440557829-fc076fdb1150?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhdGhsZXRpYyUyMHNuZWFrZXJzfGVufDB8fHx8MTc2Nzk2MDUyM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "athletic sneakers"
+    },
+    {
+      "id": "product-backpack",
+      "description": "A durable and spacious backpack for travel or daily use.",
+      "imageUrl": "https://images.unsplash.com/photo-1603920347917-d16487c88db4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx0cmF2ZWwlMjBiYWNrcGFja3xlbnwwfHx8fDE3Njc5NDMxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "travel backpack"
+    },
+    {
+      "id": "product-camera",
+      "description": "A professional DSLR camera with a lens attached.",
+      "imageUrl": "https://images.unsplash.com/photo-1617036083087-ce31fac66b23?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxEU0xSJTIwY2FtZXJhfGVufDB8fHx8MTc2Nzg5ODA1NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "DSLR camera"
+    },
+    {
+      "id": "product-chair",
+      "description": "A modern and ergonomic office chair.",
+      "imageUrl": "https://images.unsplash.com/photo-1688578735122-f37256f1b8b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8b2ZmaWNlJTIwY2hhaXJ8ZW58MHx8fHwxNzY3OTAzMDc0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "office chair"
+    },
+    {
+      "id": "product-lamp",
+      "description": "A stylish desk lamp with a warm glow.",
+      "imageUrl": "https://images.unsplash.com/photo-1523380262778-076eb862d38f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZGVzayUyMGxhbXB8ZW58MHx8fHwxNzY3ODkxOTEyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "desk lamp"
+    },
+    {
+      "id": "product-pot",
+      "description": "A ceramic pot with a small green plant.",
+      "imageUrl": "https://images.unsplash.com/photo-1620803366004-119b57f54cd6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cG90dGVkJTIwcGxhbnR8ZW58MHx8fHwxNzY3OTU0MTAxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "potted plant"
+    },
+    {
+      "id": "avatar-1",
+      "description": "User avatar 1.",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njc4NzkxMTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-2",
+      "description": "User avatar 2.",
+      "imageUrl": "https://images.unsplash.com/photo-1557053910-d9eadeed1c58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Nzg4MDI5Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    }
+  ]
 }
