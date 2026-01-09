@@ -143,7 +143,6 @@ export async function signup(prevState: any, formData: FormData) {
     }
 
     if (userType === 'admin') {
-      userData.nin = nin;
       userData.permissions = ['read', 'write', 'delete'];
       userData.adminLevel = 'admin';
       userData.lastActivity = new Date();
