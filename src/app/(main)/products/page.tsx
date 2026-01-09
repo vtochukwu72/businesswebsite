@@ -123,7 +123,7 @@ export default function ProductListingPage() {
   }, [products, filters, sortOption]);
 
   return (
-    <div className="container py-8">
+    <div className="container py-12 md:py-16">
       <h1 className="text-3xl font-bold mb-4">Shop All Products</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         <aside className="md:col-span-1">
@@ -223,7 +223,7 @@ export default function ProductListingPage() {
             <div className="text-center py-20 col-span-full">
               <h2 className="text-xl font-semibold">No products found</h2>
               <p className="text-muted-foreground mt-2">
-                Try adjusting your filters to find what you&apos;re looking for.
+                Try adjusting your filters to find what you're looking for.
               </p>
             </div>
           )}
