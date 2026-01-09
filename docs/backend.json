@@ -1,0 +1,673 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the e-commerce platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User's phone number."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of user's profile photo.",
+          "format": "uri"
+        },
+        "role": {
+          "type": "string",
+          "description": "User's role (customer, seller, admin)."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "role"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product in the e-commerce platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "Reference to User (seller) who owns this product. (Relationship: User 1:N Product)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the product."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product."
+        },
+        "discountedPrice": {
+          "type": "number",
+          "description": "Discounted price of the product."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency of the product price."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the product."
+        },
+        "subcategory": {
+          "type": "string",
+          "description": "Subcategory of the product."
+        },
+        "brand": {
+          "type": "string",
+          "description": "Brand of the product."
+        },
+        "images": {
+          "type": "array",
+          "description": "Array of URLs for product images.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "stockQuantity": {
+          "type": "number",
+          "description": "Number of units in stock."
+        },
+        "sku": {
+          "type": "string",
+          "description": "Stock Keeping Unit for the product."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the product is active."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Array of tags associated with the product.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "sellerId",
+        "name",
+        "price",
+        "currency",
+        "category",
+        "stockQuantity",
+        "sku",
+        "isActive"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category for products.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category."
+        },
+        "imageURL": {
+          "type": "string",
+          "description": "URL of the category image.",
+          "format": "uri"
+        },
+        "parentCategory": {
+          "type": "string",
+          "description": "Reference to Category (parent). (Relationship: Category 1:N Category)"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the category is active."
+        },
+        "order": {
+          "type": "number",
+          "description": "Order of the category for display purposes."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "isActive",
+        "order"
+      ]
+    },
+    "Cart": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Cart",
+      "type": "object",
+      "description": "Represents a user's shopping cart.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who owns this cart. (Relationship: User 1:1 Cart)"
+        },
+        "items": {
+          "type": "array",
+          "description": "Array of cart items.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cartTotal": {
+          "type": "number",
+          "description": "Total value of items in cart."
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents an order placed by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who placed this order. (Relationship: User 1:N Order)"
+        },
+        "orderNumber": {
+          "type": "string",
+          "description": "Human-readable order ID."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total amount of the order."
+        },
+        "orderStatus": {
+          "type": "string",
+          "description": "Status of the order (pending, confirmed, etc.)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "orderNumber",
+        "totalAmount",
+        "orderStatus"
+      ]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a review of a product.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the review."
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product being reviewed. (Relationship: Product 1:N Review)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who wrote the review. (Relationship: User 1:N Review)"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Rating given by the user (1-5)."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the review."
+        },
+        "comment": {
+          "type": "string",
+          "description": "User's comment about the product."
+        }
+      },
+      "required": [
+        "id",
+        "productId",
+        "userId",
+        "rating",
+        "title",
+        "comment"
+      ]
+    },
+    "Wishlist": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wishlist",
+      "type": "object",
+      "description": "Represents a user's wishlist.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who owns this wishlist. (Relationship: User 1:1 Wishlist)"
+        },
+        "items": {
+          "type": "array",
+          "description": "Array of product IDs in the wishlist.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    },
+    "Vendor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vendor",
+      "type": "object",
+      "description": "Represents a vendor on the e-commerce platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the vendor; same as the User ID."
+        },
+        "storeName": {
+          "type": "string",
+          "description": "Name of the vendor's store."
+        },
+        "storeDescription": {
+          "type": "string",
+          "description": "Description of the vendor's store."
+        },
+        "storeLogo": {
+          "type": "string",
+          "description": "URL for the vendor's store logo.",
+          "format": "uri"
+        },
+        "email": {
+          "type": "string",
+          "description": "Vendor's contact email.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Vendor's contact phone number."
+        },
+        "address": {
+          "type": "string",
+          "description": "Vendor's store address."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the vendor (pending, approved, suspended)."
+        }
+      },
+      "required": [
+        "id",
+        "storeName",
+        "status"
+      ]
+    },
+    "AdminSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminSettings",
+      "type": "object",
+      "description": "Represents platform-wide settings configured by the administrator.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin settings document (e.g., 'platform_settings')."
+        },
+        "platformName": {
+          "type": "string",
+          "description": "Name of the e-commerce platform."
+        },
+        "platformCurrency": {
+          "type": "string",
+          "description": "Default currency for the platform (e.g., 'USD')."
+        },
+        "defaultLanguage": {
+          "type": "string",
+          "description": "Default language for the platform (e.g., 'en')."
+        },
+        "maintenanceMode": {
+          "type": "boolean",
+          "description": "Indicates if the platform is in maintenance mode."
+        },
+        "autoApproveVendors": {
+          "type": "boolean",
+          "description": "Indicates if vendor applications should be automatically approved."
+        }
+      },
+      "required": [
+        "id",
+        "platformName",
+        "platformCurrency",
+        "defaultLanguage",
+        "maintenanceMode",
+        "autoApproveVendors"
+      ]
+    },
+    "AdminActivity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminActivity",
+      "type": "object",
+      "description": "Represents an activity performed by an administrator.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin activity."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Reference to User (admin) who performed the action. (Relationship: User 1:N AdminActivity)"
+        },
+        "action": {
+          "type": "string",
+          "description": "Type of action performed (create, update, delete, etc.)."
+        },
+        "entityType": {
+          "type": "string",
+          "description": "Type of entity affected by the action (user, product, order, etc.)."
+        },
+        "entityId": {
+          "type": "string",
+          "description": "ID of the entity affected by the action."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the activity occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "adminId",
+        "action",
+        "entityType",
+        "entityId",
+        "timestamp"
+      ]
+    },
+    "PlatformAnalytics": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PlatformAnalytics",
+      "type": "object",
+      "description": "Represents aggregated analytics data for the e-commerce platform.",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "Date for which the analytics data is collected (YYYY-MM-DD)."
+        },
+        "totalUsers": {
+          "type": "number",
+          "description": "Total number of registered users on the platform."
+        },
+        "newUsers": {
+          "type": "number",
+          "description": "Number of new users registered on the platform on the given date."
+        },
+        "totalOrders": {
+          "type": "number",
+          "description": "Total number of orders placed on the platform."
+        },
+        "totalRevenue": {
+          "type": "number",
+          "description": "Total revenue generated by the platform on the given date."
+        }
+      },
+      "required": [
+        "date",
+        "totalUsers",
+        "newUsers",
+        "totalOrders",
+        "totalRevenue"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles, including role (customer, seller, admin). Used for authentication and authorization.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information. Includes denormalized 'vendorDetails' (storeName, rating) for authorization independence.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "Unique identifier for the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores product categories.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "Unique identifier for the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/carts/{cartId}",
+        "definition": {
+          "entityName": "Cart",
+          "schema": {
+            "$ref": "#/backend/entities/Cart"
+          },
+          "description": "Stores user's shopping cart data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "cartId",
+              "description": "Unique identifier for the cart document (typically 'default')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores order information. The `userId` field links the order to a specific customer.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "Unique identifier for the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stores product reviews.",
+          "params": [
+            {
+              "name": "reviewId",
+              "description": "Unique identifier for the review."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wishlists/{wishlistId}",
+        "definition": {
+          "entityName": "Wishlist",
+          "schema": {
+            "$ref": "#/backend/entities/Wishlist"
+          },
+          "description": "Stores user's wishlist data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "wishlistId",
+              "description": "Unique identifier for the wishlist document (typically 'default')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/vendors/{vendorId}",
+        "definition": {
+          "entityName": "Vendor",
+          "schema": {
+            "$ref": "#/backend/entities/Vendor"
+          },
+          "description": "Stores vendor profile information.",
+          "params": [
+            {
+              "name": "vendorId",
+              "description": "The Firebase Auth UID of the vendor; same as the User ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admin/settings/{settingsId}",
+        "definition": {
+          "entityName": "AdminSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AdminSettings"
+          },
+          "description": "Stores platform-wide admin settings. Only accessible to admin users.",
+          "params": [
+            {
+              "name": "settingsId",
+              "description": "Unique identifier for the settings document (e.g., 'platform_settings')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admin/activities/{activityId}",
+        "definition": {
+          "entityName": "AdminActivity",
+          "schema": {
+            "$ref": "#/backend/entities/AdminActivity"
+          },
+          "description": "Stores logs of admin activities for auditing purposes.  The `adminId` field links the activity to a specific admin user.",
+          "params": [
+            {
+              "name": "activityId",
+              "description": "Unique identifier for the admin activity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/analytics/daily/{date}",
+        "definition": {
+          "entityName": "PlatformAnalytics",
+          "schema": {
+            "$ref": "#/backend/entities/PlatformAnalytics"
+          },
+          "description": "Stores aggregated platform analytics data, such as daily user and sales metrics.",
+          "params": [
+            {
+              "name": "date",
+              "description": "Date for which the analytics data is collected (YYYY-MM-DD)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/vendors/{vendorId}/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores vendor-specific order information. Duplicates data from /orders/{orderId} for efficient vendor-specific queries. Denormalized `customerId` for simpler security rules.",
+          "params": [
+            {
+              "name": "vendorId",
+              "description": "The Firebase Auth UID of the vendor."
+            },
+            {
+              "name": "orderId",
+              "description": "The unique ID of the order"
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support a secure and scalable e-commerce platform with admin and vendor dashboards, following the principles of Authorization Independence, Structural Segregation, and Access Modeling. It incorporates denormalization to avoid `get()` calls in security rules and enables efficient `list` operations. Roles are managed within the database itself, eliminating the need for custom claims, thus adhering to DBAC principles. I have applied these changes:\n\n*   The root `users` collection is used to store user profiles. The `role` field within each user document determines their access level (customer, seller, admin).\n*   The `products` collection stores product information, including the `sellerId` to link products to vendors. Vendor-specific data, such as `storeName` and `rating`, is denormalized into the product document to optimize read operations and maintain authorization independence.\n*   A top-level `categories` collection stores category information.\n*   User-specific data, such as `carts` and `wishlists`, are stored in subcollections under each user document (`users/{userId}/carts/{cartId}` and `users/{userId}/wishlists/{wishlistId}`).\n*   Orders are stored in a top-level `orders` collection. Each order document includes the `userId` to link orders to customers.\n*   Reviews are stored in a top-level `reviews` collection.\n*   Vendor-specific data is primarily stored within the `vendors` collection. This collection includes fields such as `storeName`, `storeDescription`, and `payoutSettings`.\n*   Admin-related data is stored under the `admin` collection. This collection includes settings, activity logs, and analytics data.\n*   Vendor orders are maintained both at the top level (`orders`) and within a subcollection under each vendor (`vendors/{vendorId}/orders`). This denormalization facilitates efficient queries for both customer order history and vendor order management.\n\nTo achieve Authorization Independence, key authorization data, such as vendor details (store name, rating), are denormalized into product documents. This eliminates the need for `get()` calls in security rules, enabling atomic operations and improving performance.\n\nFor QAPs (Rules are not Filters), Structural Segregation is used. For example, sensitive admin settings are stored separately from user-facing data. The Membership Map pattern is not applicable here as ownership is primarily path-based (e.g., `/users/{userId}/carts/{cartId}`)."
+  }
+}

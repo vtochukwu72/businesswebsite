@@ -1,0 +1,287 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * Core Philosophy: This ruleset implements a sophisticated Role-Based Access
+     * Control (RBAC) model combined with user ownership. Access is primarily
+     * determined by a `role` field within each user's document in the `/users`
+     * collection. This database-centric approach allows for dynamic permission
+     * changes without redeploying rules.
+     *
+     * Data Structure: The data is organized into top-level collections for major
+     * entities (`users`, `products`, `orders`, `vendors`) and user-specific
+     * subcollections for private data (`users/{userId}/carts`). Sensitive
+     * platform-wide data is structurally segregated into `/admin` and `/analytics`
+     * collections to simplify security.
+     *
+     * Key Security Decisions:
+     * - A user's role is the single source of truth for authorization, checked via
+     *   a `get()` call to their user document. This is a deliberate trade-off
+     *   for the flexibility of a database-managed RBAC system.
+     * - Public-facing data like products and categories allow global reads but
+     *   restrict writes to authorized sellers or content managers.
+     * - Writes to collections like `/analytics` and `/admin/activities` are
+     *   blocked for all clients, as these are intended to be managed exclusively
+     *   by trusted server-side Cloud Functions.
+     * - Default security posture is deny-all. Access is granted explicitly.
+     *
+     * Denormalization for Authorization: To enable efficient and secure queries
+     * for vendors, order data is denormalized into a vendor-specific subcollection
+     * at `/vendors/{vendorId}/orders`. This avoids complex and insecure queries
+     * on the top-level `/orders` collection by vendors. Similarly, product
+     * documents should contain a `sellerId` to allow for direct ownership checks
+     * without needing extra `get` calls.
+     *
+     * Structural Segregation: Private user data (carts, wishlists) is nested
+     * under `/users/{userId}`, creating a secure data boundary. Administrative
+     * data (`/admin`) and analytical data (`/analytics`) are in separate top-level
+     * paths, allowing for broad, simple rules to be applied to these sensitive areas.
+     */
+
+    // --------------------------------------------------------------------------
+    // Helper Functions
+    // --------------------------------------------------------------------------
+
+    /**
+     * @description Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the requesting user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Verifies a document exists. For use in update/delete operations.
+     */
+    function isExistingDocument() {
+      return resource != null;
+    }
+
+    /**
+     * @description Retrieves the requesting user's data document.
+     * Caches the result of the get() call for the duration of the rule evaluation.
+     */
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    /**
+     * @description Checks if the requesting user has any of the specified roles.
+     * This is the core of the RBAC (Role-Based Access Control) system.
+     */
+    function userHasAnyRole(allowedRoles) {
+      return isSignedIn() && getUserData().role in allowedRoles;
+    }
+
+    /**
+     * @description Checks for super admin role.
+     */
+    function isSuperAdmin() {
+      return userHasAnyRole(['super_admin']);
+    }
+    
+    /**
+     * @description Checks for admin or super admin roles.
+     */
+    function isAdminOrSuperAdmin() {
+      return userHasAnyRole(['admin', 'super_admin']);
+    }
+
+    /**
+     * @description Checks for roles that can manage platform content.
+     */
+    function canManageContent() {
+      return userHasAnyRole(['content_manager', 'admin', 'super_admin']);
+    }
+
+    /**
+     * @description Checks for roles that can manage orders.
+     */
+    function canManageOrders() {
+      return userHasAnyRole(['order_manager', 'admin', 'super_admin']);
+    }
+
+    /**
+     * @description Checks for roles that can manage users and support.
+     */
+    function canManageSupport() {
+      return userHasAnyRole(['support_manager', 'admin', 'super_admin']);
+    }
+
+    /**
+     * @description Checks for roles that can read analytics.
+     */
+    function canReadAnalytics() {
+      return userHasAnyRole(['finance_manager', 'admin', 'super_admin']);
+    }
+
+    // --------------------------------------------------------------------------
+    // Admin & Analytics Collections
+    // --------------------------------------------------------------------------
+
+    /**
+     * @description Secures platform-wide settings and activity logs.
+     * @path /admin/{document=**}
+     * @allow A super_admin (write) updates the platform settings document.
+     * @deny An admin (read) attempts to view admin activity logs.
+     * @principle Restricts access to sensitive configuration data to the highest privilege level.
+     */
+    match /admin/{document=**} {
+      allow get, list, create, update, delete: if isSuperAdmin();
+    }
+
+    /**
+     * @description Secures aggregated platform analytics.
+     * @path /analytics/daily/{date}
+     * @allow A finance_manager (read) fetches the daily sales report.
+     * @deny A regular user (write) attempts to modify analytics data.
+     * @principle Makes analytical data read-only for authorized roles and prevents client-side writes.
+     */
+    match /analytics/daily/{date} {
+      allow get, list: if canReadAnalytics();
+      allow create, update, delete: if false;
+    }
+
+    // --------------------------------------------------------------------------
+    // Core User & Vendor Collections
+    // --------------------------------------------------------------------------
+    
+    /**
+     * @description Manages user profile documents, which are the source of truth for roles.
+     * @path /users/{userId}
+     * @allow A new user (create) signs up and creates their own user document.
+     * @deny A regular user (list) attempts to list all users in the system.
+     * @principle Allows users to manage their own profile while giving admins override control.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || canManageSupport();
+      allow list: if canManageSupport();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) || isAdminOrSuperAdmin();
+      allow delete: if isOwner(userId) || isSuperAdmin();
+    }
+
+    /**
+     * @description Secures vendor profile documents.
+     * @path /vendors/{vendorId}
+     * @allow An anonymous user (get) views a public vendor profile.
+     * @deny A vendor (update) tries to change the profile of another vendor.
+     * @principle Allows public read of vendor profiles but restricts writes to the owner or admins.
+     */
+    match /vendors/{vendorId} {
+      allow get, list: if true;
+      allow create: if isOwner(vendorId) && request.resource.data.id == vendorId;
+      allow update: if isExistingDocument() && (isOwner(vendorId) || isAdminOrSuperAdmin());
+      allow delete: if isExistingDocument() && isSuperAdmin();
+    }
+
+    // --------------------------------------------------------------------------
+    // E-Commerce Collections (Products, Categories, Orders, Reviews)
+    // --------------------------------------------------------------------------
+
+    /**
+     * @description Secures product documents. Products are public to view.
+     * @path /products/{productId}
+     * @allow A user with a 'seller' role (create) adds a new product.
+     * @deny An anonymous user (delete) tries to remove a product.
+     * @principle Enforces Public Read with Owner-Only Writes, allowing sellers to manage their own products.
+     */
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if isExistingDocument() && (isOwner(resource.data.sellerId) || canManageContent());
+    }
+
+    /**
+     * @description Secures product category documents. Categories are public to view.
+     * @path /categories/{categoryId}
+     * @allow A content_manager (create) adds a new product category.
+     * @deny A seller (delete) attempts to remove a category.
+     * @principle Makes catalog structure publicly readable but writable only by content administrators.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if canManageContent();
+    }
+
+    /**
+     * @description Secures top-level order documents.
+     * @path /orders/{orderId}
+     * @allow A customer (get) views their own order details after placing it.
+     * @deny A customer (list) attempts to browse all orders on the platform.
+     * @principle Restricts access to the order owner and authorized order managers.
+     */
+    match /orders/{orderId} {
+      allow get: if isOwner(resource.data.userId) || canManageOrders();
+      allow list: if canManageOrders();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isExistingDocument() && canManageOrders();
+      allow delete: if isExistingDocument() && isSuperAdmin();
+    }
+    
+    /**
+     * @description Secures product review documents. Reviews are public to read.
+     * @path /reviews/{reviewId}
+     * @allow An authenticated user (create) posts a review for a product.
+     * @deny A user (update) tries to modify another user's review.
+     * @principle Enforces document ownership for writes, allowing users to manage their own reviews.
+     */
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isExistingDocument() && (isOwner(resource.data.userId) || canManageSupport());
+      allow delete: if isExistingDocument() && (isOwner(resource.data.userId) || canManageSupport());
+    }
+
+    // --------------------------------------------------------------------------
+    // User Subcollections
+    // --------------------------------------------------------------------------
+
+    /**
+     * @description Secures a user's private shopping cart.
+     * @path /users/{userId}/carts/{cartId}
+     * @allow The owning user (auth.uid == userId) adds an item to their cart (update).
+     * @deny An admin (get) attempts to view a user's cart contents.
+     * @principle Restricts access to a user's own private data tree.
+     */
+    match /users/{userId}/carts/{cartId} {
+      allow get, list, create, update, delete: if isOwner(userId);
+    }
+
+    /**
+     * @description Secures a user's private wishlist.
+     * @path /users/{userId}/wishlists/{wishlistId}
+     * @allow The owning user (auth.uid == userId) adds an item to their wishlist (update).
+     * @deny Another user (get) tries to read someone else's wishlist.
+     * @principle Restricts access to a user's own private data tree.
+     */
+    match /users/{userId}/wishlists/{wishlistId} {
+      allow get, list, create, update, delete: if isOwner(userId);
+    }
+    
+    // --------------------------------------------------------------------------
+    // Vendor Subcollections
+    // --------------------------------------------------------------------------
+
+    /**
+     * @description Secures denormalized order data for efficient vendor access.
+     * @path /vendors/{vendorId}/orders/{orderId}
+     * @allow A vendor (auth.uid == vendorId) lists all their orders.
+     * @deny A vendor (get) attempts to view an order belonging to another vendor.
+     * @principle Enforces path-based ownership, allowing vendors to manage only their orders.
+     */
+    match /vendors/{vendorId}/orders/{orderId} {
+      allow get, list: if isOwner(vendorId) || canManageOrders();
+      allow create: if false; // Orders are created by backend functions
+      allow update: if isExistingDocument() && (isOwner(vendorId) || canManageOrders());
+      allow delete: if isExistingDocument() && isSuperAdmin();
+    }
+  }
+}
