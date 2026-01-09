@@ -25,6 +25,7 @@ import {
   useCollection,
   useFirestore,
   useMemoFirebase,
+  useDoc,
 } from '@/firebase';
 import type { Cart, Wishlist, Product } from '@/lib/types';
 import { collection, doc, query } from 'firebase/firestore';
@@ -258,11 +259,6 @@ export function Header() {
                   <Link href="/account/orders">
                     <DropdownMenuItem>Orders</DropdownMenuItem>
                   </Link>
-                  {userData?.role === 'seller' && (
-                    <Link href="/seller">
-                      <DropdownMenuItem>Seller Dashboard</DropdownMenuItem>
-                    </Link>
-                  )}
                   {userData?.role === 'admin' && (
                      <Link href="/admin">
                       <DropdownMenuItem>Admin Dashboard</DropdownMenuItem>
