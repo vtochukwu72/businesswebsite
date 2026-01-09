@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductListingPage() {
   const firestore = useFirestore();
+  const [isClient, setIsClient] = useState(false);
 
   const [filters, setFilters] = useState({
     categories: [] as string[],
@@ -47,10 +48,14 @@ export default function ProductListingPage() {
   }, [products]);
   
   useEffect(() => {
-    if (maxPrice > 0) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (maxPrice > 0 && filters.price === null) {
       setFilters(f => ({ ...f, price: maxPrice }));
     }
-  }, [maxPrice]);
+  }, [maxPrice, filters.price]);
 
 
   const handleCategoryChange = (category: string) => {
@@ -94,9 +99,11 @@ export default function ProductListingPage() {
         filtered.sort((a, b) => b.price - a.price);
         break;
       case 'newest':
-        filtered.sort(
-          (a, b) => b.createdAt.seconds - a.createdAt.seconds
-        );
+        if (filtered[0]?.createdAt) {
+          filtered.sort(
+            (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
+          );
+        }
         break;
       case 'featured':
       default:
@@ -140,21 +147,23 @@ export default function ProductListingPage() {
                 )}
               </div>
             </div>
-            <div>
-              <h3 className="font-semibold mb-2">Price Range</h3>
-               <Slider
-                value={[filters.price ?? maxPrice]}
-                min={minPrice}
-                max={maxPrice}
-                step={10}
-                onValueChange={handlePriceChange}
-                disabled={isLoading || minPrice === maxPrice}
-              />
-              <div className="flex justify-between text-sm text-muted-foreground mt-2">
-                <span>₦{minPrice.toFixed(2)}</span>
-                <span>₦{filters.price?.toFixed(2) ?? maxPrice.toFixed(2)}</span>
+            {isClient && (
+              <div>
+                <h3 className="font-semibold mb-2">Price Range</h3>
+                <Slider
+                  value={[filters.price ?? maxPrice]}
+                  min={minPrice}
+                  max={maxPrice}
+                  step={10}
+                  onValueChange={handlePriceChange}
+                  disabled={isLoading || minPrice === maxPrice}
+                />
+                <div className="flex justify-between text-sm text-muted-foreground mt-2">
+                  <span>₦{minPrice.toFixed(2)}</span>
+                  <span>₦{filters.price?.toFixed(2) ?? maxPrice.toFixed(2)}</span>
+                </div>
               </div>
-            </div>
+            )}
             <div>
               <h3 className="font-semibold mb-2">Rating</h3>
                <div className="space-y-2">
