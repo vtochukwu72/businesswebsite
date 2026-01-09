@@ -3,13 +3,20 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import type { Cart, Product, CartItem } from '@/lib/types';
+import type { Cart, Product } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+
+// Note: This is not in the original types.ts, so we define it locally.
+// A more robust solution would be to add this to the global types.
+type CartItem = {
+  productId: string;
+  quantity: number;
+};
 
 type EnrichedCartItem = CartItem & { productDetails?: Product; id: string };
 
@@ -32,6 +39,11 @@ export default function CartPage() {
     if (cart && cart.items && firestore) {
       setIsLoadingDetails(true);
       const fetchProductDetails = async () => {
+        if (!cart.items) {
+          setEnrichedItems([]);
+          setIsLoadingDetails(false);
+          return;
+        }
         const itemsWithDetails = await Promise.all(
           cart.items.map(async (item) => {
             const productRef = doc(firestore, 'products', item.productId);
@@ -56,7 +68,7 @@ export default function CartPage() {
   }, [cart, firestore, isCartLoading]);
 
   const updateQuantity = async (productId: string, newQuantity: number) => {
-    if (!cartRef || !cart) return;
+    if (!cartRef || !cart || !cart.items) return;
     const updatedItems = cart.items
       .map((item) =>
         item.productId === productId ? { ...item, quantity: newQuantity } : item
@@ -66,7 +78,7 @@ export default function CartPage() {
   };
 
   const removeItem = async (productId: string) => {
-    if (!cartRef || !cart) return;
+    if (!cartRef || !cart || !cart.items) return;
     const updatedItems = cart.items.filter(
       (item) => item.productId !== productId
     );
