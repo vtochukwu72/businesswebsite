@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useState, use } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,15 +16,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { login } from '../actions';
 import { useToast } from '@/hooks/use-toast';
-import { auth as clientAuth } from '@/firebase/client';
+import { auth as clientAuth, useFirestore, useUser } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { AuthContext } from '@/context/auth-context';
 
 
-function LoginSubmitButton() {
+function LoginSubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
   const { pending } = useFormStatus();
+  const isDisabled = pending || isSubmitting;
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Signing In...' : 'Sign In'}
+    <Button type="submit" className="w-full" disabled={isDisabled}>
+      {isDisabled ? 'Signing In...' : 'Sign In'}
     </Button>
   );
 }
@@ -32,15 +35,19 @@ function LoginSubmitButton() {
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const authContext = use(AuthContext);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [loginState, loginAction] = useActionState(login, {
     message: '',
     success: false,
-    role: '',
   });
 
   const handleClientLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitting(true);
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -63,32 +70,65 @@ export default function LoginPage() {
             message = 'This account has been disabled.';
         }
         toast({ variant: 'destructive', title: 'Error', description: message });
+        setIsSubmitting(false);
     }
   }
 
 
   useEffect(() => {
     if(loginState.success) {
-      toast({ title: 'Success', description: loginState.message });
-      let redirectPath = '/';
-      switch(loginState.role) {
-        case 'admin':
-        case 'super_admin':
-          redirectPath = '/admin';
-          break;
-        case 'seller':
-          redirectPath = '/seller';
-          break;
-        case 'customer':
-          redirectPath = '/account';
-          break;
+      // The user is now logged in on the server via session cookie.
+      // We need to determine their role to redirect correctly.
+      const fetchUserAndRedirect = async () => {
+        if (!authContext?.user || !firestore) {
+          // Wait for user context to be available
+          return;
+        }
+
+        const userDocRef = doc(firestore, 'users', authContext.user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+           if (userData?.status === 'suspended') {
+              toast({ variant: 'destructive', title: 'Account Suspended', description: 'Your account has been suspended.' });
+              setIsSubmitting(false);
+              return;
+            }
+            if (userData?.role === 'vendor' && userData?.status === 'pending_verification') {
+               toast({ variant: 'destructive', title: 'Pending Approval', description: 'Your vendor account is pending approval.' });
+               setIsSubmitting(false);
+               return;
+            }
+
+          toast({ title: 'Success', description: loginState.message });
+          let redirectPath = '/';
+          switch(userData.role) {
+            case 'admin':
+            case 'super_admin':
+              redirectPath = '/admin';
+              break;
+            case 'seller':
+              redirectPath = '/seller';
+              break;
+            case 'customer':
+              redirectPath = '/account';
+              break;
+          }
+          router.push(redirectPath);
+          router.refresh();
+        } else {
+           toast({ variant: 'destructive', title: 'Error', description: 'User data not found.' });
+           setIsSubmitting(false);
+        }
       }
-      router.push(redirectPath);
-      router.refresh();
+      fetchUserAndRedirect();
+
     } else if (loginState.message && !loginState.success) {
       toast({ variant: 'destructive', title: 'Error', description: loginState.message });
+      setIsSubmitting(false);
     }
-  }, [loginState, router, toast]);
+  }, [loginState, authContext, firestore, router, toast]);
 
   return (
     <Card className="mx-auto max-w-sm">
@@ -122,7 +162,7 @@ export default function LoginPage() {
             </div>
             <Input id="password" name="password" type="password" required />
           </div>
-          <LoginSubmitButton />
+          <LoginSubmitButton isSubmitting={isSubmitting} />
           <Button variant="outline" className="w-full" disabled>
             Login with Google
           </Button>

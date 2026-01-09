@@ -1,17 +1,23 @@
 'use server';
 
+import { getAuth } from 'firebase/auth';
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  updateProfile,
-  sendPasswordResetEmail,
-} from 'firebase-admin/auth';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+  getFirestore,
+  FieldValue,
+  doc,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { cookies } from 'next/headers';
-import { initAdmin } from '@/firebase/admin-init';
+import { getSdks, initializeFirebase } from '@/firebase';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile as updateAuthProfile,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 
 const signupSchema = z
   .object({
@@ -66,7 +72,7 @@ export async function signup(prevState: any, formData: FormData) {
       if (!accountNumber)
         return { success: false, message: 'Account number is required' };
       if (!nin) return { success: false, message: 'NIN is required' };
-       if (sellerCode !== 'SELLER_SECRET')
+      if (sellerCode !== 'SELLER_SECRET')
         return { success: false, message: 'Invalid seller registration code' };
     }
     if (userType === 'admin') {
@@ -75,14 +81,18 @@ export async function signup(prevState: any, formData: FormData) {
         return { success: false, message: 'Invalid admin registration code' };
     }
 
-    const { auth, db } = await initAdmin();
+    const { auth, firestore } = getSdks(initializeFirebase().firebaseApp);
 
-    const userRecord = await auth.createUser({
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
       email,
-      password,
-      displayName: `${fname} ${lname}`,
-      phoneNumber: phone,
-    });
+      password
+    );
+    const userRecord = userCredential.user;
+
+    await updateAuthProfile(userRecord, {
+        displayName: `${fname} ${lname}`
+    })
 
     const userData: any = {
       userId: userRecord.uid,
@@ -93,9 +103,9 @@ export async function signup(prevState: any, formData: FormData) {
       role: userType,
       emailVerified: false,
       phoneVerified: false,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      lastLogin: FieldValue.serverTimestamp(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastLogin: new Date(),
       status: 'active',
     };
 
@@ -136,15 +146,15 @@ export async function signup(prevState: any, formData: FormData) {
       userData.nin = nin;
       userData.permissions = ['read', 'write', 'delete'];
       userData.adminLevel = 'admin';
-      userData.lastActivity = FieldValue.serverTimestamp();
+      userData.lastActivity = new Date();
       userData.ipWhitelist = [];
       userData.twoFactorEnabled = false;
     }
 
-    await db.collection('users').doc(userRecord.uid).set(userData);
+    await setDoc(doc(firestore, 'users', userRecord.uid), userData);
 
     if (userType === 'vendor') {
-      await db.collection('vendors').doc(userRecord.uid).set({
+      await setDoc(doc(firestore, 'vendors', userRecord.uid), {
         id: userRecord.uid,
         storeName: storeName,
         status: 'pending',
@@ -185,73 +195,38 @@ export async function login(prevState: any, formData: FormData) {
   const { idToken } = parsed.data;
 
   try {
-    const { auth, db } = await initAdmin();
-    const decodedToken = await auth.verifyIdToken(idToken);
-    const userRecord = await auth.getUser(decodedToken.uid);
+     const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:createSessionCookie?key=${process.env.FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken, expiresIn: 60 * 60 * 24 * 5 }),
+      }
+    );
 
-    const userDoc = await db.collection('users').doc(userRecord.uid).get();
-    if (!userDoc.exists) {
-      return { success: false, message: 'User data not found.' };
-    }
-    const userData = userDoc.data();
-
-    if (userData?.status === 'suspended') {
-      return {
-        success: false,
-        message: 'Your account has been suspended.',
-      };
-    }
-    if (
-      userData?.role === 'vendor' &&
-      userData?.status === 'pending_verification'
-    ) {
-      return {
-        success: false,
-        message: 'Your vendor account is pending approval.',
-      };
+    if (!res.ok) {
+        const errorBody = await res.json();
+        throw new Error(errorBody.error.message || 'Failed to create session cookie.');
     }
 
-    const sessionCookie = await auth.createSessionCookie(idToken, {
-      expiresIn: 60 * 60 * 24 * 5 * 1000,
-    });
-    
+    const { sessionCookie } = await res.json();
+
     cookies().set('session', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
+      maxAge: 60 * 60 * 24 * 5,
     });
-
-    await db
-      .collection('users')
-      .doc(userRecord.uid)
-      .update({
-        lastLogin: FieldValue.serverTimestamp(),
-      });
-
+    
     revalidatePath('/', 'layout');
 
-    return { success: true, message: 'Login successful!', role: userData?.role };
+    return { success: true, message: 'Login successful!' };
   } catch (error: any) {
     console.error('Login error:', error);
-    let message = 'Login failed. Please try again.';
-    if (
-      error.code === 'auth/user-not-found' ||
-      error.code === 'auth/wrong-password' ||
-      error.code === 'auth/invalid-credential'
-    ) {
-      message = 'Incorrect email or password.';
-    } else if (error.code === 'auth/too-many-requests') {
-      message = 'Too many failed attempts. Please try again later.';
-    } else if (error.code === 'auth/user-disabled') {
-      message = 'This account has been disabled.';
-    } else if (error.code === 'auth/id-token-expired') {
-      message = 'Session expired. Please log in again.';
-    }
-    return { success: false, message };
+    return { success: false, message: error.message || 'Login failed. Please try again.' };
   }
 }
-
 
 export async function forgotPassword(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
@@ -260,13 +235,20 @@ export async function forgotPassword(prevState: any, formData: FormData) {
   }
 
   try {
-    const { auth } = await initAdmin();
-    await auth.generatePasswordResetLink(email);
-    return { success: true, message: 'Password reset email sent! Check your inbox.' };
+    const { auth } = getSdks(initializeFirebase().firebaseApp);
+    await sendPasswordResetEmail(auth, email);
+    return {
+      success: true,
+      message: 'Password reset email sent! Check your inbox.',
+    };
   } catch (error: any) {
     console.error('Password reset error:', error);
     // Don't reveal if the user exists or not
-    return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
+    return {
+      success: true,
+      message:
+        'If an account with that email exists, a password reset link has been sent.',
+    };
   }
 }
 
