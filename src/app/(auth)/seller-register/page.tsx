@@ -127,6 +127,13 @@ export default function SellerRegisterPage() {
               )}
             </div>
           </div>
+          <div className="grid gap-2">
+              <Label htmlFor="sellerCode">Seller Code</Label>
+              <Input id="sellerCode" name="sellerCode" type="password" required />
+              {state.errors?.sellerCode && (
+                <p className="text-destructive text-sm">{state.errors.sellerCode}</p>
+              )}
+            </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>

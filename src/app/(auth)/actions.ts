@@ -26,6 +26,7 @@ const signupSchema = z
     accountNumber: z.string().optional(),
     nin: z.string().optional(),
     adminCode: z.string().optional(),
+    sellerCode: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -55,6 +56,7 @@ export async function signup(prevState: any, formData: FormData) {
     accountNumber,
     nin,
     adminCode,
+    sellerCode,
   } = parsed.data;
 
   try {
@@ -64,6 +66,8 @@ export async function signup(prevState: any, formData: FormData) {
       if (!accountNumber)
         return { success: false, message: 'Account number is required' };
       if (!nin) return { success: false, message: 'NIN is required' };
+       if (sellerCode !== 'SELLER_SECRET')
+        return { success: false, message: 'Invalid seller registration code' };
     }
     if (userType === 'admin') {
       if (!nin) return { success: false, message: 'NIN is required' };
