@@ -149,7 +149,7 @@ export function Header() {
                   <Link
                     href={link.href}
                     key={link.href + link.label}
-                    className="hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     {link.label}
                   </Link>
@@ -182,9 +182,9 @@ export function Header() {
               </NavigationMenuItem>
               {otherLinks.map((link) => (
                 <NavigationMenuItem key={link.href}>
-                  <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                    <Link href={link.href}>{link.label}</Link>
-                  </NavigationMenuLink>
+                   <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                      <Link href={link.href}>{link.label}</Link>
+                    </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
