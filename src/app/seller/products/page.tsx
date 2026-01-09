@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,6 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -106,7 +113,7 @@ export default function SellerProductsPage() {
                     alt={product.name}
                     className="aspect-square rounded-md object-cover"
                     height="64"
-                    src={product.images[0]}
+                    src={product.images?.[0] || '/placeholder.svg'}
                     width="64"
                   />
                 </TableCell>
@@ -122,10 +129,24 @@ export default function SellerProductsPage() {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {new Date(
-                    product.createdAt.seconds * 1000
+                    (product.createdAt as any).seconds * 1000
                   ).toLocaleDateString()}
                 </TableCell>
-                <TableCell>{/* Actions Dropdown */}</TableCell>
+                <TableCell>
+                   <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem>Edit</DropdownMenuItem>
+                      <DropdownMenuItem>Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -145,4 +166,3 @@ export default function SellerProductsPage() {
     </Card>
   );
 }
-    
