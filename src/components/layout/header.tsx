@@ -46,7 +46,7 @@ import {
 import { cn } from '@/lib/utils';
 import React from 'react';
 
-const otherLinks = [{ href: '#contact', label: 'Contact' }];
+const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
 export function Header() {
   const [isClient, setIsClient] = useState(false);
@@ -182,12 +182,9 @@ export function Header() {
               </NavigationMenuItem>
               {otherLinks.map((link) => (
                 <NavigationMenuItem key={link.href}>
-                    <NavigationMenuLink
-                      asChild
-                      className={navigationMenuTriggerStyle()}
-                    >
-                      <Link href={link.href}>{link.label}</Link>
-                    </NavigationMenuLink>
+                  <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                    <Link href={link.href}>{link.label}</Link>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
