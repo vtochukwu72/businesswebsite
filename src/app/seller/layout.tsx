@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { use, type ReactNode } from 'react';
 import {
   Home,
   Package,
@@ -9,7 +10,6 @@ import {
   Settings,
   PanelLeft,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   SidebarProvider,
   Sidebar,
@@ -22,6 +22,8 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AuthContext } from '@/context/auth-context';
+import SellerLoginPage from './login/page';
 
 const sellerNavItems = [
   { href: '/seller', label: 'Dashboard', icon: Home },
@@ -32,42 +34,66 @@ const sellerNavItems = [
   { href: '/seller/settings', label: 'Store Settings', icon: Settings },
 ];
 
-export default function SellerLayout({ children }: { children: React.ReactNode }) {
+function SellerDashboardLayout({ children }: { children: ReactNode }) {
+  return (
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader>
+          <Link
+            href="/seller"
+            className="flex items-center gap-2 font-bold text-lg"
+          >
+            Seller Dashboard
+          </Link>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            {sellerNavItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton asChild tooltip={{ children: item.label }}>
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
+          <SidebarTrigger />
+          <h1 className="text-lg font-semibold">Dashboard</h1>
+        </header>
+        <main className="flex-1 p-6">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+export default function SellerLayout({ children }: { children: ReactNode }) {
+  const authContext = use(AuthContext);
+
+  if (authContext?.loading) {
+    return null; // Or a loading skeleton for the whole layout
+  }
+
+  if (!authContext?.isAuthenticated || authContext.userData?.role !== 'seller') {
+    // Render a minimal layout for the login page
+    return (
+       <FirebaseClientProvider>
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+          <SellerLoginPage />
+        </div>
+      </FirebaseClientProvider>
+    );
+  }
+
+  // Render the full dashboard layout for authenticated sellers
   return (
     <FirebaseClientProvider>
-      <SidebarProvider>
-        <Sidebar>
-          <SidebarHeader>
-            <Link
-              href="/seller"
-              className="flex items-center gap-2 font-bold text-lg"
-            >
-              Seller Dashboard
-            </Link>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              {sellerNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild tooltip={{ children: item.label }}>
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset>
-          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
-            <SidebarTrigger />
-            <h1 className="text-lg font-semibold">Dashboard</h1>
-          </header>
-          <main className="flex-1 p-6">{children}</main>
-        </SidebarInset>
-      </SidebarProvider>
+      <SellerDashboardLayout>{children}</SellerDashboardLayout>
     </FirebaseClientProvider>
   );
 }

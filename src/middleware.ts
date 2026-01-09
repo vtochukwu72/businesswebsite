@@ -40,22 +40,23 @@ async function getRoleFromSession(sessionCookie: string | undefined) {
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('session');
   
-  // A temporary workaround to get role. In a real app, you'd want a more robust
-  // way to get custom claims or role from the session cookie without a network request.
-  // For now, let's assume if there is a session, the user is authenticated.
-  // The route-specific logic will handle authorization.
   const isAuthenticated = !!session;
 
   const { pathname } = request.nextUrl;
 
+  // Allow seller registration page to be public
+  if (pathname === '/seller-register') {
+      return NextResponse.next();
+  }
+
   // If trying to access a seller route
   if (pathname.startsWith('/seller')) {
-    // If it's the seller login page, let them proceed
-    if (pathname === '/seller/login' || pathname === '/seller-register') {
-      return NextResponse.next();
-    }
     if (!isAuthenticated) {
-       return NextResponse.redirect(new URL('/seller/login', request.url));
+       // Allow access to the base /seller route which will handle its own auth check
+       if (pathname === '/seller') {
+         return NextResponse.next();
+       }
+       return NextResponse.redirect(new URL('/seller', request.url));
     }
   }
 
@@ -75,5 +76,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/seller/:path*', '/account/:path*'],
+  matcher: ['/admin/:path*', '/seller/:path*', '/account/:path*', '/seller-register'],
 };

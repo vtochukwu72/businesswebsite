@@ -90,7 +90,8 @@ export default function SellerLoginPage() {
   useEffect(() => {
     if(loginState.success) {
       toast({ title: 'Success', description: loginState.message });
-      router.push('/seller');
+      // The parent layout will handle showing the dashboard now.
+      // We just need to refresh the page to trigger the context update.
       router.refresh();
     } else if (loginState.message && !loginState.success) {
       toast({ variant: 'destructive', title: 'Error', description: loginState.message });
