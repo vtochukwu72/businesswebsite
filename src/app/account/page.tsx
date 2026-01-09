@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, AuthContext } from '@/context/auth-context';
-import { updateProfile } from './actions';
+import { updateProfile } from '@/account/actions';
+import Link from 'next/link';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
