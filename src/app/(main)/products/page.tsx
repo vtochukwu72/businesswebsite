@@ -123,7 +123,7 @@ export default function ProductListingPage() {
   }, [products, filters, sortOption]);
 
   return (
-    <div className="container py-12 md:py-16">
+    <div className="container py-12 md:py-16 px-4 md:px-6">
       <h1 className="text-3xl font-bold mb-4">Shop All Products</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         <aside className="md:col-span-1">
