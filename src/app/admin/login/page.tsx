@@ -124,6 +124,12 @@ export default function AdminLoginPage() {
           </div>
           <LoginSubmitButton isSubmitting={isSubmitting} />
         </form>
+        <div className="mt-4 text-center text-sm">
+          Need an admin account?{' '}
+          <Link href="/admin/register" className="underline">
+            Register here
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   // If the user is authenticated and tries to visit a login/register page,
   // redirect them to a default authenticated page (e.g., account).
   if (session) {
-    if (pathname === '/login' || pathname === '/register' || pathname === '/seller/login' || pathname === '/admin/login' || pathname === '/seller-register') {
+    if (pathname === '/login' || pathname === '/register' || pathname === '/seller/login' || pathname === '/admin/login' || pathname === '/seller-register' || pathname === '/admin/register') {
       return NextResponse.redirect(new URL('/account', request.url));
     }
   }
@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
      }
      if (pathname.startsWith('/admin')) {
         // Allow access to /admin/login even without a session
-        if (pathname !== '/admin/login') {
+        if (pathname !== '/admin/login' && pathname !== '/admin/register') {
             return NextResponse.redirect(new URL('/admin/login', request.url));
         }
      }
