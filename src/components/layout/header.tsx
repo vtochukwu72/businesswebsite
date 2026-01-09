@@ -7,6 +7,7 @@ import {
   Menu,
   Search,
   ShoppingCart,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,26 +17,35 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   useUser,
   useDoc,
   useFirestore,
   useMemoFirebase,
-  type WithId,
+  useCollection,
 } from '@/firebase';
-import type { Cart, Wishlist } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import type { Cart, Wishlist, Product } from '@/lib/types';
+import { collection, doc, query } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from '@/components/ui/navigation-menu';
+import { cn } from '@/lib/utils';
+import React from 'react';
 
-const navLinks = [
-  { href: '/products', label: 'Shop' },
-  { href: '#deals', label: 'Deals' },
-  { href: '#categories', label: 'Categories' },
+const otherLinks = [
   { href: '#contact', label: 'Contact' },
 ];
 
@@ -44,6 +54,17 @@ export function Header() {
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+
+  const productsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'products')) : null),
+    [firestore]
+  );
+  const { data: products } = useCollection<Product>(productsQuery);
+
+  const categories = useMemo(() => {
+    if (!products) return [];
+    return [...new Set(products.map((p) => p.category))];
+  }, [products]);
 
   const cartRef = useMemoFirebase(
     () =>
@@ -79,11 +100,10 @@ export function Header() {
     }
   };
 
-
   if (!isClient) {
     return null;
   }
-  
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -111,7 +131,15 @@ export function Header() {
                   <Icons.logo className="h-6 w-6 text-primary" />
                   <span className="sr-only">E-Commerce</span>
                 </Link>
-                {navLinks.map((link) => (
+                <Link href="/products" className="hover:text-foreground">
+                  Shop
+                </Link>
+                {categories.map((category) => (
+                   <Link href="#" key={category} className="text-muted-foreground hover:text-foreground">
+                    {category}
+                   </Link>
+                ))}
+                {otherLinks.map((link) => (
                   <Link
                     href={link.href}
                     key={link.href + link.label}
@@ -125,16 +153,42 @@ export function Header() {
           </Sheet>
         </div>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          {navLinks.map((link) => (
-            <Link
-              href={link.href}
-              key={link.href + link.label}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-4 text-sm font-medium md:flex">
+           <NavigationMenu>
+            <NavigationMenuList>
+               <NavigationMenuItem>
+                <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                     <ListItem href="/products" title="All Products">
+                        Browse our full collection of amazing products.
+                      </ListItem>
+                     <ListItem href="#" title="Deals">
+                        Check out our latest deals and special offers.
+                      </ListItem>
+                    {categories.map((category) => (
+                      <ListItem
+                        key={category}
+                        href="#"
+                        title={category}
+                      >
+                        Shop all items in the {category} category.
+                      </ListItem>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+              {otherLinks.map((link) => (
+                 <NavigationMenuItem key={link.href}>
+                   <Link href={link.href} legacyBehavior passHref>
+                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                       {link.label}
+                     </NavigationMenuLink>
+                   </Link>
+                 </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
         </nav>
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-4">
@@ -151,7 +205,7 @@ export function Header() {
               </div>
             </form>
           </div>
-           <Link href="/account/wishlist">
+          <Link href="/account/wishlist">
             <Button variant="ghost" size="icon" className="relative">
               <Heart className="h-5 w-5" />
               {wishlistItemCount > 0 && (
@@ -166,7 +220,7 @@ export function Header() {
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
               {cartItemCount > 0 && (
-                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                   {cartItemCount}
                 </span>
               )}
@@ -208,3 +262,30 @@ export function Header() {
     </header>
   );
 }
+
+
+const ListItem = React.forwardRef<
+  React.ElementRef<"a">,
+  React.ComponentPropsWithoutRef<"a">
+>(({ className, title, children, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <a
+          ref={ref}
+          className={cn(
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            className
+          )}
+          {...props}
+        >
+          <div className="text-sm font-medium leading-none">{title}</div>
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+            {children}
+          </p>
+        </a>
+      </NavigationMenuLink>
+    </li>
+  )
+})
+ListItem.displayName = "ListItem"
