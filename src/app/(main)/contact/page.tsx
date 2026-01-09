@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/card';
 import {
   Mail,
-  Phone,
   MapPin,
   MessageSquare,
   Twitter,
@@ -73,18 +72,6 @@ export default function ContactPage() {
                     className="text-muted-foreground hover:underline"
                   >
                     General Inquiries: vtochukwu72@gmail.com
-                  </a>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <Phone className="h-6 w-6 text-primary mt-1" />
-                <div>
-                  <h3 className="font-semibold">Phone</h3>
-                  <a
-                    href="tel:09120461528"
-                    className="text-muted-foreground hover:underline"
-                  >
-                    Customer Service: 09120461528
                   </a>
                 </div>
               </div>
