@@ -130,6 +130,12 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </div>
+             <div className="mt-2 text-center text-sm">
+              Want to sell on our platform?{' '}
+              <Link href="/seller-register" className="underline font-semibold">
+                Register as a Seller
+              </Link>
+            </div>
           </CardContent>
         </>
       ) : (
