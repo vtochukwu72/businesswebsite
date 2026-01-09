@@ -1,13 +1,59 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type User = {
+  userId: string;
   email: string;
-  displayName: string;
-  phoneNumber?: string;
-  photoURL?: string;
-  role: 'customer' | 'seller' | 'admin';
-  createdAt: Date;
-  updatedAt: Date;
-  shippingAddresses: ShippingAddress[];
-  paymentMethods: PaymentMethod[];
+  fname: string;
+  lname: string;
+  phoneNumber: string;
+  role: 'customer' | 'vendor' | 'admin';
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  lastLogin: Timestamp;
+  status: 'active' | 'suspended' | 'pending_verification';
+  // Admin-specific
+  permissions?: string[];
+  adminLevel?: 'super_admin' | 'admin' | 'support';
+  lastActivity?: Timestamp;
+  ipWhitelist?: string[];
+  twoFactorEnabled?: boolean;
+  // Vendor-specific
+  storeName?: string;
+  accountNumber?: string;
+  nin?: string;
+  businessInfo?: {
+    businessName: string;
+    taxId: string;
+    businessType: 'individual' | 'company';
+    registrationNumber: string;
+  };
+  storeSettings?: {
+    storeSlug: string;
+    storeDescription: string;
+    storeLogo: string;
+    storeBanner: string;
+    storeContact: {
+      address: string;
+      city: string;
+      state: string;
+      country: string;
+    };
+  };
+  verificationStatus?: {
+    idVerified: boolean;
+    bankVerified: boolean;
+    ninVerified: boolean;
+    verifiedBy: string | null;
+    verifiedAt: Timestamp | null;
+  };
+  commissionRate?: number;
+  subscription?: {
+    plan: 'basic' | 'premium';
+    status: 'active' | 'inactive';
+    expiresAt: Timestamp;
+  };
 };
 
 export type ShippingAddress = {

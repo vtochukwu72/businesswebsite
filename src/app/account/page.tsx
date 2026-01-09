@@ -1,5 +1,7 @@
 'use client';
 
+import { useActionState, useEffect, useState, use } from 'react';
+import { useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -10,61 +12,60 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FormEvent, useEffect, useState } from 'react';
+import { useAuth, AuthContext } from '@/context/auth-context';
+import { updateProfile } from './actions';
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Button type="submit" disabled={pending}>{pending ? 'Saving...' : 'Save Changes'}</Button>;
+}
 
 export default function AccountProfilePage() {
-  const { user: authUser, isUserLoading: isAuthLoading } = useUser();
-  const firestore = useFirestore();
+  const authContext = use(AuthContext);
+
+  if (!authContext) {
+    // This can happen briefly on first load or if outside provider
+    return <p>Loading user...</p>;
+  }
+
+  const { user, userData, loading: authLoading } = authContext;
+
   const { toast } = useToast();
 
-  const userRef = useMemoFirebase(
-    () =>
-      firestore && authUser
-        ? doc(firestore, 'users', authUser.uid)
-        : null,
-    [firestore, authUser]
-  );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<User>(userRef);
-
-  const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [formData, setFormData] = useState({
+    fname: '',
+    lname: '',
+    phone: '',
+    email: '',
+  });
 
   useEffect(() => {
-    if (userProfile) {
-      setDisplayName(userProfile.displayName || '');
-      setPhoneNumber(userProfile.phoneNumber || '');
-    }
-  }, [userProfile]);
-
-  const handleProfileUpdate = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!userRef) return;
-
-    try {
-      await updateDoc(userRef, {
-        displayName: displayName,
-        phoneNumber: phoneNumber,
-      });
-      toast({
-        title: 'Profile Updated',
-        description: 'Your profile information has been saved.',
-      });
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: 'Could not update your profile.',
+    if (userData) {
+      setFormData({
+        fname: userData.fname || '',
+        lname: userData.lname || '',
+        phone: userData.phoneNumber || '',
+        email: userData.email || '',
       });
     }
-  };
+  }, [userData]);
   
-  const isLoading = isAuthLoading || isProfileLoading;
+  const updateProfileWithUserId = updateProfile.bind(null, user?.uid || '');
+  const [state, formAction] = useActionState(updateProfileWithUserId, { success: false, message: '' });
+
+  useEffect(() => {
+    if (state.message) {
+      if (state.success) {
+        toast({ title: 'Success', description: state.message });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: state.message });
+      }
+    }
+  }, [state, toast]);
+
+  const isLoading = authLoading;
 
   return (
     <Card>
@@ -75,46 +76,68 @@ export default function AccountProfilePage() {
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
-             <Skeleton className="h-10 w-full" />
-             <Skeleton className="h-10 w-full" />
-             <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-24 self-end" />
           </div>
-        ) : userProfile ? (
-          <form onSubmit={handleProfileUpdate} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input 
-                id="displayName" 
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
+        ) : userData ? (
+          <form action={formAction} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fname">First Name</Label>
+                <Input
+                  id="fname"
+                  name="fname"
+                  value={formData.fname}
+                  onChange={(e) => setFormData({...formData, fname: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lname">Last Name</Label>
+                <Input
+                  id="lname"
+                  name="lname"
+                  value={formData.lname}
+                  onChange={(e) => setFormData({...formData, lname: e.target.value})}
+                  required
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                value={userProfile.email}
+                value={formData.email}
                 disabled
+                className="disabled-input"
               />
+               <p className="text-sm text-muted-foreground">Email cannot be changed.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input 
-                id="phone" 
-                type="tel" 
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                placeholder="+234 800 000 0000"
               />
             </div>
             <div className="flex justify-end">
-              <Button type="submit">Save Changes</Button>
+              <SubmitButton />
             </div>
           </form>
         ) : (
-           <div className="py-12 text-center text-muted-foreground">
+          <div className="py-12 text-center text-muted-foreground">
             <h3 className="text-lg font-semibold">Profile not found.</h3>
-            <p>Please complete your registration to view your profile.</p>
+            <p>Please log in to view your profile.</p>
+             <Button asChild className="mt-4">
+              <Link href="/login">Login</Link>
+            </Button>
           </div>
         )}
       </CardContent>

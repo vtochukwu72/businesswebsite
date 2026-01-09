@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -8,7 +7,6 @@ import {
   Menu,
   Search,
   ShoppingCart,
-  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,18 +16,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, use } from 'react';
 import {
-  useUser,
-  useDoc,
+  useCollection,
   useFirestore,
   useMemoFirebase,
-  useCollection,
 } from '@/firebase';
 import type { Cart, Wishlist, Product } from '@/lib/types';
 import { collection, doc, query } from 'firebase/firestore';
@@ -45,12 +40,17 @@ import {
 } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { AuthContext } from '@/context/auth-context';
+import { logout } from '@/app/(auth)/actions';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
 export function Header() {
   const [isClient, setIsClient] = useState(false);
-  const { user } = useUser();
+  const authContext = use(AuthContext);
+  const user = authContext?.user;
+  const userData = authContext?.userData;
+
   const firestore = useFirestore();
   const router = useRouter();
 
@@ -101,9 +101,21 @@ export function Header() {
       router.push(`/search?q=${encodeURIComponent(query)}`);
     }
   };
+  
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  }
 
   if (!isClient) {
-    return null;
+    // Render a skeleton or placeholder on the server
+    return (
+       <header className="sticky top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center">
+           {/* Skeleton content */}
+        </div>
+      </header>
+    );
   }
 
   return (
@@ -236,25 +248,41 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <Link href="/account">
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-              </Link>
-              <Link href="/account/orders">
-                <DropdownMenuItem>Orders</DropdownMenuItem>
-              </Link>
-              <Link href="/seller">
-                <DropdownMenuItem>Seller Dashboard</DropdownMenuItem>
-              </Link>
-              <DropdownMenuSeparator />
-              <Link href="/login">
-                <DropdownMenuItem>Login</DropdownMenuItem>
-              </Link>
-              <Link href="/register">
-                <DropdownMenuItem>Register</DropdownMenuItem>
-              </Link>
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              {user ? (
+                <>
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <Link href="/account">
+                    <DropdownMenuItem>Profile</DropdownMenuItem>
+                  </Link>
+                  <Link href="/account/orders">
+                    <DropdownMenuItem>Orders</DropdownMenuItem>
+                  </Link>
+                  {userData?.role === 'seller' && (
+                    <Link href="/seller">
+                      <DropdownMenuItem>Seller Dashboard</DropdownMenuItem>
+                    </Link>
+                  )}
+                  {userData?.role === 'admin' && (
+                     <Link href="/admin">
+                      <DropdownMenuItem>Admin Dashboard</DropdownMenuItem>
+                    </Link>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={handleLogout}>Logout</DropdownMenuItem>
+                </>
+              ) : (
+                 <>
+                  <DropdownMenuLabel>Welcome</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <Link href="/login">
+                    <DropdownMenuItem>Login</DropdownMenuItem>
+                  </Link>
+                  <Link href="/register">
+                    <DropdownMenuItem>Register</DropdownMenuItem>
+                  </Link>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

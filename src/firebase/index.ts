@@ -39,6 +39,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
     firestore: getFirestore(firebaseApp)
   };
 }
+export const { auth } = initializeFirebase();
 
 export * from './provider';
 export * from './client-provider';
