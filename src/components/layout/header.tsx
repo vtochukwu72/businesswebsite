@@ -45,9 +45,7 @@ import {
 import { cn } from '@/lib/utils';
 import React from 'react';
 
-const otherLinks = [
-  { href: '#contact', label: 'Contact' },
-];
+const otherLinks = [{ href: '#contact', label: 'Contact' }];
 
 export function Header() {
   const [isClient, setIsClient] = useState(false);
@@ -135,9 +133,13 @@ export function Header() {
                   Shop
                 </Link>
                 {categories.map((category) => (
-                   <Link href="#" key={category} className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="#"
+                    key={category}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     {category}
-                   </Link>
+                  </Link>
                 ))}
                 {otherLinks.map((link) => (
                   <Link
@@ -154,24 +156,20 @@ export function Header() {
         </div>
 
         <nav className="hidden items-center gap-4 text-sm font-medium md:flex">
-           <NavigationMenu>
+          <NavigationMenu>
             <NavigationMenuList>
-               <NavigationMenuItem>
+              <NavigationMenuItem>
                 <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
-                     <ListItem href="/products" title="All Products">
-                        Browse our full collection of amazing products.
-                      </ListItem>
-                     <ListItem href="#" title="Deals">
-                        Check out our latest deals and special offers.
-                      </ListItem>
+                    <ListItem href="/products" title="All Products">
+                      Browse our full collection of amazing products.
+                    </ListItem>
+                    <ListItem href="#" title="Deals">
+                      Check out our latest deals and special offers.
+                    </ListItem>
                     {categories.map((category) => (
-                      <ListItem
-                        key={category}
-                        href="#"
-                        title={category}
-                      >
+                      <ListItem key={category} href="#" title={category}>
                         Shop all items in the {category} category.
                       </ListItem>
                     ))}
@@ -179,13 +177,15 @@ export function Header() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
               {otherLinks.map((link) => (
-                 <NavigationMenuItem key={link.href}>
-                   <Link href={link.href} legacyBehavior={false} passHref>
-                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                       {link.label}
-                     </NavigationMenuLink>
-                   </Link>
-                 </NavigationMenuItem>
+                <NavigationMenuItem key={link.href}>
+                  <Link href={link.href} passHref>
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      {link.label}
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
               ))}
             </NavigationMenuList>
           </NavigationMenu>
@@ -263,10 +263,9 @@ export function Header() {
   );
 }
 
-
 const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a">
+  React.ElementRef<'a'>,
+  React.ComponentPropsWithoutRef<'a'>
 >(({ className, title, children, ...props }, ref) => {
   return (
     <li>
@@ -274,7 +273,7 @@ const ListItem = React.forwardRef<
         <a
           ref={ref}
           className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            'block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
             className
           )}
           {...props}
@@ -286,6 +285,6 @@ const ListItem = React.forwardRef<
         </a>
       </NavigationMenuLink>
     </li>
-  )
-})
-ListItem.displayName = "ListItem"
+  );
+});
+ListItem.displayName = 'ListItem';
