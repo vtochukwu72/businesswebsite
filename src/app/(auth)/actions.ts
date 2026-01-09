@@ -163,8 +163,7 @@ export async function signup(prevState: any, formData: FormData) {
 }
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  idToken: z.string().min(1, 'ID token is required'),
 });
 
 export async function login(prevState: any, formData: FormData) {
@@ -175,35 +174,21 @@ export async function login(prevState: any, formData: FormData) {
     return {
       success: false,
       errors: parsed.error.flatten().fieldErrors,
-      message: 'Please correct the errors below.',
+      message: 'Please provide a valid token.',
     };
   }
 
-  const { email, password } = parsed.data;
+  const { idToken } = parsed.data;
 
   try {
-    const { auth: clientAuth } = await import('@/firebase/client');
-    const { signInWithEmailAndPassword } = await import('firebase/auth');
-    
-    // This is a client-side SDK sign in. We need a custom token to set a server-side cookie.
-    // Let's use the Admin SDK to verify the user and create a session cookie.
     const { auth, db } = await initAdmin();
+    const decodedToken = await auth.verifyIdToken(idToken);
+    const userRecord = await auth.getUser(decodedToken.uid);
 
-    // To verify the password, we can't directly use the admin SDK.
-    // A common pattern is to sign in on the client, get the ID token, and send it to a server endpoint.
-    // Since this is a server action, we'll try a different approach:
-    // We can't verify password with Admin SDK. So we will use a workaround.
-    // For a real app, use client-side sign-in to get an ID token, then post to a server route to create a session.
-    // Here, we'll just check if user exists, which isn't secure for password check.
-    // This is a simplified login for demonstration.
-
-    const userRecord = await auth.getUserByEmail(email);
     const userDoc = await db.collection('users').doc(userRecord.uid).get();
-
     if (!userDoc.exists) {
       return { success: false, message: 'User data not found.' };
     }
-
     const userData = userDoc.data();
 
     if (userData?.status === 'suspended') {
@@ -222,32 +207,42 @@ export async function login(prevState: any, formData: FormData) {
       };
     }
 
-    // This is the insecure part. We are not verifying password.
-    // A proper implementation would involve a client-side sign-in first.
-    // Let's assume password is correct for now and create a session cookie.
-
-    const token = await auth.createCustomToken(userRecord.uid);
-    const sessionCookie = await auth.createSessionCookie(token, { expiresIn: 60 * 60 * 24 * 5 * 1000 });
-    
-    cookies().set('session', sessionCookie, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-
-    await db.collection('users').doc(userRecord.uid).update({
-      lastLogin: FieldValue.serverTimestamp(),
+    const sessionCookie = await auth.createSessionCookie(idToken, {
+      expiresIn: 60 * 60 * 24 * 5 * 1000,
     });
     
+    cookies().set('session', sessionCookie, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    await db
+      .collection('users')
+      .doc(userRecord.uid)
+      .update({
+        lastLogin: FieldValue.serverTimestamp(),
+      });
+
     revalidatePath('/', 'layout');
 
     return { success: true, message: 'Login successful!', role: userData?.role };
-
   } catch (error: any) {
     console.error('Login error:', error);
     let message = 'Login failed. Please try again.';
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code ==='auth/invalid-credential') {
-        message = 'Incorrect email or password.';
+    if (
+      error.code === 'auth/user-not-found' ||
+      error.code === 'auth/wrong-password' ||
+      error.code === 'auth/invalid-credential'
+    ) {
+      message = 'Incorrect email or password.';
     } else if (error.code === 'auth/too-many-requests') {
-        message = 'Too many failed attempts. Please try again later.';
+      message = 'Too many failed attempts. Please try again later.';
     } else if (error.code === 'auth/user-disabled') {
-        message = 'This account has been disabled.';
+      message = 'This account has been disabled.';
+    } else if (error.code === 'auth/id-token-expired') {
+      message = 'Session expired. Please log in again.';
     }
     return { success: false, message };
   }

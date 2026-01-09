@@ -16,6 +16,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { login, forgotPassword } from '../actions';
 import { useToast } from '@/hooks/use-toast';
+import { auth as clientAuth } from '@/firebase/client';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+
 
 function LoginSubmitButton() {
   const { pending } = useFormStatus();
@@ -51,12 +54,41 @@ export default function LoginPage() {
     success: false,
   });
 
+  const handleClientLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+
+      const serverFormData = new FormData();
+      serverFormData.append('idToken', idToken);
+      loginAction(serverFormData);
+
+    } catch (error: any) {
+        let message = 'Login failed. Please try again.';
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code ==='auth/invalid-credential') {
+            message = 'Incorrect email or password.';
+        } else if (error.code === 'auth/too-many-requests') {
+            message = 'Too many failed attempts. Please try again later.';
+        } else if (error.code === 'auth/user-disabled') {
+            message = 'This account has been disabled.';
+        }
+        toast({ variant: 'destructive', title: 'Error', description: message });
+    }
+  }
+
+
   useEffect(() => {
     if(loginState.success) {
       toast({ title: 'Success', description: loginState.message });
       let redirectPath = '/';
       switch(loginState.role) {
         case 'admin':
+        case 'super_admin':
           redirectPath = '/admin';
           break;
         case 'seller':
@@ -67,7 +99,8 @@ export default function LoginPage() {
           break;
       }
       router.push(redirectPath);
-    } else if (loginState.message) {
+      router.refresh();
+    } else if (loginState.message && !loginState.success) {
       toast({ variant: 'destructive', title: 'Error', description: loginState.message });
     }
   }, [loginState, router, toast]);
@@ -95,7 +128,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={loginAction} className="space-y-4">
+            <form onSubmit={handleClientLogin} className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
