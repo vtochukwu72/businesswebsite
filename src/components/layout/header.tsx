@@ -21,6 +21,16 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { useEffect, useState } from 'react';
+import {
+  useUser,
+  useDoc,
+  useFirestore,
+  useMemoFirebase,
+  type WithId,
+} from '@/firebase';
+import type { Cart, Wishlist } from '@/lib/types';
+import { doc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/products', label: 'Shop' },
@@ -31,10 +41,44 @@ const navLinks = [
 
 export function Header() {
   const [isClient, setIsClient] = useState(false);
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+
+  const cartRef = useMemoFirebase(
+    () =>
+      firestore && user
+        ? doc(firestore, 'users', user.uid, 'carts', 'default')
+        : null,
+    [firestore, user]
+  );
+  const { data: cart } = useDoc<Cart>(cartRef);
+
+  const wishlistRef = useMemoFirebase(
+    () =>
+      firestore && user
+        ? doc(firestore, 'users', user.uid, 'wishlists', 'default')
+        : null,
+    [firestore, user]
+  );
+  const { data: wishlist } = useDoc<Wishlist>(wishlistRef);
+
+  const cartItemCount = cart?.items?.length || 0;
+  const wishlistItemCount = wishlist?.items?.length || 0;
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const query = formData.get('search') as string;
+    if (query) {
+      router.push(`/search?q=${encodeURIComponent(query)}`);
+    }
+  };
+
 
   if (!isClient) {
     return null;
@@ -95,27 +139,37 @@ export function Header() {
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-4">
           <div className="w-full flex-1 md:w-auto md:flex-none">
-            <form>
+            <form onSubmit={handleSearch}>
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
+                  name="search"
                   placeholder="Search products..."
                   className="w-full rounded-lg bg-secondary pl-8 md:w-[200px] lg:w-[300px]"
                 />
               </div>
             </form>
           </div>
-          <Button variant="ghost" size="icon" className="relative">
-            <Heart className="h-5 w-5" />
-            <span className="sr-only">Wishlist</span>
-          </Button>
+           <Link href="/account/wishlist">
+            <Button variant="ghost" size="icon" className="relative">
+              <Heart className="h-5 w-5" />
+              {wishlistItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  {wishlistItemCount}
+                </span>
+              )}
+              <span className="sr-only">Wishlist</span>
+            </Button>
+          </Link>
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                3
-              </span>
+              {cartItemCount > 0 && (
+                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  {cartItemCount}
+                </span>
+              )}
               <span className="sr-only">Cart</span>
             </Button>
           </Link>

@@ -81,7 +81,6 @@ export type Cart = {
   userId: string;
   items: CartItem[];
   updatedAt: Date;
-  cartTotal: number;
 };
 
 export type OrderItem = {
@@ -149,4 +148,15 @@ export type Wishlist = {
   userId: string;
   items: WishlistItem[];
   updatedAt: Date;
+};
+
+export type Vendor = {
+  id: string;
+  storeName: string;
+  storeDescription?: string;
+  storeLogo?: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  status: 'pending' | 'approved' | 'suspended';
 };
