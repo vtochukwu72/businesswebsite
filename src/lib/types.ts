@@ -1,5 +1,4 @@
 export type User = {
-  userId: string;
   email: string;
   displayName: string;
   phoneNumber?: string;
@@ -32,7 +31,6 @@ export type PaymentMethod = {
 };
 
 export type Product = {
-  productId: string;
   sellerId: string;
   name: string;
   description: string;
@@ -51,13 +49,18 @@ export type Product = {
     count: number;
   };
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  updatedAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
   tags: string[];
 };
 
 export type Category = {
-  categoryId: string;
   name: string;
   description?: string;
   imageURL: string;
@@ -103,7 +106,13 @@ export type Order = {
     transactionId?: string | null;
     amount: number;
   };
-  orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  orderStatus:
+    | 'pending'
+    | 'confirmed'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled';
   totalAmount: number;
   shippingFee: number;
   taxAmount: number;
