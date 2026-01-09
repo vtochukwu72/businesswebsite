@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import {
   Home,
@@ -20,6 +21,7 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from '@/components/ui/sidebar';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: Home },
@@ -32,35 +34,40 @@ const adminNavItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <Link href="/admin" className="flex items-center gap-2 font-bold text-lg">
-            Admin Panel
-          </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {adminNavItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild tooltip={{ children: item.label }}>
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
-           <SidebarTrigger/>
-          <h1 className="text-lg font-semibold">Dashboard</h1>
-        </header>
-        <main className="flex-1 p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <FirebaseClientProvider>
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarHeader>
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 font-bold text-lg"
+            >
+              Admin Panel
+            </Link>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {adminNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild tooltip={{ children: item.label }}>
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
+            <SidebarTrigger />
+            <h1 className="text-lg font-semibold">Dashboard</h1>
+          </header>
+          <main className="flex-1 p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </FirebaseClientProvider>
   );
 }

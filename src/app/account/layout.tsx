@@ -1,5 +1,7 @@
+'use client';
 import { Header } from '@/components/layout/header';
 import { AccountNav } from '@/components/layout/account-nav';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export default function AccountLayout({
   children,
@@ -7,7 +9,7 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <FirebaseClientProvider>
       <Header />
       <div className="container py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -18,6 +20,6 @@ export default function AccountLayout({
           <main className="md:col-span-3">{children}</main>
         </div>
       </div>
-    </>
+    </FirebaseClientProvider>
   );
 }
