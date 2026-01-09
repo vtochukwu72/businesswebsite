@@ -133,12 +133,6 @@ export default function LoginPage() {
             Sign up
           </Link>
         </div>
-        <div className="mt-2 text-center text-sm">
-          Want to sell?{' '}
-          <Link href="/seller-register" className="underline">
-            Register as a Seller
-          </Link>
-        </div>
       </CardContent>
     </Card>
   );
