@@ -57,7 +57,7 @@ export function Header() {
                   <span className="sr-only">E-Commerce</span>
                 </Link>
                 {navLinks.map((link) => (
-                  <Link href={link.href} key={link.href} className="hover:text-foreground">
+                  <Link href={link.href} key={link.href + link.label} className="hover:text-foreground">
                     {link.label}
                   </Link>
                 ))}
@@ -70,7 +70,7 @@ export function Header() {
           {navLinks.map((link) => (
             <Link
               href={link.href}
-              key={link.href}
+              key={link.href + link.label}
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {link.label}
