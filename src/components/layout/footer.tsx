@@ -33,8 +33,8 @@ export function Footer() {
             <h4 className="font-semibold">Support</h4>
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link href="/contact" className="text-muted-foreground hover:text-foreground">Contact Us</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-foreground">Shipping</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-foreground">Returns</Link></li>
+              <li><Link href="/shipping-and-returns" className="text-muted-foreground hover:text-foreground">Shipping</Link></li>
+              <li><Link href="/shipping-and-returns" className="text-muted-foreground hover:text-foreground">Returns</Link></li>
             </ul>
           </div>
           
@@ -71,3 +71,5 @@ export function Footer() {
     </footer>
   );
 }
+
+    
