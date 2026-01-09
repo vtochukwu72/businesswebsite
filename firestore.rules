@@ -195,7 +195,7 @@ service cloud.firestore {
      */
     match /products/{productId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid && userHasAnyRole(['seller']);
       allow update, delete: if isExistingDocument() && (isOwner(resource.data.sellerId) || canManageContent());
     }
 
@@ -285,5 +285,4 @@ service cloud.firestore {
     }
   }
 }
-
     
