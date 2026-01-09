@@ -4,7 +4,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Truck, PackageReturn, ShieldCheck } from 'lucide-react';
+import { Truck, Package, ShieldCheck } from 'lucide-react';
 
 export default function ShippingAndReturnsPage() {
   return (
@@ -60,7 +60,7 @@ export default function ShippingAndReturnsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PackageReturn className="h-6 w-6 text-primary" />
+              <Package className="h-6 w-6 text-primary" />
               Returns & Exchanges Policy
             </CardTitle>
           </CardHeader>
@@ -104,5 +104,3 @@ export default function ShippingAndReturnsPage() {
     </div>
   );
 }
-
-    
