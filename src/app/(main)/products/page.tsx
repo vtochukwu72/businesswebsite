@@ -1,4 +1,5 @@
 'use client';
+import { useState, useMemo, useEffect } from 'react';
 import { ProductCard } from '@/components/products/product-card';
 import {
   Select,
@@ -18,6 +19,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function ProductListingPage() {
   const firestore = useFirestore();
 
+  const [filters, setFilters] = useState({
+    categories: [] as string[],
+    price: null as number | null,
+    rating: 0,
+  });
+  const [sortOption, setSortOption] = useState('featured');
+
   const productsQuery = useMemoFirebase(
     () =>
       firestore
@@ -26,6 +34,80 @@ export default function ProductListingPage() {
     [firestore]
   );
   const { data: products, isLoading } = useCollection<Product>(productsQuery);
+
+  const { categories, minPrice, maxPrice } = useMemo(() => {
+    if (!products) {
+      return { categories: [], minPrice: 0, maxPrice: 10000 };
+    }
+    const uniqueCategories = [...new Set(products.map((p) => p.category))];
+    const prices = products.map((p) => p.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return { categories: uniqueCategories, minPrice: min, maxPrice: max };
+  }, [products]);
+  
+  useEffect(() => {
+    if (maxPrice > 0) {
+      setFilters(f => ({ ...f, price: maxPrice }));
+    }
+  }, [maxPrice]);
+
+
+  const handleCategoryChange = (category: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter((c) => c !== category)
+        : [...prev.categories, category],
+    }));
+  };
+
+  const handlePriceChange = (value: number[]) => {
+    setFilters((prev) => ({ ...prev, price: value[0] }));
+  };
+  
+  const handleRatingChange = (rating: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      rating: prev.rating === rating ? 0 : rating,
+    }));
+  };
+
+
+  const filteredAndSortedProducts = useMemo(() => {
+    if (!products) return [];
+
+    let filtered = products.filter((product) => {
+      const categoryMatch =
+        filters.categories.length === 0 ||
+        filters.categories.includes(product.category);
+      const priceMatch = filters.price === null || product.price <= filters.price;
+      const ratingMatch = product.ratings.average >= filters.rating;
+      return categoryMatch && priceMatch && ratingMatch;
+    });
+
+    switch (sortOption) {
+      case 'price-asc':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'newest':
+        filtered.sort(
+          (a, b) => b.createdAt.seconds - a.createdAt.seconds
+        );
+        break;
+      case 'featured':
+      default:
+        // You could add a 'isFeatured' flag to your product data
+        // For now, let's just sort by rating
+        filtered.sort((a, b) => b.ratings.average - a.ratings.average);
+        break;
+    }
+
+    return filtered;
+  }, [products, filters, sortOption]);
 
   return (
     <div className="container py-8">
@@ -37,44 +119,65 @@ export default function ProductListingPage() {
             <div>
               <h3 className="font-semibold mb-2">Category</h3>
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="cat-electronics" />
-                  <Label htmlFor="cat-electronics">Electronics</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="cat-fashion" />
-                  <Label htmlFor="cat-fashion">Fashion</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="cat-home" />
-                  <Label htmlFor="cat-home">Home Goods</Label>
-                </div>
+                {isLoading ? (
+                  <>
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-5 w-3/4" />
+                  </>
+                ) : (
+                  categories.map((category) => (
+                    <div key={category} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`cat-${category}`}
+                        checked={filters.categories.includes(category)}
+                        onCheckedChange={() => handleCategoryChange(category)}
+                      />
+                      <Label htmlFor={`cat-${category}`} className="capitalize">
+                        {category}
+                      </Label>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
             <div>
               <h3 className="font-semibold mb-2">Price Range</h3>
-              <Slider defaultValue={[500]} max={1000} step={10} />
+               <Slider
+                value={[filters.price ?? maxPrice]}
+                min={minPrice}
+                max={maxPrice}
+                step={10}
+                onValueChange={handlePriceChange}
+                disabled={isLoading || minPrice === maxPrice}
+              />
               <div className="flex justify-between text-sm text-muted-foreground mt-2">
-                <span>$0</span>
-                <span>$1000</span>
+                <span>₦{minPrice.toFixed(2)}</span>
+                <span>₦{filters.price?.toFixed(2) ?? maxPrice.toFixed(2)}</span>
               </div>
             </div>
             <div>
               <h3 className="font-semibold mb-2">Rating</h3>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="rate-4" />
-                <Label htmlFor="rate-4">4 stars & up</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="rate-3" />
-                <Label htmlFor="rate-3">3 stars & up</Label>
+               <div className="space-y-2">
+                {[4, 3, 2, 1].map(rating => (
+                  <div key={rating} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`rate-${rating}`}
+                      checked={filters.rating === rating}
+                      onCheckedChange={() => handleRatingChange(rating)}
+                    />
+                    <Label htmlFor={`rate-${rating}`}>{rating} stars & up</Label>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </aside>
         <main className="md:col-span-3">
-          <div className="flex justify-end mb-4">
-            <Select>
+          <div className="flex justify-between items-center mb-4">
+             <div className="text-muted-foreground">
+              {filteredAndSortedProducts.length} products
+            </div>
+            <Select value={sortOption} onValueChange={setSortOption}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -95,10 +198,18 @@ export default function ProductListingPage() {
                   <Skeleton className="h-6 w-1/2" />
                 </div>
               ))}
-            {products?.map((product) => (
+            {filteredAndSortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
+           {!isLoading && filteredAndSortedProducts.length === 0 && (
+            <div className="text-center py-20 col-span-full">
+              <h2 className="text-xl font-semibold">No products found</h2>
+              <p className="text-muted-foreground mt-2">
+                Try adjusting your filters to find what you&apos;re looking for.
+              </p>
+            </div>
+          )}
         </main>
       </div>
     </div>
