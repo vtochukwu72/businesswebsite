@@ -110,6 +110,12 @@ export default function AdminRegisterPage() {
             <input type="hidden" name="role" value="admin" />
             <SubmitButton />
           </form>
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{' '}
+            <Link href="/admin-login" className="underline">
+              Sign in
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

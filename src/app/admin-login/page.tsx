@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -89,6 +88,12 @@ export default function AdminLoginPage() {
             <input type="hidden" name="role" value="admin" />
             <SubmitButton />
           </form>
+          <div className="mt-4 text-center text-sm">
+            Don't have an account?{' '}
+            <Link href="/admin-register" className="underline">
+              Sign up
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
