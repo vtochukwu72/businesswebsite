@@ -12,10 +12,25 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import type { Product } from '@/lib/types';
-import { products as staticProducts } from '@/lib/static-data';
+import { getProducts } from '@/services/product-service';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function ProductSkeleton() {
+  return (
+    <div className="flex flex-col space-y-3">
+      <Skeleton className="h-[250px] w-full rounded-xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[200px]" />
+        <Skeleton className="h-4 w-[150px]" />
+      </div>
+    </div>
+  )
+}
 
 export default function ProductListingPage() {
   const [isClient, setIsClient] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [filters, setFilters] = useState({
     categories: [] as string[],
@@ -24,10 +39,18 @@ export default function ProductListingPage() {
   });
   const [sortOption, setSortOption] = useState('featured');
 
-  const products: Product[] = staticProducts;
+  useEffect(() => {
+    async function fetchProducts() {
+      setLoading(true);
+      const fetchedProducts = await getProducts();
+      setProducts(fetchedProducts);
+      setLoading(false);
+    }
+    fetchProducts();
+  }, []);
 
   const { categories, minPrice, maxPrice } = useMemo(() => {
-    if (!products) {
+    if (!products || products.length === 0) {
       return { categories: [], minPrice: 0, maxPrice: 10000 };
     }
     const uniqueCategories = [...new Set(products.map((p) => p.category))];
@@ -167,7 +190,7 @@ export default function ProductListingPage() {
         <main className="md:col-span-3">
           <div className="flex justify-between items-center mb-4">
              <div className="text-muted-foreground">
-              {filteredAndSortedProducts.length} products
+              {loading ? 'Loading...' : `${filteredAndSortedProducts.length} products`}
             </div>
             {isClient && (
               <Select value={sortOption} onValueChange={setSortOption}>
@@ -183,12 +206,18 @@ export default function ProductListingPage() {
               </Select>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAndSortedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-           {filteredAndSortedProducts.length === 0 && (
+          {loading ? (
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => <ProductSkeleton key={i} />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredAndSortedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+           {!loading && filteredAndSortedProducts.length === 0 && (
             <div className="text-center py-20 col-span-full">
               <h2 className="text-xl font-semibold">No products found</h2>
               <p className="text-muted-foreground mt-2">

@@ -6,23 +6,33 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Product, Review } from '@/lib/types';
-import { products as staticProducts } from '@/lib/static-data';
 import { useState, useEffect } from 'react';
+import { getProduct } from '@/services/product-service';
 
 export default function ProductDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const [product, setProduct] = useState<Product | undefined>(undefined);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const foundProduct = staticProducts.find(p => p.id === params.slug);
-    setProduct(foundProduct);
+    async function fetchProduct() {
+      setLoading(true);
+      const foundProduct = await getProduct(params.slug);
+      setProduct(foundProduct);
+      setLoading(false);
+    }
+    fetchProduct();
   }, [params.slug]);
 
   // Placeholder for reviews
   const reviews: Review[] = [];
+
+  if (loading) {
+    return <div className="container py-8 text-center">Loading product...</div>
+  }
 
   if (!product) {
     return (
