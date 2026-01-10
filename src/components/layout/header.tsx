@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -5,6 +6,7 @@ import {
   Menu,
   Search,
   ShoppingCart,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,14 +23,24 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { products as staticProducts } from '@/lib/static-data';
+import { useAuth } from '@/context/auth-context';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
 export function Header() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   const categories = useMemo(() => {
     if (!staticProducts) return [];
@@ -129,7 +141,7 @@ export function Header() {
           </NavigationMenu>
         </nav>
 
-        <div className="ml-auto flex flex-1 items-center justify-end gap-4">
+        <div className="ml-auto flex flex-1 items-center justify-end gap-2">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <form onSubmit={handleSearch}>
               <div className="relative">
@@ -143,12 +155,40 @@ export function Header() {
               </div>
             </form>
           </div>
-          <Link href="/cart">
+          <Link href="/cart" aria-label="Open shopping cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
               <span className="sr-only">Cart</span>
             </Button>
           </Link>
+
+          {!loading &&
+            (user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="h-5 w-5" />
+                    <span className="sr-only">My Account</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href="/account">Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/account/orders">Orders</Link></DropdownMenuItem>
+                  <DropdownMenuItem>Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2">
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/login">Sign In</Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link href="/register">Register</Link>
+                </Button>
+              </div>
+            ))}
         </div>
       </div>
     </header>
