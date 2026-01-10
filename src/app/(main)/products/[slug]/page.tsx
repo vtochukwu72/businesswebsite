@@ -13,7 +13,8 @@ export default function ProductDetailPage({
 }: {
   params: { slug: string };
 }) {
-  const product: Product | undefined = staticProducts.find(p => p.id === params.slug);
+  const { slug } = params;
+  const product: Product | undefined = staticProducts.find(p => p.id === slug);
 
   // Placeholder for reviews
   const reviews: Review[] = [];
@@ -23,7 +24,7 @@ export default function ProductDetailPage({
       <div className="container py-8 text-center">
         <h1 className="text-2xl font-bold">Product not found</h1>
         <p className="text-muted-foreground">
-          Sorry, we couldn&apos;t find the product you were looking for.
+          Sorry, we couldn't find the product you were looking for.
         </p>
       </div>
     );
