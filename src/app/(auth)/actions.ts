@@ -49,21 +49,33 @@ export async function signup(prevState: any, formData: FormData) {
     );
     const user = userCredential.user;
 
-    // Update profile
+    // Update profile in Auth
     await updateProfile(user, {
         displayName: displayName
     });
 
-    // Create user profile in Firestore
+    // Create user profile in Firestore with more details
     await setDoc(doc(db, 'users', user.uid), {
       id: user.uid,
+      email: user.email,
+      fname: fname,
+      lname: lname,
       displayName: displayName,
-      email,
-      role,
-      createdAt: serverTimestamp(),
       phone: "",
-      address: "",
-      photoURL: user.photoURL
+      address: {},
+      photoURL: user.photoURL,
+      role,
+      emailVerified: user.emailVerified,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      cart: [],
+      wishlist: [],
+      orders: [],
+      shippingAddresses: [],
+      preferences: {
+        newsletter: false,
+        marketingEmails: false
+      }
     });
 
     // Create session cookie
@@ -106,20 +118,22 @@ export async function login(prevState: any, formData: FormData) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // If a role is specified, check it.
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+             return {
+                message: 'User data not found.',
+                success: false,
+                errors: {},
+            };
+        }
+        
+        const userData = userDoc.data();
+
+        // If a role is specified for login (e.g., for seller or admin portals), check it.
         if (role) {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (!userDoc.exists()) {
-                return {
-                    message: 'User data not found.',
-                    success: false,
-                    errors: {},
-                };
-            }
-
-            const userData = userDoc.data();
             const allowedRoles = role === 'admin' ? ['admin', 'super_admin'] : [role];
-
             if (!allowedRoles.includes(userData.role)) {
                  return {
                     message: `Access Denied: Not a ${role} account.`,
@@ -138,7 +152,7 @@ export async function login(prevState: any, formData: FormData) {
             path: '/',
         });
 
-        return { success: true, role: (await getDoc(doc(db, 'users', user.uid))).data()?.role, errors: {} };
+        return { success: true, role: userData.role, errors: {} };
     } catch (error: any) {
         let errorMessage = 'An unexpected error occurred.';
         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {

@@ -72,6 +72,9 @@ export default function AdminRegisterPage() {
                   placeholder="John"
                   required
                 />
+                {state.errors?.fname && (
+                    <p className="text-sm text-destructive">{state.errors.fname.join(', ')}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lname">Last Name</Label>
@@ -81,6 +84,9 @@ export default function AdminRegisterPage() {
                   placeholder="Doe"
                   required
                 />
+                {state.errors?.lname && (
+                    <p className="text-sm text-destructive">{state.errors.lname.join(', ')}</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
