@@ -6,27 +6,30 @@
       "type": "object",
       "description": "Represents a user of the e-commerce platform.",
       "properties": {
-        "id": {
+        "uid": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user (Firebase Auth UID)."
         },
         "email": {
           "type": "string",
           "description": "User's email address.",
           "format": "email"
         },
-        "displayName": {
+        "fname": {
           "type": "string",
-          "description": "User's display name."
+          "description": "User's first name."
         },
-        "phoneNumber": {
+        "lname": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "User's full name."
+        },
+        "phone": {
           "type": "string",
           "description": "User's phone number."
-        },
-        "photoURL": {
-          "type": "string",
-          "description": "URL of user's profile photo.",
-          "format": "uri"
         },
         "role": {
           "type": "string",
@@ -41,12 +44,74 @@
             "support_manager",
             "finance_manager"
           ]
+        },
+        "emailVerified": {
+          "type": "boolean",
+          "description": "Indicates if the user's email has been verified."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last user profile update.",
+          "format": "date-time"
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "zipCode": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            }
+          }
+        },
+        "cart": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "wishlist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "newsletter": {
+              "type": "boolean"
+            },
+            "marketingEmails": {
+              "type": "boolean"
+            }
+          }
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of user's profile photo.",
+          "format": "uri"
         }
       },
       "required": [
-        "id",
+        "uid",
         "email",
-        "displayName",
+        "fullName",
         "role"
       ]
     },
@@ -783,5 +848,4 @@
     "reasoning": "This Firestore structure is designed to support a secure and scalable e-commerce platform with admin and vendor dashboards, following the principles of Authorization Independence, Structural Segregation, and Access Modeling. It incorporates denormalization to avoid `get()` calls in security rules and enables efficient `list` operations. Roles are managed within the database itself, eliminating the need for custom claims, thus adhering to DBAC principles. I have applied these changes:\n\n*   The root `users` collection is used to store user profiles. The `role` field within each user document determines their access level (customer, seller, admin).\n*   The `products` collection stores product information, including the `sellerId` to link products to vendors. Vendor-specific data, such as `storeName` and `rating`, is denormalized into the product document to optimize read operations and maintain authorization independence.\n*   A top-level `categories` collection stores category information.\n*   User-specific data, such as `carts` and `wishlists`, are stored in subcollections under each user document (`users/{userId}/carts/{cartId}` and `users/{userId}/wishlists/{wishlistId}`).\n*   Orders are stored in a top-level `orders` collection. Each order document includes the `userId` to link orders to customers.\n*   Reviews are stored in a top-level `reviews` collection.\n*   Vendor-specific data is primarily stored within the `vendors` collection. This collection includes fields such as `storeName`, `storeDescription`, and `payoutSettings`.\n*   Admin-related data is stored under the `admin` collection. This collection includes settings, activity logs, and analytics data.\n*   Vendor orders are maintained both at the top level (`orders`) and within a subcollection under each vendor (`vendors/{vendorId}/orders`). This denormalization facilitates efficient queries for both customer order history and vendor order management.\n\nTo achieve Authorization Independence, key authorization data, such as vendor details (store name, rating), are denormalized into product documents. This eliminates the need for `get()` calls in security rules, enabling atomic operations and improving performance.\n\nFor QAPs (Rules are not Filters), Structural Segregation is used. For example, sensitive admin settings are stored separately from user-facing data. The Membership Map pattern is not applicable here as ownership is primarily path-based (e.g., `/users/{userId}/carts/{cartId}`)."
   }
 }
-
     
