@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -15,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { signup } from '@/firebase/auth/actions';
+import { signup } from '@/app/(auth)/actions';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -111,7 +112,7 @@ export default function SellerRegisterPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
-            <Link href="/seller-login" className="underline">
+            <Link href="/seller/login" className="underline">
               Sign in
             </Link>
           </div>
