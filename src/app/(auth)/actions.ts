@@ -218,6 +218,15 @@ export async function login(prevState: any, formData: FormData) {
 
   try {
     const adminAuth = getAdminAuth();
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+    
+    const { firestore } = getSdks(initializeFirebase().firebaseApp);
+    await updateDoc(doc(firestore, 'users', uid), {
+      lastLogin: new Date(),
+      status: 'active'
+    });
+    
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
