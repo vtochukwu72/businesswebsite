@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
 // Ensure Firebase is initialized
@@ -60,7 +60,7 @@ export async function signup(prevState: any, formData: FormData) {
       displayName: displayName,
       email,
       role,
-      createdAt: new Date().toISOString(),
+      createdAt: serverTimestamp(),
       phone: "",
       address: "",
       photoURL: user.photoURL
@@ -149,5 +149,25 @@ export async function login(prevState: any, formData: FormData) {
             success: false,
             errors: {},
         };
+    }
+}
+
+
+export async function signInWithGoogle(idToken: string, role: 'customer' | 'seller' | 'admin' | 'super_admin') {
+    // This function will be called from the client after Google sign-in
+    // It's responsible for setting the session cookie.
+    // The actual user creation/check will happen on the client side for now to get user info.
+    // In a more robust setup, you'd verify the token here and get user info from it.
+    try {
+        cookies().set('session', idToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            path: '/',
+        });
+        
+        return { success: true };
+    } catch(error) {
+        return { success: false };
     }
 }
