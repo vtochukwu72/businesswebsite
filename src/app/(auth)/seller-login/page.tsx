@@ -16,21 +16,21 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { signup } from '@/app/(auth)/actions';
+import { login } from '@/app/(auth)/actions';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Creating Account...' : 'Create Account'}
+      {pending ? 'Signing In...' : 'Sign In'}
     </Button>
   );
 }
 
-export default function SellerRegisterPage() {
+export default function SellerLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [state, formAction] = useActionState(signup, {
+  const [state, formAction] = useActionState(login, {
     errors: {},
     success: false,
   });
@@ -38,15 +38,14 @@ export default function SellerRegisterPage() {
   useEffect(() => {
     if (state.success) {
       toast({
-        title: 'Account Created!',
-        description:
-          "Welcome! You've been successfully registered and are now being redirected.",
+        title: 'Login Successful!',
+        description: "Welcome back! You're being redirected to your dashboard.",
       });
       router.push('/seller');
     } else if (state.message) {
       toast({
         variant: 'destructive',
-        title: 'Registration Failed',
+        title: 'Login Failed',
         description: state.message,
       });
     }
@@ -56,33 +55,13 @@ export default function SellerRegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Become a Seller</CardTitle>
+          <CardTitle className="text-2xl">Seller Login</CardTitle>
           <CardDescription>
-            Create your vendor account to start selling.
+            Access your vendor dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fname">First Name</Label>
-                <Input
-                  id="fname"
-                  name="fname"
-                  placeholder="John"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lname">Last Name</Label>
-                <Input
-                  id="lname"
-                  name="lname"
-                  placeholder="Doe"
-                  required
-                />
-              </div>
-            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -107,13 +86,12 @@ export default function SellerRegisterPage() {
                 </p>
               )}
             </div>
-            <input type="hidden" name="role" value="seller" />
             <SubmitButton />
           </form>
           <div className="mt-4 text-center text-sm">
-            Already have an account?{' '}
-            <Link href="/seller-login" className="underline">
-              Sign in
+            Don't have an account?{' '}
+            <Link href="/seller-register" className="underline">
+              Sign up
             </Link>
           </div>
         </CardContent>
