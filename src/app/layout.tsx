@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import '../styles/auth.css';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/context/auth-context';
 
 export const metadata: Metadata = {
   title: 'E-Commerce Platform',
@@ -29,7 +30,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster />
       </body>
     </html>

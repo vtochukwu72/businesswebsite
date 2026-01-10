@@ -94,7 +94,7 @@ export default function SellerDashboardPage() {
               </CardDescription>
             </div>
             <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="#">
+              <Link href="/seller/orders">
                 View All
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
@@ -111,7 +111,7 @@ export default function SellerDashboardPage() {
                   <TableHead className="hidden xl:table-column">
                     Status
                   </TableHead>
-                  <TableHead className="hidden xl:table-column">Date</TableHead>
+                  <TableHead className="hidden md:table-cell lg:hidden xl:table-column">Date</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
