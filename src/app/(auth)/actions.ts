@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
@@ -39,6 +39,7 @@ export async function signup(prevState: any, formData: FormData) {
   }
 
   const { email, password, fname, lname, role } = parsed.data;
+  const displayName = `${fname} ${lname}`;
 
   try {
     const userCredential = await createUserWithEmailAndPassword(
@@ -48,13 +49,21 @@ export async function signup(prevState: any, formData: FormData) {
     );
     const user = userCredential.user;
 
+    // Update profile
+    await updateProfile(user, {
+        displayName: displayName
+    });
+
     // Create user profile in Firestore
     await setDoc(doc(db, 'users', user.uid), {
       id: user.uid,
-      displayName: `${fname} ${lname}`,
+      displayName: displayName,
       email,
       role,
       createdAt: new Date().toISOString(),
+      phone: "",
+      address: "",
+      photoURL: user.photoURL
     });
 
     // Create session cookie
