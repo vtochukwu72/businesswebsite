@@ -1,7 +1,6 @@
-import { initializeApp, getApp, getApps, App, cert } from 'firebase-admin/app';
+import { initializeApp, getApp, getApps, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import { firebaseAdminConfig } from './admin-config';
 
 // This function initializes and returns the Firebase Admin App instance.
 // It ensures that the app is initialized only once.
@@ -11,19 +10,10 @@ function initializeAdminApp(): App {
     return getApp();
   }
 
-  // Ensure environment variable is handled correctly
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  if (!privateKey) {
-    throw new Error('FIREBASE_PRIVATE_KEY environment variable is not set.');
-  }
-
-  return initializeApp({
-    credential: cert({
-      projectId: firebaseAdminConfig.projectId,
-      clientEmail: firebaseAdminConfig.clientEmail,
-      privateKey: privateKey,
-    }),
-  });
+  // When running in a Google Cloud environment (like App Hosting or Cloud Functions),
+  // initializeApp() automatically discovers the service account credentials.
+  // This removes the need for manual configuration or environment variables.
+  return initializeApp();
 }
 
 // Singleton instance of the Firebase Admin App
