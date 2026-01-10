@@ -5,16 +5,22 @@ import { z } from 'zod';
 import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getApps, initializeApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
+import { getAdminApp } from '@/firebase/admin-config';
+
 
 // Ensure Firebase is initialized
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Use a separate schema for server-side validation.
 const profileSchema = z.object({
-  userId: z.string().min(1),
-  displayName: z.string().min(3, 'Display name must be at least 3 characters'),
+  userId: z.string().min(1, 'User ID is required.'),
+  fname: z.string().min(1, 'First name is required.'),
+  lname: z.string().min(1, 'Last name is required.'),
   phone: z.string().optional(),
 });
+
 
 export async function updateUserProfile(prevState: any, formData: FormData) {
   const values = Object.fromEntries(formData.entries());
@@ -28,17 +34,33 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
   }
 
   const { userId, ...profileData } = parsed.data;
+  const fullName = `${profileData.fname} ${profileData.lname}`.trim();
 
   try {
+    const adminApp = getAdminApp();
+    const adminAuth = getAdminAuth(adminApp);
+    
+    // Update Firebase Auth display name
+    await adminAuth.updateUser(userId, {
+      displayName: fullName,
+    });
+
+    // Update Firestore document
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
       ...profileData,
+      fullName: fullName,
       updatedAt: serverTimestamp(),
     });
     return { success: true, errors: {} };
   } catch (error: any) {
+    console.error("Error updating user profile:", error);
+    let message = 'An unexpected error occurred.';
+    if(error.code === 'auth/user-not-found') {
+        message = 'User not found. Could not update profile.';
+    }
     return {
-      message: 'An unexpected error occurred.',
+      message: message,
       success: false,
       errors: {},
     };

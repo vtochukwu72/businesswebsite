@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
-import { updateUserProfile } from './actions';
+import { updateUserProfile } from '../actions';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -71,17 +71,29 @@ export default function ProfilePage() {
           <input type="hidden" name="userId" value={user.uid} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div className="space-y-2">
-                <Label htmlFor="displayName">Display Name</Label>
+                <Label htmlFor="fname">First Name</Label>
                 <Input
-                id="displayName"
-                name="displayName"
-                defaultValue={userData?.displayName || ''}
+                id="fname"
+                name="fname"
+                defaultValue={userData?.fname || ''}
                 />
-                {state.errors?.displayName && (
-                    <p className="text-sm text-destructive">{state.errors.displayName.join(', ')}</p>
+                {state.errors?.fname && (
+                    <p className="text-sm text-destructive">{state.errors.fname.join(', ')}</p>
                 )}
             </div>
              <div className="space-y-2">
+                <Label htmlFor="lname">Last Name</Label>
+                <Input
+                id="lname"
+                name="lname"
+                defaultValue={userData?.lname || ''}
+                />
+                {state.errors?.lname && (
+                    <p className="text-sm text-destructive">{state.errors.lname.join(', ')}</p>
+                )}
+            </div>
+          </div>
+           <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                 id="email"
@@ -91,7 +103,6 @@ export default function ProfilePage() {
                 disabled
                 />
             </div>
-          </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
             <Input
