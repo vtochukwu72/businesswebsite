@@ -91,8 +91,6 @@ export async function signup(prevState: any, formData: FormData) {
     );
     const userRecord = userCredential.user;
     
-    const idToken = await userRecord.getIdToken();
-
     await updateAuthProfile(userRecord, {
         displayName: `${fname} ${lname}`
     })
@@ -155,7 +153,19 @@ export async function signup(prevState: any, formData: FormData) {
 
     await setDoc(doc(firestore, 'users', userRecord.uid), userData);
     
-    // Also create a session cookie for immediate login
+    if (userType === 'vendor') {
+      await setDoc(doc(firestore, 'vendors', userRecord.uid), {
+        id: userRecord.uid,
+        storeName: storeName,
+        status: 'pending',
+        storeDescription: '',
+        email: email,
+      });
+    }
+
+    // After successful signup, we can automatically log the user in
+    // by creating a session cookie.
+    const idToken = await userRecord.getIdToken();
     const adminAuth = getAdminAuth();
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
@@ -169,21 +179,15 @@ export async function signup(prevState: any, formData: FormData) {
     });
 
 
-    if (userType === 'vendor') {
-      await setDoc(doc(firestore, 'vendors', userRecord.uid), {
-        id: userRecord.uid,
-        storeName: storeName,
-        status: 'pending',
-        storeDescription: '',
-        email: email,
-      });
-    }
-
   } catch (error: any) {
     console.error('Signup error:', error);
+    let message = error.message || 'Failed to create account.';
+    if (error.code === 'auth/email-already-in-use') {
+        message = 'This email address is already in use by another account.';
+    }
     return {
       success: false,
-      message: error.message || 'Failed to create account.',
+      message,
     };
   }
 
@@ -191,11 +195,10 @@ export async function signup(prevState: any, formData: FormData) {
   if (userType === 'admin') {
     redirect('/admin');
   }
-
-  return {
-      success: true,
-      message: 'Account created successfully!',
-  };
+  if (userType === 'vendor') {
+    redirect('/seller');
+  }
+  redirect('/account');
 }
 
 const loginSchema = z.object({
