@@ -24,6 +24,7 @@ const signupSchema = z.object({
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
     password: z.string().min(1, 'Password is required'),
+    role: z.enum(['customer', 'seller', 'admin', 'super_admin']).optional(),
 });
 
 export async function signup(prevState: any, formData: FormData) {
@@ -90,21 +91,35 @@ export async function login(prevState: any, formData: FormData) {
         };
     }
 
-    const { email, password } = parsed.data;
+    const { email, password, role } = parsed.data;
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Check user role from Firestore
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (!userDoc.exists() || userDoc.data().role !== 'seller') {
-            return {
-                message: 'Access Denied: Not a seller account.',
-                success: false,
-                errors: {},
-            };
+        // If a role is specified, check it.
+        if (role) {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (!userDoc.exists()) {
+                return {
+                    message: 'User data not found.',
+                    success: false,
+                    errors: {},
+                };
+            }
+
+            const userData = userDoc.data();
+            const allowedRoles = role === 'admin' ? ['admin', 'super_admin'] : [role];
+
+            if (!allowedRoles.includes(userData.role)) {
+                 return {
+                    message: `Access Denied: Not a ${role} account.`,
+                    success: false,
+                    errors: {},
+                };
+            }
         }
+
 
         const idToken = await user.getIdToken();
         cookies().set('session', idToken, {
@@ -114,7 +129,7 @@ export async function login(prevState: any, formData: FormData) {
             path: '/',
         });
 
-        return { success: true, errors: {} };
+        return { success: true, role: (await getDoc(doc(db, 'users', user.uid))).data()?.role, errors: {} };
     } catch (error: any) {
         let errorMessage = 'An unexpected error occurred.';
         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {

@@ -16,21 +16,21 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { login } from '@/app/(auth)/actions';
+import { signup } from '@/app/(auth)/actions';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Signing In...' : 'Sign In'}
+      {pending ? 'Creating Account...' : 'Create Admin Account'}
     </Button>
   );
 }
 
-export default function SellerLoginPage() {
+export default function AdminRegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [state, formAction] = useActionState(login, {
+  const [state, formAction] = useActionState(signup, {
     errors: {},
     success: false,
   });
@@ -38,14 +38,15 @@ export default function SellerLoginPage() {
   useEffect(() => {
     if (state.success) {
       toast({
-        title: 'Login Successful!',
-        description: "Welcome back! You're being redirected to your dashboard.",
+        title: 'Account Created!',
+        description:
+          "Admin account successfully registered. You are now being redirected to the dashboard.",
       });
-      router.push('/seller');
+      router.push('/admin');
     } else if (state.message) {
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: 'Registration Failed',
         description: state.message,
       });
     }
@@ -55,13 +56,33 @@ export default function SellerLoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Seller Login</CardTitle>
+          <CardTitle className="text-2xl">Create Admin Account</CardTitle>
           <CardDescription>
-            Access your vendor dashboard.
+            Enter your information to create an administrator account.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fname">First Name</Label>
+                <Input
+                  id="fname"
+                  name="fname"
+                  placeholder="John"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lname">Last Name</Label>
+                <Input
+                  id="lname"
+                  name="lname"
+                  placeholder="Doe"
+                  required
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -86,15 +107,9 @@ export default function SellerLoginPage() {
                 </p>
               )}
             </div>
-            <input type="hidden" name="role" value="seller" />
+            <input type="hidden" name="role" value="admin" />
             <SubmitButton />
           </form>
-          <div className="mt-4 text-center text-sm">
-            Don't have an account?{' '}
-            <Link href="/seller-register" className="underline">
-              Sign up
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>

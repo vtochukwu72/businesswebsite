@@ -27,7 +27,7 @@ function SubmitButton() {
   );
 }
 
-export default function SellerLoginPage() {
+export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useActionState(login, {
@@ -39,9 +39,9 @@ export default function SellerLoginPage() {
     if (state.success) {
       toast({
         title: 'Login Successful!',
-        description: "Welcome back! You're being redirected to your dashboard.",
+        description: "Welcome back! You're being redirected to the admin dashboard.",
       });
-      router.push('/seller');
+      router.push('/admin');
     } else if (state.message) {
       toast({
         variant: 'destructive',
@@ -55,9 +55,9 @@ export default function SellerLoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Seller Login</CardTitle>
+          <CardTitle className="text-2xl">Administrator Login</CardTitle>
           <CardDescription>
-            Access your vendor dashboard.
+            Access the platform's admin dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -68,7 +68,7 @@ export default function SellerLoginPage() {
                 id="email"
                 name="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="admin@example.com"
                 required
               />
               {state.errors?.email && (
@@ -86,15 +86,9 @@ export default function SellerLoginPage() {
                 </p>
               )}
             </div>
-            <input type="hidden" name="role" value="seller" />
+            <input type="hidden" name="role" value="admin" />
             <SubmitButton />
           </form>
-          <div className="mt-4 text-center text-sm">
-            Don't have an account?{' '}
-            <Link href="/seller-register" className="underline">
-              Sign up
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
