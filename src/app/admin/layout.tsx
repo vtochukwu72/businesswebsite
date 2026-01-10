@@ -49,14 +49,13 @@ function AdminDashboardLayout({ children }: { children: ReactNode }) {
     return <FullScreenLoader />;
   }
 
-  const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
-
-  if (!authContext?.isAuthenticated || !isAdmin) {
-    // This should ideally be handled by middleware, but as a fallback:
+  // After loading, if user is not authenticated or not an admin, redirect
+  if (!authContext?.isAuthenticated || !authContext.isAdmin) {
     router.push('/admin-login');
-    return <FullScreenLoader />;
+    return <FullScreenLoader />; // Show loader while redirecting
   }
 
+  // If authenticated and is an admin, render the dashboard
   return (
      <SidebarProvider>
         <Sidebar>

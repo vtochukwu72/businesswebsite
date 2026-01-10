@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useActionState, useEffect, useState, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -19,7 +18,6 @@ import { login } from '@/app/(auth)/actions';
 import { useToast } from '@/hooks/use-toast';
 import { auth as clientAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { AuthContext } from '@/context/auth-context';
 import { doc, getDoc } from 'firebase/firestore';
 
 function LoginSubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
@@ -59,35 +57,30 @@ export default function SellerLoginPage() {
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      if (userDoc.exists()) {
+      if (userDoc.exists() && userDoc.data().role === 'seller') {
         const userData = userDoc.data();
-        if (userData.role === 'seller') {
-          if (userData.status === 'pending_verification') {
+        if (userData.status === 'pending_verification') {
             toast({ variant: 'destructive', title: 'Pending Approval', description: 'Your vendor account is pending approval.' });
             setIsSubmitting(false);
             return;
-          }
+        }
 
-          const idToken = await user.getIdToken();
-          const serverFormData = new FormData();
-          serverFormData.append('idToken', idToken);
-          
-          const result = await login(null, serverFormData);
+        const idToken = await user.getIdToken();
+        const serverFormData = new FormData();
+        serverFormData.append('idToken', idToken);
+        
+        const result = await login(null, serverFormData);
 
-          if (result.success) {
-            toast({ title: 'Success', description: 'Seller login successful!' });
-            router.push('/seller');
-            router.refresh();
-          } else {
-            toast({ variant: 'destructive', title: 'Server Error', description: result.message });
-            setIsSubmitting(false);
-          }
+        if (result.success) {
+          toast({ title: 'Success', description: 'Seller login successful!' });
+          router.push('/seller');
+          router.refresh();
         } else {
-          toast({ variant: 'destructive', title: 'Access Denied', description: 'This login is for sellers only.' });
+          toast({ variant: 'destructive', title: 'Server Error', description: result.message });
           setIsSubmitting(false);
         }
       } else {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'User profile not found.' });
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'This login is for sellers only.' });
         setIsSubmitting(false);
       }
     } catch (error: any) {

@@ -8,10 +8,9 @@ import React, {
   ReactNode,
 } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
-import { auth, initializeFirebase, useFirestore } from '@/firebase'; // Using client-side auth
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, useFirestore } from '@/firebase';
 import type { User as UserData } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface AuthContextType {
   user: User | null;
@@ -41,39 +40,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        if (!firestore) return;
-        
-        const unsubDoc = onSnapshot(
-          doc(firestore, 'users', firebaseUser.uid),
-          (docSnap) => {
-            if (docSnap.exists()) {
-              setUserData(docSnap.data() as UserData);
-            } else {
-              console.error('User data not found in Firestore.');
-              setUserData(null);
-            }
-            setLoading(false);
-          },
-          (error) => {
-            console.error('Error fetching user data:', error);
-            setUserData(null);
-            setLoading(false);
-          }
-        );
-        return () => unsubDoc();
-      } else {
-        setUser(null);
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      if (!firebaseUser) {
         setUserData(null);
         setLoading(false);
       }
     });
 
-    return () => unsubscribe();
-  }, [firestore]);
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (user && firestore) {
+      setLoading(true);
+      const unsubDoc = onSnapshot(
+        doc(firestore, 'users', user.uid),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            setUserData(docSnap.data() as UserData);
+          } else {
+            console.error('User data not found in Firestore.');
+            setUserData(null);
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Error fetching user data:', error);
+          setUserData(null);
+          setLoading(false);
+        }
+      );
+      return () => unsubDoc();
+    } else if (!user) {
+      setLoading(false);
+    }
+  }, [user, firestore]);
 
   const value: AuthContextType = {
     user,
@@ -81,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loading,
     isAuthenticated: !!user,
     isAdmin: userData?.role === 'admin' || userData?.role === 'super_admin',
-    isVendor: userData?.role === 'vendor',
+    isVendor: userData?.role === 'seller',
     isCustomer: userData?.role === 'customer',
   };
 

@@ -36,6 +36,24 @@ const sellerNavItems = [
 ];
 
 function SellerDashboardLayout({ children }: { children: ReactNode }) {
+  const authContext = use(AuthContext);
+  const router = useRouter();
+
+  if (authContext?.loading) {
+    return <FullScreenLoader />;
+  }
+
+  // If not loading, check authentication and role
+  if (!authContext?.isAuthenticated || !authContext.isVendor) {
+    // If not a vendor, show the login page within the layout context
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <SellerLoginPage />
+      </div>
+    );
+  }
+
+  // If authenticated and is a seller, render the full dashboard layout
   return (
     <SidebarProvider>
       <Sidebar>
@@ -82,23 +100,6 @@ const FullScreenLoader = () => (
 );
 
 export default function SellerLayout({ children }: { children: ReactNode }) {
-  const authContext = use(AuthContext);
-  
-  if (authContext?.loading) {
-    return <FullScreenLoader />;
-  }
-
-  const isSeller = authContext?.userData?.role === 'seller';
-
-  if (!authContext?.isAuthenticated || !isSeller) {
-     return (
-       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <SellerLoginPage />
-      </div>
-    );
-  }
-
-  // Render the full dashboard layout for authenticated sellers
   return (
     <FirebaseClientProvider>
       <SellerDashboardLayout>{children}</SellerDashboardLayout>

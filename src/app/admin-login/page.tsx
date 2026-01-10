@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useActionState, useEffect, useState, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -56,34 +55,27 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
       const user = userCredential.user;
 
+      // Fetch user role from Firestore before creating session
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
       
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const userRole = userData.role;
+      if (userDoc.exists() && (userDoc.data().role === 'admin' || userDoc.data().role === 'super_admin')) {
+        const idToken = await user.getIdToken();
+        const serverFormData = new FormData();
+        serverFormData.append('idToken', idToken);
+        
+        const result = await login(null, serverFormData);
 
-        if (userRole === 'admin' || userRole === 'super_admin') {
-          const idToken = await user.getIdToken();
-          const serverFormData = new FormData();
-          serverFormData.append('idToken', idToken);
-          
-          const result = await login(null, serverFormData);
-
-          if (result.success) {
-            toast({ title: 'Success', description: 'Admin login successful!' });
-            router.push('/admin');
-            router.refresh();
-          } else {
-            toast({ variant: 'destructive', title: 'Server Error', description: result.message });
-            setIsSubmitting(false);
-          }
+        if (result.success) {
+          toast({ title: 'Success', description: 'Admin login successful!' });
+          router.push('/admin'); // Redirect to admin dashboard
+          router.refresh(); // Refresh to update layouts
         } else {
-          toast({ variant: 'destructive', title: 'Access Denied', description: 'This login is for administrators only.' });
+          toast({ variant: 'destructive', title: 'Server Error', description: result.message });
           setIsSubmitting(false);
         }
       } else {
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'User profile not found.' });
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'This login is for administrators only.' });
         setIsSubmitting(false);
       }
     } catch (error: any) {

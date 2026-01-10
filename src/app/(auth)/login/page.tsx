@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -36,14 +36,24 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const authContext = use(AuthContext);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [loginState, loginAction] = useActionState(login, {
-    message: '',
-    success: false,
-  });
 
+  useEffect(() => {
+    // Redirect if user is already logged in
+    if (authContext?.isAuthenticated) {
+      const { isAdmin, isVendor } = authContext;
+      if (isAdmin) {
+        router.push('/admin');
+      } else if (isVendor) {
+        router.push('/seller');
+      } else {
+        router.push('/account');
+      }
+    }
+  }, [authContext, router]);
+  
   const handleClientLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -60,57 +70,22 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
       const user = userCredential.user;
+      const idToken = await user.getIdToken();
       
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (userData?.status === 'suspended') {
-            toast({ variant: 'destructive', title: 'Account Suspended', description: 'Your account has been suspended.' });
-            setIsSubmitting(false);
-            return;
-        }
-        if (userData?.role === 'seller' && userData?.status === 'pending_verification') {
-            toast({ variant: 'destructive', title: 'Pending Approval', description: 'Your vendor account is pending approval.' });
-            setIsSubmitting(false);
-            return;
-        }
-
-        const idToken = await user.getIdToken();
-        const serverFormData = new FormData();
-        serverFormData.append('idToken', idToken);
-        
-        // This server action creates the session cookie
-        const result = await login(null, serverFormData);
-        
-        if (result.success) {
-            toast({ title: 'Success', description: 'Login successful!' });
-            
-            // Perform redirection based on role
-            let redirectPath = '/';
-            switch (userData.role) {
-                case 'admin':
-                case 'super_admin':
-                redirectPath = '/admin';
-                break;
-                case 'seller':
-                redirectPath = '/seller';
-                break;
-                case 'customer':
-                default:
-                redirectPath = '/account';
-                break;
-            }
-            router.push(redirectPath);
-            router.refresh(); // Refresh to ensure layout updates
-        } else {
-            toast({ variant: 'destructive', title: 'Server Error', description: result.message });
-            setIsSubmitting(false);
-        }
+      const serverFormData = new FormData();
+      serverFormData.append('idToken', idToken);
+      
+      // The server action just creates the session cookie now.
+      const result = await login(null, serverFormData);
+      
+      if (result.success) {
+          toast({ title: 'Success', description: 'Login successful!' });
+          // The AuthContext will pick up the new user and role,
+          // and the useEffect above will handle redirection.
+          router.refresh();
       } else {
-         toast({ variant: 'destructive', title: 'Error', description: 'User data not found.' });
-         setIsSubmitting(false);
+          toast({ variant: 'destructive', title: 'Server Error', description: result.message });
+          setIsSubmitting(false);
       }
 
     } catch (error: any) {
@@ -126,7 +101,6 @@ export default function LoginPage() {
         setIsSubmitting(false);
     }
   }
-
 
   return (
     <Card className="mx-auto max-w-sm">
