@@ -7,14 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Product, Review } from '@/lib/types';
 import { products as staticProducts } from '@/lib/static-data';
+import { useState, useEffect } from 'react';
 
 export default function ProductDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const { slug } = params;
-  const product: Product | undefined = staticProducts.find(p => p.id === slug);
+  const [product, setProduct] = useState<Product | undefined>(undefined);
+  
+  useEffect(() => {
+    const foundProduct = staticProducts.find(p => p.id === params.slug);
+    setProduct(foundProduct);
+  }, [params.slug]);
 
   // Placeholder for reviews
   const reviews: Review[] = [];
