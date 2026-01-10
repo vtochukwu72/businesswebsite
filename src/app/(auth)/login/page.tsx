@@ -20,6 +20,7 @@ import { login, signInWithGoogle } from '@/app/(auth)/actions';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { FcGoogle } from 'react-icons/fc';
+import { app } from '@/firebase/config';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -55,8 +56,8 @@ export default function LoginPage() {
   }, [state, router, toast]);
 
   const handleGoogleSignIn = async () => {
-    const auth = getAuth();
-    const db = getFirestore();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
     try {
       const userCredential = await signInWithPopup(auth, provider);
