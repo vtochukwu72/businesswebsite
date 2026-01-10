@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,8 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { login, signInWithGoogle } from '@/app/(auth)/actions';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { createSession } from '@/app/(auth)/actions';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { FcGoogle } from 'react-icons/fc';
 import { app } from '@/firebase/config';
@@ -34,32 +34,50 @@ function SubmitButton() {
 export default function SellerLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [state, formAction] = useActionState(login, {
-    errors: {},
-    success: false,
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{email?: string[], password?: string[], general?: string}>({});
 
-  useEffect(() => {
-    if (state.success && state.role === 'seller') {
-      toast({
-        title: 'Login Successful!',
-        description: "Welcome back! You're being redirected to your dashboard.",
-      });
-      router.push('/seller');
-    } else if(state.success && state.role !== 'seller') {
-        toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: 'This is not a seller account.',
-        });
-    } else if (state.message) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: state.message,
-      });
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists() || userDoc.data().role !== 'seller') {
+             setErrors({ general: 'Access Denied: Not a seller account.'});
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'Access Denied: Not a seller account.' });
+             return;
+        }
+
+        const idToken = await user.getIdToken();
+        const sessionResult = await createSession(idToken);
+
+        if (sessionResult.success) {
+            toast({
+                title: 'Login Successful!',
+                description: "Welcome back! You're being redirected to your dashboard.",
+            });
+            router.push('/seller');
+        } else {
+             setErrors({ general: sessionResult.message });
+             toast({ variant: 'destructive', title: 'Login Failed', description: sessionResult.message });
+        }
+    } catch (error: any) {
+        let errorMessage = 'Invalid email or password.';
+        if (error.code !== 'auth/user-not-found' && error.code !== 'auth/wrong-password' && error.code !== 'auth/invalid-credential') {
+            errorMessage = 'An unexpected error occurred.';
+        }
+        setErrors({ general: errorMessage });
+        toast({ variant: 'destructive', title: 'Login Failed', description: errorMessage });
     }
-  }, [state, router, toast]);
+  };
 
   const handleGoogleSignIn = async () => {
     const auth = getAuth(app);
@@ -82,6 +100,8 @@ export default function SellerLoginPage() {
         await setDoc(userRef, {
           id: user.uid,
           displayName: user.displayName,
+          fname: user.displayName?.split(' ')[0] || '',
+          lname: user.displayName?.split(' ')[1] || '',
           email: user.email,
           photoURL: user.photoURL,
           role: 'seller',
@@ -90,16 +110,16 @@ export default function SellerLoginPage() {
       }
       
       const idToken = await user.getIdToken();
-      const googleLoginState = await signInWithGoogle(idToken, 'seller');
+      const sessionResult = await createSession(idToken);
 
-      if (googleLoginState.success) {
+      if (sessionResult.success) {
         toast({
           title: 'Login Successful!',
           description: "Welcome back! You're being redirected to your dashboard.",
         });
         router.push('/seller');
       } else {
-        toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: 'Could not create a session.' });
+        toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: sessionResult.message });
       }
     } catch (error: any) {
       toast({
@@ -120,7 +140,12 @@ export default function SellerLoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
+             {errors.general && (
+                <p className="text-sm text-center text-destructive">
+                  {errors.general}
+                </p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -129,23 +154,21 @@ export default function SellerLoginPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-              {state.errors?.email && (
-                <p className="text-sm text-destructive">
-                  {state.errors.email.join(', ')}
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
-              {state.errors?.password && (
-                <p className="text-sm text-destructive">
-                  {state.errors.password.join(', ')}
-                </p>
-              )}
+              <Input 
+                id="password" 
+                name="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
-            <input type="hidden" name="role" value="seller" />
             <SubmitButton />
           </form>
           <div className="relative my-4">

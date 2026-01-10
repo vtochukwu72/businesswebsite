@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,7 +16,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { signup } from '@/app/(auth)/actions';
+import { createSession } from '@/app/(auth)/actions';
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { app } from '@/firebase/config';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -30,26 +33,81 @@ function SubmitButton() {
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [state, formAction] = useActionState(signup, {
-    errors: {},
-    success: false,
+  const [formData, setFormData] = useState({
+      fname: '',
+      lname: '',
+      email: '',
+      password: '',
   });
+  const [errors, setErrors] = useState<{fname?: string[], lname?: string[], email?: string[], password?: string[], general?: string}>({});
 
-  useEffect(() => {
-    if (state.success) {
-      toast({
-        title: 'Account Created!',
-        description: 'Welcome! You have been successfully registered.',
-      });
-      router.push('/');
-    } else if (state.message) {
-      toast({
-        variant: 'destructive',
-        title: 'Registration Failed',
-        description: state.message,
-      });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+  
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const { email, password, fname, lname } = formData;
+    const displayName = `${fname} ${lname}`;
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await updateProfile(user, { displayName });
+
+        await setDoc(doc(db, 'users', user.uid), {
+            id: user.uid,
+            email: user.email,
+            fname,
+            lname,
+            displayName,
+            phone: "",
+            address: {},
+            photoURL: user.photoURL,
+            role: 'customer',
+            emailVerified: user.emailVerified,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            cart: [],
+            wishlist: [],
+            orders: [],
+            shippingAddresses: [],
+            preferences: {
+                newsletter: false,
+                marketingEmails: false
+            }
+        });
+        
+        const idToken = await user.getIdToken();
+        const sessionResult = await createSession(idToken);
+
+        if (sessionResult.success) {
+            toast({
+                title: 'Account Created!',
+                description: 'Welcome! You have been successfully registered.',
+            });
+            router.push('/');
+        } else {
+            setErrors({ general: sessionResult.message });
+            toast({ variant: 'destructive', title: 'Registration Failed', description: sessionResult.message });
+        }
+
+    } catch (error: any) {
+        let errorMessage = 'An unexpected error occurred.';
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'This email address is already in use.';
+        }
+        setErrors({ general: errorMessage });
+        toast({ variant: 'destructive', title: 'Registration Failed', description: errorMessage });
     }
-  }, [state, router, toast]);
+  };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
@@ -61,7 +119,12 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4">
+             {errors.general && (
+                <p className="text-sm text-center text-destructive">
+                  {errors.general}
+                </p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="fname">First Name</Label>
@@ -70,9 +133,11 @@ export default function RegisterPage() {
                   name="fname"
                   placeholder="John"
                   required
+                  value={formData.fname}
+                  onChange={handleInputChange}
                 />
-                 {state.errors?.fname && (
-                    <p className="text-sm text-destructive">{state.errors.fname.join(', ')}</p>
+                 {errors?.fname && (
+                    <p className="text-sm text-destructive">{errors.fname.join(', ')}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -82,9 +147,11 @@ export default function RegisterPage() {
                   name="lname"
                   placeholder="Doe"
                   required
+                  value={formData.lname}
+                  onChange={handleInputChange}
                 />
-                 {state.errors?.lname && (
-                    <p className="text-sm text-destructive">{state.errors.lname.join(', ')}</p>
+                 {errors?.lname && (
+                    <p className="text-sm text-destructive">{errors.lname.join(', ')}</p>
                 )}
               </div>
             </div>
@@ -96,23 +163,31 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={formData.email}
+                onChange={handleInputChange}
               />
-              {state.errors?.email && (
+              {errors?.email && (
                 <p className="text-sm text-destructive">
-                  {state.errors.email.join(', ')}
+                  {errors.email.join(', ')}
                 </p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
-              {state.errors?.password && (
+              <Input 
+                id="password" 
+                name="password" 
+                type="password" 
+                required 
+                value={formData.password}
+                onChange={handleInputChange}
+              />
+              {errors?.password && (
                 <p className="text-sm text-destructive">
-                  {state.errors.password.join(', ')}
+                  {errors.password.join(', ')}
                 </p>
               )}
             </div>
-            <input type="hidden" name="role" value="customer" />
             <SubmitButton />
           </form>
           <div className="mt-4 text-center text-sm">
