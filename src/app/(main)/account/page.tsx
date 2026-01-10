@@ -14,7 +14,7 @@ export default function AccountPage() {
   const { user, userData } = useAuth();
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">My Profile</h1>
+      <h1 className="text-2xl font-bold mb-4">Account Overview</h1>
       <Card>
         <CardHeader>
           <CardTitle>Welcome, {userData?.displayName || user?.email}!</CardTitle>

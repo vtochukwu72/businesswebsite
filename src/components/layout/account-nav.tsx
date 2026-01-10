@@ -10,6 +10,7 @@ import {
   MapPin,
   CreditCard,
   LogOut,
+  LayoutDashboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
@@ -18,7 +19,8 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
-  { href: '/account', label: 'Profile', icon: User },
+  { href: '/account', label: 'Overview', icon: LayoutDashboard },
+  { href: '/account/profile', label: 'Profile', icon: User },
   { href: '/account/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/account/wishlist', label: 'Wishlist', icon: Heart },
   { href: '/account/addresses', label: 'Addresses', icon: MapPin },
