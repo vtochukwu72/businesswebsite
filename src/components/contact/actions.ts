@@ -1,9 +1,6 @@
 'use server';
 
-import { addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
 import { z } from 'zod';
-import { getSdks } from '@/firebase';
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -24,21 +21,9 @@ export async function addContactMessage(prevState: any, formData: FormData) {
     };
   }
 
-  try {
-    const { firestore } = getSdks();
-    const contactsCollection = collection(firestore, 'contacts');
+  console.log('New contact message:', parsed.data);
 
-    await addDocumentNonBlocking(contactsCollection, {
-      ...parsed.data,
-      createdAt: serverTimestamp(),
-    });
-
-    return { success: true, errors: {} };
-  } catch (error) {
-    console.error('Error sending message:', error);
-    return {
-      success: false,
-      errors: { _form: ['An unexpected error occurred.'] },
-    };
-  }
+  // This is a static implementation. In a real app, you would save this to a database.
+  // For now, we just simulate a successful submission.
+  return { success: true, errors: {} };
 }

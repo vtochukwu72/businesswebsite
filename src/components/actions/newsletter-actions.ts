@@ -1,9 +1,6 @@
 'use server';
 
-import { addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { z } from 'zod';
-import { getSdks } from '@/firebase';
 
 const emailSchema = z.string().email('Invalid email address');
 
@@ -19,30 +16,10 @@ export async function addNewsletterSubscriber(prevState: any, formData: FormData
     };
   }
 
-  try {
-    const { firestore } = getSdks();
-    const subscribersCollection = collection(firestore, 'newsletterSubscribers');
+  console.log(`New newsletter subscriber: ${parsed.data}`);
 
-    // Check if email already exists
-    const q = query(subscribersCollection, where('email', '==', parsed.data));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      return { success: false, error: 'This email is already subscribed.' };
-    }
-
-    await addDocumentNonBlocking(subscribersCollection, {
-      email: parsed.data,
-      createdAt: serverTimestamp(),
-    });
-
-    return { success: true, error: null };
-  } catch (error) {
-    console.error('Error subscribing to newsletter:', error);
-    return {
-      success: false,
-      error: 'An unexpected error occurred.',
-    };
-  }
+  // This is a static implementation. In a real app, you would save this to a database.
+  // For now, we just simulate a successful subscription.
+  
+  return { success: true, error: null };
 }
-
-    

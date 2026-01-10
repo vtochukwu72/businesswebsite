@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import '../styles/auth.css';
 import { Toaster } from '@/components/ui/toaster';
-import { AppProviders } from './providers';
 
 export const metadata: Metadata = {
   title: 'E-Commerce Platform',
@@ -30,10 +29,8 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <AppProviders>
-          {children}
-          <Toaster />
-        </AppProviders>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

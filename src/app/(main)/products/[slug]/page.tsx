@@ -5,52 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
 import type { Product, Review } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { products as staticProducts } from '@/lib/static-data';
 
 export default function ProductDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const firestore = useFirestore();
+  const product: Product | undefined = staticProducts.find(p => p.id === params.slug);
 
-  const productRef = useMemoFirebase(
-    () => (firestore ? doc(collection(firestore, 'products'), params.slug) : null),
-    [firestore, params.slug]
-  );
-  const { data: product, isLoading: isProductLoading } = useDoc<Product>(productRef);
-
-  // Note: This implementation fetches all reviews.
-  // For production, you'd want to paginate this.
-  const reviews: Review[] = []; // Placeholder for reviews from Firestore
-
-  if (isProductLoading) {
-    return (
-      <div className="container py-8">
-        <div className="grid md:grid-cols-2 gap-8">
-          <div>
-            <Skeleton className="w-full h-[400px] rounded-lg" />
-            <div className="grid grid-cols-4 gap-4 mt-4">
-              <Skeleton className="w-full h-[100px] rounded-lg" />
-              <Skeleton className="w-full h-[100px] rounded-lg" />
-              <Skeleton className="w-full h-[100px] rounded-lg" />
-              <Skeleton className="w-full h-[100px] rounded-lg" />
-            </div>
-          </div>
-          <div>
-            <Skeleton className="h-8 w-3/4 mb-2" />
-            <Skeleton className="h-6 w-1/2 mb-4" />
-            <Skeleton className="h-8 w-1/4 mb-4" />
-            <Skeleton className="h-20 w-full mb-6" />
-            <Skeleton className="h-12 w-full" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Placeholder for reviews
+  const reviews: Review[] = [];
 
   if (!product) {
     return (
@@ -155,45 +121,49 @@ export default function ProductDetailPage({
               {Object.entries(product.specifications).map(([key, value]) => (
                 <li key={key} className="flex">
                   <span className="font-semibold w-1/3">{key}:</span>
-                  <span>{value}</span>
+                  <span>{value as string}</span>
                 </li>
               ))}
             </ul>
           </TabsContent>
           <TabsContent value="reviews" className="py-4">
-            <div className="space-y-6">
-              {reviews.map((review) => (
-                <div key={review.reviewId} className="flex gap-4">
-                  <Avatar>
-                    <AvatarImage
-                      src={review.user?.avatar}
-                      alt={review.user?.name}
-                      data-ai-hint="person portrait"
-                    />
-                    <AvatarFallback>{review.user?.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold">{review.user?.name}</h4>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
+            {reviews.length > 0 ? (
+                <div className="space-y-6">
+                {reviews.map((review) => (
+                    <div key={review.reviewId} className="flex gap-4">
+                    <Avatar>
+                        <AvatarImage
+                        src={review.user?.avatar}
+                        alt={review.user?.name}
+                        data-ai-hint="person portrait"
+                        />
+                        <AvatarFallback>{review.user?.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">{review.user?.name}</h4>
+                        <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                            <Star
+                                key={i}
+                                className={`h-4 w-4 ${
+                                i < review.rating
+                                    ? 'text-yellow-400 fill-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                            />
+                            ))}
+                        </div>
+                        </div>
+                        <h5 className="font-bold mt-1">{review.title}</h5>
+                        <p className="text-muted-foreground mt-1">{review.comment}</p>
                     </div>
-                    <h5 className="font-bold mt-1">{review.title}</h5>
-                    <p className="text-muted-foreground mt-1">{review.comment}</p>
-                  </div>
+                    </div>
+                ))}
                 </div>
-              ))}
-            </div>
+            ) : (
+                <p className="text-muted-foreground">No reviews yet for this product.</p>
+            )}
           </TabsContent>
         </Tabs>
       </div>

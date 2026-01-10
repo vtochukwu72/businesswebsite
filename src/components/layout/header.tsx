@@ -2,33 +2,15 @@
 
 import Link from 'next/link';
 import {
-  CircleUser,
-  Heart,
   Menu,
   Search,
   ShoppingCart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
-import { useEffect, useState, useMemo, use } from 'react';
-import {
-  useCollection,
-  useFirestore,
-  useMemoFirebase,
-  useDoc,
-} from '@/firebase';
-import type { Cart, Wishlist, Product } from '@/lib/types';
-import { collection, doc, query } from 'firebase/firestore';
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   NavigationMenu,
@@ -41,57 +23,16 @@ import {
 } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
 import React from 'react';
-import { AuthContext } from '@/context/auth-context';
-import { logout } from '@/app/(auth)/actions';
+import { products as staticProducts } from '@/lib/static-data';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
 export function Header() {
-  const [isClient, setIsClient] = useState(false);
-  const authContext = use(AuthContext);
-  const user = authContext?.user;
-  const userData = authContext?.userData;
-
-  const firestore = useFirestore();
   const router = useRouter();
 
-  const productsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'products')) : null),
-    [firestore]
-  );
-  const { data: products } = useCollection<Product>(productsQuery);
-
   const categories = useMemo(() => {
-    if (!products) return [];
-    return [...new Set(products.map((p) => p.category))];
-  }, [products]);
-
-  const cartRef = useMemoFirebase(
-    () =>
-      firestore && user
-        ? doc(firestore, 'users', user.uid, 'carts', 'default')
-        : null,
-    [firestore, user]
-  );
-  const { data: cart } = useDoc<Cart>(cartRef);
-
-  const wishlistRef = useMemoFirebase(
-    () =>
-      firestore && user
-        ? doc(firestore, 'users', user.uid, 'wishlists', 'default')
-        : null,
-    [firestore, user]
-  );
-  const { data: wishlist } = useDoc<Wishlist>(wishlistRef);
-
-  const cartItemCount = cart?.items?.reduce(
-    (count, item) => count + item.quantity,
-    0
-  );
-  const wishlistItemCount = wishlist?.items?.length || 0;
-
-  useEffect(() => {
-    setIsClient(true);
+    if (!staticProducts) return [];
+    return [...new Set(staticProducts.map((p) => p.category))];
   }, []);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
@@ -102,22 +43,6 @@ export function Header() {
       router.push(`/search?q=${encodeURIComponent(query)}`);
     }
   };
-  
-  const handleLogout = async () => {
-    await logout();
-    router.push('/');
-  }
-
-  if (!isClient) {
-    // Render a skeleton or placeholder on the server
-    return (
-       <header className="sticky top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-           {/* Skeleton content */}
-        </div>
-      </header>
-    );
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -151,7 +76,7 @@ export function Header() {
                 </Link>
                 {categories.map((category) => (
                   <Link
-                    href="#"
+                    href="/products"
                     key={category}
                     className="text-muted-foreground hover:text-foreground"
                   >
@@ -182,11 +107,11 @@ export function Header() {
                     <ListItem href="/products" title="All Products">
                       Browse our full collection of amazing products.
                     </ListItem>
-                    <ListItem href="#" title="Deals">
+                    <ListItem href="/products" title="Deals">
                       Check out our latest deals and special offers.
                     </ListItem>
                     {categories.map((category) => (
-                      <ListItem key={category} href="#" title={category}>
+                      <ListItem key={category} href="/products" title={category}>
                         Shop all items in the {category} category.
                       </ListItem>
                     ))}
@@ -218,69 +143,12 @@ export function Header() {
               </div>
             </form>
           </div>
-          <Link href="/account/wishlist">
-            <Button variant="ghost" size="icon" className="relative">
-              <Heart className="h-5 w-5" />
-              {wishlistItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {wishlistItemCount}
-                </span>
-              )}
-              <span className="sr-only">Wishlist</span>
-            </Button>
-          </Link>
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {cartItemCount}
-                </span>
-              )}
               <span className="sr-only">Cart</span>
             </Button>
           </Link>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <CircleUser className="h-5 w-5" />
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {user ? (
-                <>
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <Link href="/account">
-                    <DropdownMenuItem>Profile</DropdownMenuItem>
-                  </Link>
-                  <Link href="/account/orders">
-                    <DropdownMenuItem>Orders</DropdownMenuItem>
-                  </Link>
-                  {userData?.role === 'admin' && (
-                     <Link href="/admin">
-                      <DropdownMenuItem>Admin Dashboard</DropdownMenuItem>
-                    </Link>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={handleLogout}>Logout</DropdownMenuItem>
-                </>
-              ) : (
-                 <>
-                  <DropdownMenuLabel>Welcome</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <Link href="/login">
-                    <DropdownMenuItem>Login</DropdownMenuItem>
-                  </Link>
-                  <Link href="/register">
-                    <DropdownMenuItem>Register</DropdownMenuItem>
-                  </Link>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
     </header>

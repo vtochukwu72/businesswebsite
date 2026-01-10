@@ -11,13 +11,10 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { products as staticProducts } from '@/lib/static-data';
 
 export default function ProductListingPage() {
-  const firestore = useFirestore();
   const [isClient, setIsClient] = useState(false);
 
   const [filters, setFilters] = useState({
@@ -27,14 +24,7 @@ export default function ProductListingPage() {
   });
   const [sortOption, setSortOption] = useState('featured');
 
-  const productsQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(collection(firestore, 'products'), where('isActive', '==', true))
-        : null,
-    [firestore]
-  );
-  const { data: products, isLoading } = useCollection<Product>(productsQuery);
+  const products: Product[] = staticProducts;
 
   const { categories, minPrice, maxPrice } = useMemo(() => {
     if (!products) {
@@ -99,11 +89,7 @@ export default function ProductListingPage() {
         filtered.sort((a, b) => b.price - a.price);
         break;
       case 'newest':
-        if (filtered[0]?.createdAt) {
-          filtered.sort(
-            (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
-          );
-        }
+        // no-op for static data
         break;
       case 'stock-desc':
         filtered.sort((a, b) => b.stockQuantity - a.stockQuantity);
@@ -113,8 +99,6 @@ export default function ProductListingPage() {
         break;
       case 'featured':
       default:
-        // You could add a 'isFeatured' flag to your product data
-        // For now, let's just sort by rating
         filtered.sort((a, b) => b.ratings.average - a.ratings.average);
         break;
     }
@@ -132,25 +116,18 @@ export default function ProductListingPage() {
             <div>
               <h3 className="font-semibold mb-2">Category</h3>
               <div className="space-y-2">
-                {isLoading ? (
-                  <>
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-5 w-3/4" />
-                  </>
-                ) : (
-                  categories.map((category) => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`cat-${category}`}
-                        checked={filters.categories.includes(category)}
-                        onCheckedChange={() => handleCategoryChange(category)}
-                      />
-                      <Label htmlFor={`cat-${category}`} className="capitalize">
-                        {category}
-                      </Label>
-                    </div>
-                  ))
-                )}
+                {categories.map((category) => (
+                  <div key={category} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`cat-${category}`}
+                      checked={filters.categories.includes(category)}
+                      onCheckedChange={() => handleCategoryChange(category)}
+                    />
+                    <Label htmlFor={`cat-${category}`} className="capitalize">
+                      {category}
+                    </Label>
+                  </div>
+                ))}
               </div>
             </div>
             {isClient && (
@@ -162,7 +139,7 @@ export default function ProductListingPage() {
                   max={maxPrice}
                   step={10}
                   onValueChange={handlePriceChange}
-                  disabled={isLoading || minPrice === maxPrice}
+                  disabled={minPrice === maxPrice}
                 />
                 <div className="flex justify-between text-sm text-muted-foreground mt-2">
                   <span>₦{minPrice.toFixed(2)}</span>
@@ -202,26 +179,16 @@ export default function ProductListingPage() {
                   <SelectItem value="price-asc">Price: Low to High</SelectItem>
                   <SelectItem value="price-desc">Price: High to Low</SelectItem>
                   <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="stock-desc">Stock: High to Low</SelectItem>
-                  <SelectItem value="stock-asc">Stock: Low to High</SelectItem>
                 </SelectContent>
               </Select>
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading &&
-              Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="space-y-2">
-                  <Skeleton className="h-48 w-full" />
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-6 w-1/2" />
-                </div>
-              ))}
             {filteredAndSortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-           {!isLoading && filteredAndSortedProducts.length === 0 && (
+           {filteredAndSortedProducts.length === 0 && (
             <div className="text-center py-20 col-span-full">
               <h2 className="text-xl font-semibold">No products found</h2>
               <p className="text-muted-foreground mt-2">

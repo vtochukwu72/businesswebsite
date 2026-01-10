@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
-import type { Product, Wishlist } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,83 +12,26 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import {
-  WithId,
-  useUser,
-  useFirestore,
-  useDoc,
-  useMemoFirebase,
-} from '@/firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
-  product: WithId<Product>;
+  product: Product;
   className?: string;
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
-  const { user } = useUser();
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   const hasDiscount =
     product.discountedPrice && product.discountedPrice < product.price;
 
-  const wishlistRef = useMemoFirebase(
-    () =>
-      firestore && user
-        ? doc(firestore, 'users', user.uid, 'wishlists', 'default')
-        : null,
-    [firestore, user]
-  );
-  const { data: wishlist } = useDoc<Wishlist>(wishlistRef);
-
-  const isInWishlist =
-    wishlist?.items?.some((item) => item.productId === product.id) || false;
-
-  const handleWishlistToggle = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigating to product page
-    if (!user || !wishlistRef) {
-      toast({
-        variant: 'destructive',
-        title: 'Not signed in',
-        description: 'Please sign in to add items to your wishlist.',
-      });
-      return;
-    }
-
-    const wishlistItem = {
-      productId: product.id,
-      addedAt: new Date(),
-    };
-
-    if (isInWishlist) {
-      await updateDoc(wishlistRef, {
-        items: arrayRemove(
-          ...wishlist!.items!.filter((item) => item.productId === product.id)
-        ),
-      });
-      toast({
-        title: 'Removed from wishlist',
-        description: `${product.name} has been removed from your wishlist.`,
-      });
-    } else {
-      await updateDoc(
-        wishlistRef,
-        {
-          items: arrayUnion(wishlistItem),
-          userId: user.uid,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      );
-      toast({
-        title: 'Added to wishlist',
-        description: `${product.name} has been added to your wishlist.`,
-      });
-    }
-  };
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toast({
+        title: "Added to cart",
+        description: `${product.name} has been added to your cart.`
+    })
+  }
 
   return (
     <Card
@@ -113,22 +56,6 @@ export function ProductCard({ product, className }: ProductCardProps) {
             SALE
           </Badge>
         )}
-        <Button
-          size="icon"
-          variant="ghost"
-          className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/50 hover:bg-background"
-          onClick={handleWishlistToggle}
-        >
-          <Heart
-            className={cn(
-              'h-5 w-5 text-destructive',
-              isInWishlist && 'fill-destructive'
-            )}
-          />
-          <span className="sr-only">
-            {isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-          </span>
-        </Button>
       </CardHeader>
       <CardContent className="flex-1 p-4">
         <div className="flex items-center justify-between">
@@ -161,7 +88,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </span>
           )}
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={handleAddToCart}>
           <ShoppingCart className="mr-2 h-4 w-4" />
           Add to cart
         </Button>

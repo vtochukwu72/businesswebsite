@@ -11,14 +11,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProductCard } from '@/components/products/product-card';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
 import { NewsletterForm } from '@/components/newsletter-form';
+import { products as staticProducts } from '@/lib/static-data';
+
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image');
 const categories = [
@@ -64,20 +62,7 @@ const categories = [
   },
 ];
 export default function HomePage() {
-  const firestore = useFirestore();
-
-  const productsQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, 'products'),
-            where('isActive', '==', true),
-            limit(8)
-          )
-        : null,
-    [firestore]
-  );
-  const { data: products, isLoading } = useCollection<Product>(productsQuery);
+  const products: Product[] = staticProducts;
 
   return (
     <>
@@ -118,7 +103,7 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {categories.map((category) => (
-              <Link href="#" key={category.categoryId} className="group">
+              <Link href="/products" key={category.categoryId} className="group">
                 <Card className="overflow-hidden transition-all hover:shadow-xl">
                   <CardHeader className="p-0">
                     <Image
@@ -156,18 +141,7 @@ export default function HomePage() {
             className="mx-auto w-full max-w-sm md:max-w-3xl lg:max-w-5xl"
           >
             <CarouselContent>
-              {isLoading &&
-                Array.from({ length: 3 }).map((_, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="md:basis-1/2 lg:basis-1/3"
-                  >
-                    <Skeleton className="aspect-square w-full" />
-                    <Skeleton className="mt-2 h-6 w-3/4" />
-                    <Skeleton className="mt-2 h-6 w-1/2" />
-                  </CarouselItem>
-                ))}
-              {products?.map((product) => (
+              {products?.slice(0,8).map((product) => (
                 <CarouselItem
                   key={product.id}
                   className="md:basis-1/2 lg:basis-1/3"
@@ -235,5 +209,3 @@ export default function HomePage() {
     </>
   );
 }
-
-    
