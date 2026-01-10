@@ -61,6 +61,7 @@ export default function SellerLoginPage() {
         const userData = userDoc.data();
         if (userData.status === 'pending_verification') {
             toast({ variant: 'destructive', title: 'Pending Approval', description: 'Your vendor account is pending approval.' });
+            await clientAuth.signOut();
             setIsSubmitting(false);
             return;
         }
@@ -81,6 +82,7 @@ export default function SellerLoginPage() {
         }
       } else {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'This login is for sellers only.' });
+        await clientAuth.signOut();
         setIsSubmitting(false);
       }
     } catch (error: any) {

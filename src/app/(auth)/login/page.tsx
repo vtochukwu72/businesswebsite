@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { login } from '../actions';
 import { useToast } from '@/hooks/use-toast';
-import { auth as clientAuth, useFirestore, useUser } from '@/firebase';
+import { auth as clientAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { AuthContext } from '@/context/auth-context';
@@ -41,8 +41,8 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Redirect if user is already logged in
-    if (authContext?.isAuthenticated) {
+    // Redirect if user is already logged in and we have their data
+    if (authContext?.isAuthenticated && authContext.userData) {
       const { isAdmin, isVendor } = authContext;
       if (isAdmin) {
         router.push('/admin');
@@ -70,8 +70,12 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
       const user = userCredential.user;
-      const idToken = await user.getIdToken();
       
+      // Fetch user role to decide redirection
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      const idToken = await user.getIdToken();
       const serverFormData = new FormData();
       serverFormData.append('idToken', idToken);
       
@@ -80,8 +84,18 @@ export default function LoginPage() {
       
       if (result.success) {
           toast({ title: 'Success', description: 'Login successful!' });
-          // The AuthContext will pick up the new user and role,
-          // and the useEffect above will handle redirection.
+          if (userDoc.exists()) {
+            const role = userDoc.data().role;
+            if (role === 'admin' || role === 'super_admin') {
+              router.push('/admin');
+            } else if (role === 'seller') {
+              router.push('/seller');
+            } else {
+              router.push('/account');
+            }
+          } else {
+             router.push('/account'); // Default redirect
+          }
           router.refresh();
       } else {
           toast({ variant: 'destructive', title: 'Server Error', description: result.message });
