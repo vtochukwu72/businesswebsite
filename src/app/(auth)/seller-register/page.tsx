@@ -74,19 +74,11 @@ export default function SellerRegisterPage() {
             updatedAt: serverTimestamp(),
         });
         
-        const idToken = await user.getIdToken();
-        const sessionResult = await createSession(idToken);
-
-        if (sessionResult.success) {
-            toast({
-                title: 'Account Created!',
-                description: "Welcome! You've been successfully registered and are now being redirected.",
-            });
-            router.push('/seller');
-        } else {
-            setErrors({ general: sessionResult.message });
-            toast({ variant: 'destructive', title: 'Registration Failed', description: sessionResult.message });
-        }
+        toast({
+            title: 'Account Created!',
+            description: "Please sign in to access your seller dashboard.",
+        });
+        router.push('/seller-login');
 
     } catch (error: any) {
         let errorMessage = 'An unexpected error occurred.';

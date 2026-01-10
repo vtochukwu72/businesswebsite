@@ -75,19 +75,11 @@ export default function AdminRegisterPage() {
             updatedAt: serverTimestamp(),
         });
         
-        const idToken = await user.getIdToken();
-        const sessionResult = await createSession(idToken);
-
-        if (sessionResult.success) {
-            toast({
-                title: 'Account Created!',
-                description: 'Admin account successfully registered. You are now being redirected to the dashboard.',
-            });
-            router.push('/admin');
-        } else {
-            setErrors({ general: sessionResult.message });
-            toast({ variant: 'destructive', title: 'Registration Failed', description: sessionResult.message });
-        }
+        toast({
+            title: 'Account Created!',
+            description: 'Admin account successfully registered. Please sign in to continue.',
+        });
+        router.push('/admin-login');
 
     } catch (error: any) {
         let errorMessage = 'An unexpected error occurred.';

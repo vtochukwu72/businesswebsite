@@ -86,19 +86,11 @@ export default function RegisterPage() {
             }
         });
         
-        const idToken = await user.getIdToken();
-        const sessionResult = await createSession(idToken);
-
-        if (sessionResult.success) {
-            toast({
-                title: 'Account Created!',
-                description: 'Welcome! You have been successfully registered.',
-            });
-            router.push('/');
-        } else {
-            setErrors({ general: sessionResult.message });
-            toast({ variant: 'destructive', title: 'Registration Failed', description: sessionResult.message });
-        }
+        toast({
+            title: 'Account Created!',
+            description: 'Please sign in to continue.',
+        });
+        router.push('/login');
 
     } catch (error: any) {
         let errorMessage = 'An unexpected error occurred.';
