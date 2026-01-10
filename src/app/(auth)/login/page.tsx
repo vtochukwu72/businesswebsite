@@ -36,7 +36,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
-  const authContext = use(AuthContext);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -52,13 +51,67 @@ export default function LoginPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Firestore is not available.' });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
-      const idToken = await userCredential.user.getIdToken();
+      const user = userCredential.user;
+      
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
 
-      const serverFormData = new FormData();
-      serverFormData.append('idToken', idToken);
-      loginAction(serverFormData);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData?.status === 'suspended') {
+            toast({ variant: 'destructive', title: 'Account Suspended', description: 'Your account has been suspended.' });
+            setIsSubmitting(false);
+            return;
+        }
+        if (userData?.role === 'seller' && userData?.status === 'pending_verification') {
+            toast({ variant: 'destructive', title: 'Pending Approval', description: 'Your vendor account is pending approval.' });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const idToken = await user.getIdToken();
+        const serverFormData = new FormData();
+        serverFormData.append('idToken', idToken);
+        
+        // This server action creates the session cookie
+        const result = await login(null, serverFormData);
+        
+        if (result.success) {
+            toast({ title: 'Success', description: 'Login successful!' });
+            
+            // Perform redirection based on role
+            let redirectPath = '/';
+            switch (userData.role) {
+                case 'admin':
+                case 'super_admin':
+                redirectPath = '/admin';
+                break;
+                case 'seller':
+                redirectPath = '/seller';
+                break;
+                case 'customer':
+                default:
+                redirectPath = '/account';
+                break;
+            }
+            router.push(redirectPath);
+            router.refresh(); // Refresh to ensure layout updates
+        } else {
+            toast({ variant: 'destructive', title: 'Server Error', description: result.message });
+            setIsSubmitting(false);
+        }
+      } else {
+         toast({ variant: 'destructive', title: 'Error', description: 'User data not found.' });
+         setIsSubmitting(false);
+      }
 
     } catch (error: any) {
         let message = 'Login failed. Please try again.';
@@ -74,61 +127,6 @@ export default function LoginPage() {
     }
   }
 
-
-  useEffect(() => {
-    if(loginState.success) {
-      // The user is now logged in on the server via session cookie.
-      // We need to determine their role to redirect correctly.
-      const fetchUserAndRedirect = async () => {
-        if (!authContext?.user || !firestore) {
-          // Wait for user context to be available
-          return;
-        }
-
-        const userDocRef = doc(firestore, 'users', authContext.user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-           if (userData?.status === 'suspended') {
-              toast({ variant: 'destructive', title: 'Account Suspended', description: 'Your account has been suspended.' });
-              setIsSubmitting(false);
-              return;
-            }
-            if (userData?.role === 'vendor' && userData?.status === 'pending_verification') {
-               toast({ variant: 'destructive', title: 'Pending Approval', description: 'Your vendor account is pending approval.' });
-               setIsSubmitting(false);
-               return;
-            }
-
-          toast({ title: 'Success', description: loginState.message });
-          let redirectPath = '/';
-          switch(userData.role) {
-            case 'admin':
-            case 'super_admin':
-              redirectPath = '/admin';
-              break;
-            case 'seller':
-              redirectPath = '/seller';
-              break;
-            case 'customer':
-              redirectPath = '/account';
-              break;
-          }
-          router.push(redirectPath);
-          router.refresh();
-        } else {
-           toast({ variant: 'destructive', title: 'Error', description: 'User data not found.' });
-           setIsSubmitting(false);
-        }
-      }
-      fetchUserAndRedirect();
-
-    } else if (loginState.message && !loginState.success) {
-      toast({ variant: 'destructive', title: 'Error', description: loginState.message });
-      setIsSubmitting(false);
-    }
-  }, [loginState, authContext, firestore, router, toast]);
 
   return (
     <Card className="mx-auto max-w-sm">
