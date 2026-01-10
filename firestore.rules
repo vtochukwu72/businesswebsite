@@ -163,7 +163,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || canManageSupport();
       allow list: if canManageSupport();
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow create: if isOwner(userId) &&
+                      request.resource.data.uid == userId &&
+                      request.resource.data.email == request.auth.token.email &&
+                      !request.resource.data.keys().hasAny(["password", "passwordHash"]);
       allow update: if isOwner(userId) || isAdminOrSuperAdmin();
       allow delete: if isOwner(userId) || isSuperAdmin();
     }
@@ -313,4 +316,3 @@ service cloud.firestore {
     }
   }
 }
-    
