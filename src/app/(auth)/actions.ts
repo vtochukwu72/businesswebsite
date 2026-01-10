@@ -167,11 +167,9 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 
-export async function signInWithGoogle(idToken: string, role: 'customer' | 'seller' | 'admin' | 'super_admin') {
+export async function signInWithGoogle(idToken: string) {
     // This function will be called from the client after Google sign-in
     // It's responsible for setting the session cookie.
-    // The actual user creation/check will happen on the client side for now to get user info.
-    // In a more robust setup, you'd verify the token here and get user info from it.
     try {
         cookies().set('session', idToken, {
             httpOnly: true,
@@ -182,6 +180,6 @@ export async function signInWithGoogle(idToken: string, role: 'customer' | 'sell
         
         return { success: true };
     } catch(error) {
-        return { success: false };
+        return { success: false, message: 'Could not create session.' };
     }
 }
