@@ -19,6 +19,7 @@ import {
   sendPasswordResetEmail,
 } from 'firebase/auth';
 import { getAdminApp, getAdminAuth } from '@/firebase/admin-init';
+import { redirect } from 'next/navigation';
 
 const signupSchema = z
   .object({
@@ -150,22 +151,23 @@ export async function signup(prevState: any, formData: FormData) {
       userData.lastActivity = new Date();
       userData.ipWhitelist = [];
       userData.twoFactorEnabled = false;
-
-      // Also create a session cookie for immediate login
-      const adminAuth = getAdminAuth();
-      const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-      const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-
-      cookies().set('session', sessionCookie, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: expiresIn / 1000,
-        path: '/',
-        sameSite: 'lax'
-      });
     }
 
     await setDoc(doc(firestore, 'users', userRecord.uid), userData);
+    
+    // Also create a session cookie for immediate login
+    const adminAuth = getAdminAuth();
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+
+    cookies().set('session', sessionCookie, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: expiresIn / 1000,
+      path: '/',
+      sameSite: 'lax'
+    });
+
 
     if (userType === 'vendor') {
       await setDoc(doc(firestore, 'vendors', userRecord.uid), {
@@ -177,10 +179,6 @@ export async function signup(prevState: any, formData: FormData) {
       });
     }
 
-    return {
-      success: true,
-      message: 'Account created successfully!',
-    };
   } catch (error: any) {
     console.error('Signup error:', error);
     return {
@@ -188,6 +186,16 @@ export async function signup(prevState: any, formData: FormData) {
       message: error.message || 'Failed to create account.',
     };
   }
+
+  // Redirect after successful sign-up and session creation
+  if (userType === 'admin') {
+    redirect('/admin');
+  }
+
+  return {
+      success: true,
+      message: 'Account created successfully!',
+  };
 }
 
 const loginSchema = z.object({

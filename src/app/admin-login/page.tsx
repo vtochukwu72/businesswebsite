@@ -91,6 +91,7 @@ export default function AdminLoginPage() {
   useEffect(() => {
     if(loginState.success) {
       toast({ title: 'Success', description: 'Admin login successful!' });
+      router.push('/admin');
       router.refresh();
     } else if (loginState.message && !loginState.success) {
       toast({ variant: 'destructive', title: 'Error', description: loginState.message });
@@ -99,6 +100,7 @@ export default function AdminLoginPage() {
   }, [loginState, router, toast]);
 
   return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
     <Card className="mx-auto max-w-sm">
       <CardHeader>
         <CardTitle className="text-2xl">Admin Sign In</CardTitle>
@@ -126,11 +128,12 @@ export default function AdminLoginPage() {
         </form>
         <div className="mt-4 text-center text-sm">
           Need an admin account?{' '}
-          <Link href="/admin/register" className="underline">
+          <Link href="/admin-register" className="underline">
             Register here
           </Link>
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }

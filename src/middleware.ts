@@ -1,58 +1,63 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { initializeApp, getApp, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { firebaseAdminConfig } from './firebase/admin-config';
-
-// This middleware is now simplified to only handle basic redirects for logged-in
-// users trying to access login pages. The core role-based protection is moved
-// to the layouts (`src/app/admin/layout.tsx`, `src/app/seller/layout.tsx`)
-// to avoid using `firebase-admin` in the Edge Runtime.
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
   const { pathname } = request.nextUrl;
 
-  // If the user is authenticated and tries to visit a login/register page,
-  // redirect them to a default authenticated page (e.g., account).
+  // Define public paths that do not require authentication
+  const publicPaths = [
+    '/login',
+    '/register',
+    '/seller-register',
+    '/seller-login',
+    '/admin-login',
+    '/admin-register',
+    '/forgot-password',
+  ];
+
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+
+  // If user is logged in
   if (session) {
-    if (pathname === '/login' || pathname === '/register' || pathname === '/seller/login' || pathname === '/admin/login' || pathname === '/seller-register' || pathname === '/admin/register') {
-      return NextResponse.redirect(new URL('/account', request.url));
+    // If they try to access a public-only path (like login), redirect them away.
+    // Allow access to /admin/register and /seller-register for demo purposes, can be tightened later.
+    if (publicPaths.includes(pathname) && pathname !== '/admin-register' && pathname !== '/seller-register') {
+      let redirectUrl = '/account'; // Default redirect for logged-in users
+      // A more advanced check could decode the session and redirect based on role,
+      // but that requires more complex setup (e.g., JWT library).
+      // For now, a simple redirect is sufficient.
+      return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
   }
 
-  // If the user is not authenticated and tries to access a protected route,
-  // the respective layout (admin, seller, account) will handle the redirect
-  // on the client side to the correct login page.
+  // If user is not logged in and tries to access a protected route
   if (!session) {
      if (pathname.startsWith('/account')) {
         return NextResponse.redirect(new URL('/login', request.url));
      }
      if (pathname.startsWith('/admin')) {
-        // Allow access to /admin/login even without a session
-        if (pathname !== '/admin/login' && pathname !== '/admin/register') {
-            return NextResponse.redirect(new URL('/admin/login', request.url));
-        }
+        return NextResponse.redirect(new URL('/admin-login', request.url));
      }
      if (pathname.startsWith('/seller')) {
-        if (pathname !== '/seller/login' && pathname !== '/seller-register') {
-             return NextResponse.redirect(new URL('/seller/login', request.url));
-        }
+        return NextResponse.redirect(new URL('/seller-login', request.url));
      }
   }
 
-
+  // Allow the request to proceed
   return NextResponse.next();
 }
 
-// The matcher ensures this middleware runs on the specified paths.
+// The matcher defines which routes the middleware will run on.
 export const config = {
   matcher: [
-      '/admin/:path*',
-      '/seller/:path*',
-      '/seller-register',
-      '/account/:path*',
-      '/login',
-      '/register'
+      /*
+       * Match all request paths except for the ones starting with:
+       * - api (API routes)
+       * - _next/static (static files)
+       * - _next/image (image optimization files)
+       * - favicon.ico (favicon file)
+       */
+      '/((?!api|_next/static|_next/image|favicon.ico).*)',
     ],
 };

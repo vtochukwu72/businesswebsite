@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { use, type ReactNode, useEffect } from 'react';
+import { use, type ReactNode } from 'react';
 import {
   Home,
   Package,
@@ -25,7 +25,6 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthContext } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import AdminLoginPage from './login/page';
 
 
 const adminNavItems = [
@@ -43,6 +42,21 @@ const adminNavItems = [
 ];
 
 function AdminDashboardLayout({ children }: { children: ReactNode }) {
+  const authContext = use(AuthContext);
+  const router = useRouter();
+
+  if (authContext?.loading) {
+    return <FullScreenLoader />;
+  }
+
+  const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
+
+  if (!authContext?.isAuthenticated || !isAdmin) {
+    // This should ideally be handled by middleware, but as a fallback:
+    router.push('/admin-login');
+    return <FullScreenLoader />;
+  }
+
   return (
      <SidebarProvider>
         <Sidebar>
@@ -90,23 +104,6 @@ const FullScreenLoader = () => (
 
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const authContext = use(AuthContext);
-
-  if (authContext?.loading) {
-    return <FullScreenLoader />;
-  }
-  
-  const isAdmin = authContext?.userData?.role === 'admin' || authContext?.userData?.role === 'super_admin';
-
-  if (!authContext?.isAuthenticated || !isAdmin) {
-    return (
-       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <AdminLoginPage />
-      </div>
-    );
-  }
-
-  // Render the full dashboard layout for authenticated admins
   return (
     <FirebaseClientProvider>
       <AdminDashboardLayout>{children}</AdminDashboardLayout>

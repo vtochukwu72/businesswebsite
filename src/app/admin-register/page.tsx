@@ -37,17 +37,8 @@ export default function AdminRegisterPage() {
   });
 
   useEffect(() => {
-    if (state.success) {
-      toast({
-        title: 'Success!',
-        description: 'Admin account created. Logging you in...',
-      });
-      // Redirect to the admin dashboard after a short delay
-      setTimeout(() => {
-        router.push('/admin');
-        router.refresh();
-      }, 1000);
-    } else if (state.message) {
+    // A successful signup will automatically redirect via the action
+    if (state.message && !state.success) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -133,7 +124,7 @@ export default function AdminRegisterPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
-            <Link href="/admin/login" className="underline">
+            <Link href="/admin-login" className="underline">
               Sign in
             </Link>
           </div>
