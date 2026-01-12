@@ -23,34 +23,10 @@ import {
 } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { user, userData, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading) {
-      if (!user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
-        router.push('/admin-login');
-      }
-    }
-  }, [user, userData, loading, router]);
-
-  if (loading || !user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
-    return (
-        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
-            <div className="h-16 w-16 animate-spin rounded-full border-4 border-dashed border-primary"></div>
-            <p className="mt-4 text-muted-foreground">Loading admin dashboard...</p>
-        </div>
-    );
-  }
-
+function AdminDashboard({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -116,5 +92,44 @@ export default function AdminLayout({
       </div>
     </div>
     </SidebarProvider>
+  )
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user, userData, loading } = useAuth();
+  const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
+        router.push('/admin-login');
+      }
+    }
+  }, [user, userData, loading, router]);
+
+  if (loading || !user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
+    return (
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-dashed border-primary"></div>
+            <p className="mt-4 text-muted-foreground">Loading admin dashboard...</p>
+        </div>
+    );
+  }
+
+  if (!isClient) {
+    return null;
+  }
+
+  return (
+    <AdminDashboard>{children}</AdminDashboard>
   );
 }
