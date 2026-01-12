@@ -21,7 +21,7 @@ export default function AccountPage() {
           <CardDescription>
             This is your account dashboard. You can manage your profile, orders,
             and settings here.
-          </-cardDescription>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
