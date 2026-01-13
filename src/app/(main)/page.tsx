@@ -1,3 +1,4 @@
+
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -15,7 +16,9 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProductCard } from '@/components/products/product-card';
 import type { Product } from '@/lib/types';
 import { NewsletterForm } from '@/components/newsletter-form';
-import { products as staticProducts } from '@/lib/static-data';
+import { getProducts } from '@/services/product-service';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image');
@@ -61,8 +64,32 @@ const categories = [
         ?.imageHint || 'category image',
   },
 ];
+
+function ProductSkeleton() {
+  return (
+    <div className="flex flex-col space-y-3">
+      <Skeleton className="h-[250px] w-full rounded-xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[200px]" />
+        <Skeleton className="h-4 w-[150px]" />
+      </div>
+    </div>
+  )
+}
+
 export default function HomePage() {
-  const products: Product[] = staticProducts;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      setLoading(true);
+      const fetchedProducts = await getProducts();
+      setProducts(fetchedProducts);
+      setLoading(false);
+    }
+    fetchProducts();
+  }, []);
 
   return (
     <>
@@ -141,14 +168,22 @@ export default function HomePage() {
             className="mx-auto w-full max-w-sm md:max-w-3xl lg:max-w-5xl"
           >
             <CarouselContent>
-              {products?.slice(0,8).map((product) => (
-                <CarouselItem
-                  key={product.id}
-                  className="md:basis-1/2 lg:basis-1/3"
-                >
-                  <ProductCard product={product} />
-                </CarouselItem>
-              ))}
+               {loading ? (
+                [...Array(3)].map((_, i) => (
+                  <CarouselItem key={i} className="md:basis-1/2 lg:basis-1/3">
+                    <ProductSkeleton />
+                  </CarouselItem>
+                ))
+              ) : (
+                products?.slice(0,8).map((product) => (
+                  <CarouselItem
+                    key={product.id}
+                    className="md:basis-1/2 lg:basis-1/3"
+                  >
+                    <ProductCard product={product} />
+                  </CarouselItem>
+                ))
+              )}
             </CarouselContent>
             <CarouselPrevious />
             <CarouselNext />
