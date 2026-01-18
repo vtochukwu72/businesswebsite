@@ -25,3 +25,12 @@ export async function createSession(idToken: string) {
         return { success: false, message: 'Could not create session.' };
     }
 }
+
+export async function destroySession() {
+    try {
+        cookies().delete('session');
+        return { success: true };
+    } catch(error) {
+        return { success: false, message: 'Could not destroy session.' };
+    }
+}

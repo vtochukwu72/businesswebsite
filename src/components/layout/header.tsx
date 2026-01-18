@@ -35,12 +35,31 @@ import { cn } from '@/lib/utils';
 import React from 'react';
 import { products as staticProducts } from '@/lib/static-data';
 import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/hooks/use-toast';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
 export function Header() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, userData, loading, logout } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'An error occurred while logging out.',
+      });
+    }
+  };
 
   const categories = useMemo(() => {
     if (!staticProducts) return [];
@@ -176,7 +195,8 @@ export function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild><Link href="/account">Profile</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/account/orders">Orders</Link></DropdownMenuItem>
-                  <DropdownMenuItem>Logout</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
