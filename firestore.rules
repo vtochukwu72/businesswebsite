@@ -163,8 +163,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || canManageSupport();
       allow list: if canManageSupport();
-      allow create: if isOwner(userId) &&
-                      request.resource.data.uid == userId &&
+      allow create: if request.auth != null &&
+                      request.auth.uid == userId &&
                       request.resource.data.email == request.auth.token.email &&
                       !request.resource.data.keys().hasAny(["password", "passwordHash"]);
       allow update: if isOwner(userId) || isAdminOrSuperAdmin();

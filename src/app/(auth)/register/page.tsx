@@ -17,10 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { createSession } from '@/app/(auth)/actions';
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import { Eye, EyeOff } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
+import { Separator } from '@/components/ui/separator';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -102,6 +104,66 @@ export default function RegisterPage() {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+    try {
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          id: user.uid,
+          displayName: user.displayName,
+          fname: user.displayName?.split(' ')[0] || '',
+          lname: user.displayName?.split(' ')[1] || '',
+          email: user.email,
+          photoURL: user.photoURL,
+          role: 'customer',
+          emailVerified: user.emailVerified,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          cart: [],
+          wishlist: [],
+          orders: [],
+          shippingAddresses: [],
+          preferences: {
+            newsletter: false,
+            marketingEmails: false
+          }
+        });
+
+        toast({
+          title: 'Account Created!',
+          description: 'Welcome! Redirecting you to the homepage.',
+        });
+      } else {
+        toast({
+          title: 'Welcome Back!',
+          description: 'Redirecting you to the homepage.',
+        });
+      }
+      
+      const idToken = await user.getIdToken();
+      const sessionResult = await createSession(idToken);
+
+      if (sessionResult.success) {
+        router.push('/');
+      } else {
+        toast({ variant: 'destructive', title: 'Sign-Up Failed', description: sessionResult.message });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Google Sign-Up Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
@@ -195,6 +257,24 @@ export default function RegisterPage() {
             </div>
             <SubmitButton />
           </form>
+
+          <div className="relative my-4">
+            <Separator />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+              OR
+            </span>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignUp}
+          >
+            <FcGoogle className="mr-2 h-5 w-5" />
+            Sign up with Google
+          </Button>
+
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
             <Link href="/login" className="underline">
