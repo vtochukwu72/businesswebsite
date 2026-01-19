@@ -8,7 +8,7 @@ import { NewsletterForm } from '../newsletter-form';
 export function Footer() {
   return (
     <footer className="border-t bg-card text-card-foreground">
-      <div className="container">
+      <div className="container px-4 md:px-8 lg:px-12">
         <div className="grid grid-cols-2 gap-8 py-12 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">

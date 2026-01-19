@@ -107,7 +107,7 @@ export default function HomePage() {
           />
         )}
         <div className="absolute inset-0 bg-black/50" />
-        <div className="container relative z-10 flex h-full flex-col items-start justify-center text-white">
+        <div className="relative z-10 flex h-full flex-col items-start justify-center text-white px-4 md:px-8 lg:px-12">
           <h1 className="text-4xl font-extrabold md:text-6xl">
             Elevate Your Lifestyle
           </h1>
@@ -123,7 +123,7 @@ export default function HomePage() {
       </section>
 
       {/* Categories Section */}
-      <section className="py-12 md:py-20">
+      <section className="py-12 md:py-20 px-4 md:px-8 lg:px-12">
         <div className="container">
           <h2 className="mb-8 text-center text-3xl font-bold">
             Shop by Category
@@ -155,7 +155,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured Products */}
-      <section className="bg-secondary py-12 md:py-20">
+      <section className="bg-secondary py-12 md:py-20 px-4 md:px-8 lg:px-12">
         <div className="container">
           <h2 className="mb-8 text-center text-3xl font-bold">
             Featured Products
@@ -192,7 +192,7 @@ export default function HomePage() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-12 md:py-20">
+      <section className="py-12 md:py-20 px-4 md:px-8 lg:px-12">
         <div className="container">
           <h2 className="mb-8 text-center text-3xl font-bold">
             Why Shop With Us?
@@ -230,7 +230,7 @@ export default function HomePage() {
       </section>
 
       {/* Newsletter Section */}
-      <section className="bg-muted py-12 md:py-20">
+      <section className="bg-muted py-12 md:py-20 px-4 md:px-8 lg:px-12">
         <div className="container text-center">
           <h2 className="text-3xl font-bold">Join Our Newsletter</h2>
           <p className="mt-2 text-muted-foreground">
