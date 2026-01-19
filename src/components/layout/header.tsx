@@ -36,6 +36,7 @@ import React from 'react';
 import { products as staticProducts } from '@/lib/static-data';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
@@ -185,9 +186,13 @@ export function Header() {
             (user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <User className="h-5 w-5" />
-                    <span className="sr-only">My Account</span>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.photoURL || userData?.photoURL || ''} alt={user.displayName || 'User'} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {(userData?.fname?.[0] || user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
