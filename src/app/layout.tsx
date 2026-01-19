@@ -8,6 +8,9 @@ import { AuthProvider } from '@/context/auth-context';
 export const metadata: Metadata = {
   title: 'E-Commerce Platform',
   description: 'A full-featured e-commerce platform',
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
