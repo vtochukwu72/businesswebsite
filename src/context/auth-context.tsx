@@ -70,12 +70,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      // Clear session cookie first (don't wait for it)
+      fetch('/api/logout', { method: 'POST' }).catch(() => {
+        // Ignore errors - session will expire anyway
+      });
+      
+      // Sign out from Firebase
       await signOut(auth);
-      // Clear session cookie
-      await fetch('/api/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
+      // Even if there's an error, try to sign out anyway
+      try {
+        await signOut(auth);
+      } catch (e) {
+        console.error('Force signout error:', e);
+      }
     }
   };
 
