@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -37,6 +36,7 @@ import { products as staticProducts } from '@/lib/static-data';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
@@ -94,14 +94,14 @@ export function Header() {
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left">
+            <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-6 text-lg font-medium">
                 <Link
                   href="/"
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
                   <Icons.logo className="h-6 w-6 text-primary" />
-                  <span className="sr-only">E-Commerce</span>
+                  <span>E-Commerce</span>
                 </Link>
                 <Link href="/products" className="hover:text-foreground">
                   Shop
@@ -125,8 +125,27 @@ export function Header() {
                   </Link>
                 ))}
               </nav>
+              <div className="mt-auto">
+                {!loading && !user && (
+                    <>
+                        <Separator className="my-4" />
+                        <div className="grid gap-2">
+                            <Button asChild>
+                                <Link href="/login">Sign In</Link>
+                            </Button>
+                            <Button asChild variant="outline">
+                                <Link href="/register">Register</Link>
+                            </Button>
+                        </div>
+                    </>
+                )}
+              </div>
             </SheetContent>
           </Sheet>
+          <Link href="/" className="flex items-center gap-2 md:hidden">
+            <Icons.logo className="h-6 w-6 text-primary" />
+            <span className="font-bold sr-only sm:not-sr-only">E-Commerce</span>
+          </Link>
         </div>
 
         <nav className="hidden items-center gap-4 text-sm font-medium md:flex">
