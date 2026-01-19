@@ -1,6 +1,6 @@
 'use server';
 
-import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import type { Product } from '@/lib/types';
 
@@ -30,5 +30,18 @@ export async function getProduct(slug: string): Promise<Product | null> {
   } catch (error) {
     console.error(`Error fetching product ${slug}: `, error);
     return null;
+  }
+}
+
+export async function getProductsBySeller(sellerId: string): Promise<Product[]> {
+  try {
+    const productsCol = collection(db, 'products');
+    const q = query(productsCol, where('sellerId', '==', sellerId));
+    const productSnapshot = await getDocs(q);
+    const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    return productList;
+  } catch (error) {
+    console.error(`Error fetching products for seller ${sellerId}: `, error);
+    return [];
   }
 }

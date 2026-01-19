@@ -2,16 +2,12 @@
 import {
   Activity,
   ArrowUpRight,
-  CircleUser,
+  Package,
   CreditCard,
   DollarSign,
-  Menu,
-  Package2,
-  Search,
-  Users,
 } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,8 +26,40 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import Link from 'next/link';
+import { useAuth } from '@/context/auth-context';
+import type { Product } from '@/lib/types';
+import { getProductsBySeller } from '@/services/product-service';
 
 export default function SellerDashboardPage() {
+  const { user } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      if (user) {
+        setLoading(true);
+        const sellerProducts = await getProductsBySeller(user.uid);
+        setProducts(sellerProducts);
+        setLoading(false);
+      }
+    }
+    fetchProducts();
+  }, [user]);
+
+  const dashboardStats = useMemo(() => {
+    const activeProducts = products.filter(p => p.isActive).length;
+    // Other stats are static for now
+    return {
+      activeProducts,
+      totalRevenue: '₦45,231.89',
+      sales: '+12,234',
+      totalOrders: '+2350',
+    };
+  }, [products]);
+
+  const recentProducts = products.slice(0, 5);
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -41,9 +69,9 @@ export default function SellerDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦45,231.89</div>
+            <div className="text-2xl font-bold">{dashboardStats.totalRevenue}</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% from last month
+              +20.1% from last month (Static)
             </p>
           </CardContent>
         </Card>
@@ -53,21 +81,25 @@ export default function SellerDashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+12,234</div>
+            <div className="text-2xl font-bold">{dashboardStats.sales}</div>
             <p className="text-xs text-muted-foreground">
-              +19% from last month
+              +19% from last month (Static)
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Products</CardTitle>
-            <Package2 className="h-4 w-4 text-muted-foreground" />
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+573</div>
+            {loading ? (
+              <div className="h-8 w-16 animate-pulse rounded-md bg-muted"></div>
+            ) : (
+              <div className="text-2xl font-bold">{dashboardStats.activeProducts}</div>
+            )}
             <p className="text-xs text-muted-foreground">
-              +201 since last hour
+              of {products.length} total products
             </p>
           </CardContent>
         </Card>
@@ -77,9 +109,9 @@ export default function SellerDashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2350</div>
+            <div className="text-2xl font-bold">{dashboardStats.totalOrders}</div>
             <p className="text-xs text-muted-foreground">
-              +180.1% from last month
+              (Static Data)
             </p>
           </CardContent>
         </Card>
@@ -88,13 +120,13 @@ export default function SellerDashboardPage() {
         <Card className="xl:col-span-2">
           <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
-              <CardTitle>Recent Orders</CardTitle>
+              <CardTitle>Your Recent Products</CardTitle>
               <CardDescription>
-                Recent orders from your store.
+                A quick look at products you manage.
               </CardDescription>
             </div>
             <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="/seller/orders">
+              <Link href="/seller/products">
                 View All
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
@@ -104,56 +136,45 @@ export default function SellerDashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden xl:table-column">
-                    Type
-                  </TableHead>
+                  <TableHead>Product</TableHead>
                   <TableHead className="hidden xl:table-column">
                     Status
                   </TableHead>
-                  <TableHead className="hidden md:table-cell lg:hidden xl:table-column">Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Stock
+                  </TableHead>
+                  <TableHead className="text-right">Price</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell>
-                    <div className="font-medium">Liam Johnson</div>
-                    <div className="hidden text-sm text-muted-foreground md:inline">
-                      liam@example.com
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden xl:table-column">Sale</TableCell>
-                  <TableCell className="hidden xl:table-column">
-                    <Badge className="text-xs" variant="outline">
-                      Approved
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                    2023-06-23
-                  </TableCell>
-                  <TableCell className="text-right">₦250.00</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>
-                    <div className="font-medium">Olivia Smith</div>
-                    <div className="hidden text-sm text-muted-foreground md:inline">
-                      olivia@example.com
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden xl:table-column">
-                    Refund
-                  </TableCell>
-                  <TableCell className="hidden xl:table-column">
-                    <Badge className="text-xs" variant="outline">
-                      Declined
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                    2023-06-24
-                  </TableCell>
-                  <TableCell className="text-right">₦150.00</TableCell>
-                </TableRow>
+                {loading ? (
+                  [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><div className="h-4 w-32 animate-pulse rounded-md bg-muted"></div></TableCell>
+                      <TableCell className="hidden xl:table-column"><div className="h-4 w-16 animate-pulse rounded-md bg-muted"></div></TableCell>
+                      <TableCell className="hidden md:table-cell"><div className="h-4 w-12 animate-pulse rounded-md bg-muted"></div></TableCell>
+                      <TableCell className="text-right"><div className="h-4 w-20 ml-auto animate-pulse rounded-md bg-muted"></div></TableCell>
+                    </TableRow>
+                  ))
+                ) : recentProducts.map(product => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <div className="font-medium">{product.name}</div>
+                      <div className="hidden text-sm text-muted-foreground md:inline">
+                        {product.brand}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-column">
+                      <Badge className="text-xs" variant={product.isActive ? 'default' : 'outline'}>
+                        {product.isActive ? 'Active' : 'Draft'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {product.stockQuantity}
+                    </TableCell>
+                    <TableCell className="text-right">₦{product.price.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </CardContent>
@@ -161,13 +182,12 @@ export default function SellerDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Sales</CardTitle>
+             <CardDescription>
+                This is static data for now.
+              </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-8">
             <div className="flex items-center gap-4">
-              <Avatar className="hidden h-9 w-9 sm:flex">
-                <AvatarImage src="/avatars/01.png" alt="Avatar" />
-                <AvatarFallback>OM</AvatarFallback>
-              </Avatar>
               <div className="grid gap-1">
                 <p className="text-sm font-medium leading-none">
                   Olivia Martin
@@ -179,10 +199,6 @@ export default function SellerDashboardPage() {
               <div className="ml-auto font-medium">+₦1,999.00</div>
             </div>
             <div className="flex items-center gap-4">
-              <Avatar className="hidden h-9 w-9 sm:flex">
-                <AvatarImage src="/avatars/02.png" alt="Avatar" />
-                <AvatarFallback>JL</AvatarFallback>
-              </Avatar>
               <div className="grid gap-1">
                 <p className="text-sm font-medium leading-none">
                   Jackson Lee

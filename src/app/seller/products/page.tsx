@@ -5,9 +5,9 @@ import {
     PlusCircle,
   } from 'lucide-react'
   import Image from 'next/image';
+  import { useEffect, useState } from 'react';
   
   import { Badge } from '@/components/ui/badge'
-  
   import { Button } from '@/components/ui/button'
   import {
     Card,
@@ -25,7 +25,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from '@/components/ui/dropdown-menu'
-
   import {
     Table,
     TableBody,
@@ -40,8 +39,50 @@ import {
     TabsList,
     TabsTrigger,
   } from '@/components/ui/tabs'
+  import { useAuth } from '@/context/auth-context';
+  import { getProductsBySeller } from '@/services/product-service';
+  import type { Product } from '@/lib/types';
+  import { Skeleton } from '@/components/ui/skeleton';
   
+  function ProductRowSkeleton() {
+    return (
+      <TableRow>
+        <TableCell className="hidden sm:table-cell">
+          <Skeleton className="aspect-square rounded-md object-cover h-16 w-16" />
+        </TableCell>
+        <TableCell>
+          <Skeleton className="h-4 w-32" />
+        </TableCell>
+        <TableCell>
+          <Skeleton className="h-6 w-16" />
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          <Skeleton className="h-4 w-20" />
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          <Skeleton className="h-4 w-12" />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
   export default function SellerProductsPage() {
+    const { user } = useAuth();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      async function fetchProducts() {
+        if (user) {
+          setLoading(true);
+          const sellerProducts = await getProductsBySeller(user.uid);
+          setProducts(sellerProducts);
+          setLoading(false);
+        }
+      }
+      fetchProducts();
+    }, [user]);
+
     return (
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
         <Tabs defaultValue="all">
@@ -111,46 +152,58 @@ import {
                         Price
                       </TableHead>
                       <TableHead className="hidden md:table-cell">
-                        Total Sales
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Created at
+                        Stock
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell className="hidden sm:table-cell">
-                        <Image
-                          alt="Product image"
-                          className="aspect-square rounded-md object-cover"
-                          height="64"
-                          src="https://picsum.photos/seed/101/64/64"
-                          width="64"
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        LaserPrism Smartwatch
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">Draft</Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        ₦499.99
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        25
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        2023-07-12 10:42 AM
-                      </TableCell>
-                    </TableRow>
+                    {loading ? (
+                      <>
+                        <ProductRowSkeleton />
+                        <ProductRowSkeleton />
+                        <ProductRowSkeleton />
+                      </>
+                    ) : products.length > 0 ? (
+                      products.map(product => (
+                        <TableRow key={product.id}>
+                          <TableCell className="hidden sm:table-cell">
+                            <Image
+                              alt={product.name}
+                              className="aspect-square rounded-md object-cover"
+                              height="64"
+                              src={product.images[0] || 'https://placehold.co/64x64'}
+                              width="64"
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {product.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={product.isActive ? 'default' : 'outline'}>
+                              {product.isActive ? 'Active' : 'Draft'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            ₦{product.price.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {product.stockQuantity}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          No products found.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
               <CardFooter>
                 <div className="text-xs text-muted-foreground">
-                  Showing <strong>1-10</strong> of <strong>32</strong> products
+                  Showing <strong>1-{products.length > 0 ? products.length : 0}</strong> of <strong>{products.length}</strong> products
                 </div>
               </CardFooter>
             </Card>
