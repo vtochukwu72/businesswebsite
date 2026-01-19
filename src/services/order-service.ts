@@ -1,6 +1,6 @@
 'use server';
 
-import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import type { Order } from '@/lib/types';
 
@@ -30,6 +30,29 @@ export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
     return orderList;
   } catch (error) {
     console.error(`Error fetching orders for seller ${sellerId}: `, error);
+    return [];
+  }
+}
+
+export async function getAllOrders(count?: number): Promise<Order[]> {
+  try {
+    const ordersCol = collection(db, 'orders');
+    const q = count
+      ? query(ordersCol, orderBy('createdAt', 'desc'), limit(count))
+      : query(ordersCol, orderBy('createdAt', 'desc'));
+    
+    const orderSnapshot = await getDocs(q);
+    const orderList = orderSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+      } as Order;
+    });
+    return orderList;
+  } catch (error) {
+    console.error("Error fetching all orders: ", error);
     return [];
   }
 }

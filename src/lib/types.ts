@@ -21,6 +21,18 @@ export type Product = {
   tags: string[];
 };
 
+export type User = {
+  id: string;
+  displayName?: string;
+  fname?: string;
+  lname?: string;
+  email: string;
+  role: 'customer' | 'seller' | 'admin' | 'super_admin' | 'content_manager' | 'order_manager' | 'support_manager' | 'finance_manager';
+  createdAt: any; // Firestore Timestamp
+  photoURL?: string;
+};
+
+
 export type Category = {
   name: string;
   description?: string;
