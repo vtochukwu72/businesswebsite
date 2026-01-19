@@ -36,24 +36,37 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    totalUsers: 0,
+  });
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const [fetchedOrders, fetchedUsers] = await Promise.all([
-        getAllOrders(5), // Fetch latest 5 orders
-        getUsers(5)      // Fetch latest 5 users
+      const [fetchedOrders, allUsers] = await Promise.all([
+        getAllOrders(),
+        getUsers()
       ]);
-      const allUsers = await getUsers(); // Fetch all for total count
+      
+      const totalRevenue = fetchedOrders.reduce((sum, order) => sum + order.grandTotal, 0);
 
       setOrders(fetchedOrders);
-      setUsers(allUsers); // Store all users for total count
+      setUsers(allUsers); 
+      setStats({
+        totalRevenue,
+        totalOrders: fetchedOrders.length,
+        totalUsers: allUsers.length
+      });
+
       setLoading(false);
     }
     fetchData();
   }, []);
   
   const recentSignups = users.slice(0, 5);
+  const recentOrders = orders.slice(0, 5);
 
   const getBadgeVariant = (status: string) => {
     switch (status.toLowerCase()) {
@@ -78,7 +91,7 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦1,250,231.89</div>
+            {loading ? <Skeleton className="h-8 w-32" /> : <div className="text-2xl font-bold">₦{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
             <p className="text-xs text-muted-foreground">
               +25.1% from last month (Static)
             </p>
@@ -86,11 +99,11 @@ export default function AdminDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-20"/> : <div className="text-2xl font-bold">+{orders.length}</div>}
+            {loading ? <Skeleton className="h-8 w-20"/> : <div className="text-2xl font-bold">+{stats.totalOrders}</div>}
             <p className="text-xs text-muted-foreground">
               +15% from last month (Static)
             </p>
@@ -98,11 +111,11 @@ export default function AdminDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-16"/> : <div className="text-2xl font-bold">+{users.length}</div>}
+            {loading ? <Skeleton className="h-8 w-16"/> : <div className="text-2xl font-bold">+{stats.totalUsers}</div>}
             <p className="text-xs text-muted-foreground">
               Total users on the platform
             </p>
@@ -152,8 +165,8 @@ export default function AdminDashboardPage() {
               <TableBody>
                 {loading ? (
                   <TableRow><TableCell colSpan={4} className="text-center h-24">Loading transactions...</TableCell></TableRow>
-                ) : orders.length > 0 ? (
-                  orders.map(order => (
+                ) : recentOrders.length > 0 ? (
+                  recentOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell>
                         <div className="font-medium">{order.customerName || 'N/A'}</div>

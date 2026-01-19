@@ -39,6 +39,18 @@ export default function SellerDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const dashboardStats = useMemo(() => {
+    const totalRevenue = orders.reduce((sum, order) => sum + order.grandTotal, 0);
+    const totalSales = orders.length;
+    const activeProducts = products.filter(p => p.isActive).length;
+
+    return {
+      totalRevenue,
+      totalSales,
+      activeProducts,
+    };
+  }, [orders, products]);
+
   useEffect(() => {
     async function fetchData() {
       if (user) {
@@ -55,18 +67,6 @@ export default function SellerDashboardPage() {
     fetchData();
   }, [user]);
 
-  const dashboardStats = useMemo(() => {
-    const activeProducts = products.filter(p => p.isActive).length;
-    const totalOrders = orders.length;
-    // Other stats are static for now
-    return {
-      activeProducts,
-      totalOrders,
-      totalRevenue: '₦45,231.89', // Static
-      sales: '+12,234', // Static
-    };
-  }, [products, orders]);
-
   const recentOrders = orders.slice(0, 5);
 
   return (
@@ -78,7 +78,11 @@ export default function SellerDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalRevenue}</div>
+            {loading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              <div className="text-2xl font-bold">₦{dashboardStats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               +20.1% from last month (Static)
             </p>
@@ -86,17 +90,17 @@ export default function SellerDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
              {loading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <div className="text-2xl font-bold">{dashboardStats.totalOrders}</div>
+              <div className="text-2xl font-bold">+{dashboardStats.totalSales}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              Total orders received
+              Total sales from your products
             </p>
           </CardContent>
         </Card>
@@ -118,13 +122,13 @@ export default function SellerDashboardPage() {
         </Card>
          <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sales</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.sales}</div>
+             <div className="text-2xl font-bold">+573</div>
             <p className="text-xs text-muted-foreground">
-              +19% from last month (Static)
+               +201 since last hour (Static)
             </p>
           </CardContent>
         </Card>
@@ -208,32 +212,27 @@ export default function SellerDashboardPage() {
           <CardHeader>
             <CardTitle>Recent Sales</CardTitle>
              <CardDescription>
-                This is static data for now.
+                Your most recent sales from fulfilled orders.
               </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-8">
-            <div className="flex items-center gap-4">
-              <div className="grid gap-1">
-                <p className="text-sm font-medium leading-none">
-                  Olivia Martin
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  olivia.martin@email.com
-                </p>
-              </div>
-              <div className="ml-auto font-medium">+₦1,999.00</div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="grid gap-1">
-                <p className="text-sm font-medium leading-none">
-                  Jackson Lee
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  jackson.lee@email.com
-                </p>
-              </div>
-              <div className="ml-auto font-medium">+₦39.00</div>
-            </div>
+            {loading ? <Skeleton className="h-12 w-full" /> : recentOrders.length > 0 ? (
+                recentOrders.map(order => (
+                  <div key={order.id} className="flex items-center gap-4">
+                    <div className="grid gap-1">
+                      <p className="text-sm font-medium leading-none">
+                        {order.customerName || 'Anonymous Customer'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Order #{order.orderNumber}
+                      </p>
+                    </div>
+                    <div className="ml-auto font-medium">+₦{order.grandTotal.toFixed(2)}</div>
+                  </div>
+                ))
+            ) : (
+                <p className="text-sm text-muted-foreground">No recent sales found.</p>
+            )}
           </CardContent>
         </Card>
       </div>
