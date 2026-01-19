@@ -38,8 +38,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRevenue: 0,
-    totalOrders: 0,
+    totalSales: 0,
     totalUsers: 0,
+    recentActivity: 0,
   });
 
   useEffect(() => {
@@ -52,12 +53,20 @@ export default function AdminDashboardPage() {
       
       const totalRevenue = fetchedOrders.reduce((sum, order) => sum + order.grandTotal, 0);
 
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+      
+      const recentOrdersCount = fetchedOrders.filter(order => new Date(order.createdAt) > twentyFourHoursAgo).length;
+      const recentUsersCount = allUsers.filter(user => new Date(user.createdAt) > twentyFourHoursAgo).length;
+      const recentActivity = recentOrdersCount + recentUsersCount;
+
       setOrders(fetchedOrders);
       setUsers(allUsers); 
       setStats({
         totalRevenue,
-        totalOrders: fetchedOrders.length,
-        totalUsers: allUsers.length
+        totalSales: fetchedOrders.length,
+        totalUsers: allUsers.length,
+        recentActivity: recentActivity,
       });
 
       setLoading(false);
@@ -103,7 +112,7 @@ export default function AdminDashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-20"/> : <div className="text-2xl font-bold">+{stats.totalOrders}</div>}
+            {loading ? <Skeleton className="h-8 w-20"/> : <div className="text-2xl font-bold">+{stats.totalSales}</div>}
             <p className="text-xs text-muted-foreground">
               +15% from last month (Static)
             </p>
@@ -123,13 +132,13 @@ export default function AdminDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Platform Activity</CardTitle>
+            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+573</div>
+             {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">+{stats.recentActivity}</div>}
             <p className="text-xs text-muted-foreground">
-              +201 since last hour (Static)
+              New users & orders in last 24h
             </p>
           </CardContent>
         </Card>

@@ -43,11 +43,16 @@ export default function SellerDashboardPage() {
     const totalRevenue = orders.reduce((sum, order) => sum + order.grandTotal, 0);
     const totalSales = orders.length;
     const activeProducts = products.filter(p => p.isActive).length;
+    
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+    const recentActivity = orders.filter(order => new Date(order.createdAt) > twentyFourHoursAgo).length;
 
     return {
       totalRevenue,
       totalSales,
       activeProducts,
+      recentActivity,
     };
   }, [orders, products]);
 
@@ -90,7 +95,7 @@ export default function SellerDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+            <CardTitle className="text-sm font-medium">Sales</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -126,9 +131,9 @@ export default function SellerDashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-             <div className="text-2xl font-bold">+573</div>
+             {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">+{dashboardStats.recentActivity}</div>}
             <p className="text-xs text-muted-foreground">
-               +201 since last hour (Static)
+               New orders in last 24h
             </p>
           </CardContent>
         </Card>
