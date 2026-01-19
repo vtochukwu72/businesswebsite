@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -99,50 +98,52 @@ export function Header() {
               <SheetHeader>
                 <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
               </SheetHeader>
-              <nav className="grid gap-6 text-lg font-medium">
-                <Link
-                  href="/"
-                  className="flex items-center gap-2 text-lg font-semibold"
-                >
-                  <Icons.logo className="h-6 w-6 text-primary" />
-                  <span>E-Commerce</span>
-                </Link>
-                <Link href="/products" className="hover:text-foreground">
-                  Shop
-                </Link>
-                {categories.map((category) => (
+              <div className="flex h-full flex-col">
+                <nav className="grid gap-6 text-lg font-medium">
                   <Link
-                    href="/products"
-                    key={category}
-                    className="text-muted-foreground hover:text-foreground"
+                    href="/"
+                    className="flex items-center gap-2 text-lg font-semibold"
                   >
-                    {category}
+                    <Icons.logo className="h-6 w-6 text-primary" />
+                    <span>E-Commerce</span>
                   </Link>
-                ))}
-                {otherLinks.map((link) => (
-                  <Link
-                    href={link.href}
-                    key={link.href + link.label}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {link.label}
+                  <Link href="/products" className="hover:text-foreground">
+                    Shop
                   </Link>
-                ))}
-              </nav>
-              <div className="mt-auto">
-                {!loading && !user && (
-                    <>
-                        <Separator className="my-4" />
-                        <div className="grid gap-2">
-                            <Button asChild>
-                                <Link href="/login">Sign In</Link>
-                            </Button>
-                            <Button asChild variant="outline">
-                                <Link href="/register">Register</Link>
-                            </Button>
-                        </div>
-                    </>
-                )}
+                  {categories.map((category) => (
+                    <Link
+                      href="/products"
+                      key={category}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {category}
+                    </Link>
+                  ))}
+                  {otherLinks.map((link) => (
+                    <Link
+                      href={link.href}
+                      key={link.href + link.label}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </nav>
+                <div className="mt-auto">
+                  {!loading && !user && (
+                      <>
+                          <Separator className="my-4" />
+                          <div className="grid gap-2">
+                              <Button asChild>
+                                  <Link href="/login">Sign In</Link>
+                              </Button>
+                              <Button asChild variant="outline">
+                                  <Link href="/register">Register</Link>
+                              </Button>
+                          </div>
+                      </>
+                  )}
+                </div>
               </div>
             </SheetContent>
           </Sheet>
