@@ -5,6 +5,8 @@ import { Icons } from '@/components/icons';
 import { Github, Twitter, Facebook } from 'lucide-react';
 import { NewsletterForm } from '../newsletter-form';
 
+
+
 export function Footer() {
   return (
     <footer className="border-t bg-card text-card-foreground">

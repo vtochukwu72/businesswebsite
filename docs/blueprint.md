@@ -19,3 +19,5 @@
 - Use a set of minimalist icons to provide an intuitive experience
 - Implement a grid-based layout for product listings and use clear visual hierarchies.
 - Incorporate subtle animations to enhance user engagement without being distracting.
+
+yep
