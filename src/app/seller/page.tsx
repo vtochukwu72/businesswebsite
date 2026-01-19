@@ -5,9 +5,10 @@ import {
   Package,
   CreditCard,
   DollarSign,
+  ShoppingCart,
 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,38 +28,46 @@ import {
 } from '@/components/ui/table';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
-import type { Product } from '@/lib/types';
+import type { Product, Order } from '@/lib/types';
 import { getProductsBySeller } from '@/services/product-service';
+import { getOrdersBySeller } from '@/services/order-service';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SellerDashboardPage() {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchData() {
       if (user) {
         setLoading(true);
-        const sellerProducts = await getProductsBySeller(user.uid);
+        const [sellerProducts, sellerOrders] = await Promise.all([
+          getProductsBySeller(user.uid),
+          getOrdersBySeller(user.uid)
+        ]);
         setProducts(sellerProducts);
+        setOrders(sellerOrders);
         setLoading(false);
       }
     }
-    fetchProducts();
+    fetchData();
   }, [user]);
 
   const dashboardStats = useMemo(() => {
     const activeProducts = products.filter(p => p.isActive).length;
+    const totalOrders = orders.length;
     // Other stats are static for now
     return {
       activeProducts,
-      totalRevenue: '₦45,231.89',
-      sales: '+12,234',
-      totalOrders: '+2350',
+      totalOrders,
+      totalRevenue: '₦45,231.89', // Static
+      sales: '+12,234', // Static
     };
-  }, [products]);
+  }, [products, orders]);
 
-  const recentProducts = products.slice(0, 5);
+  const recentOrders = orders.slice(0, 5);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -77,13 +86,17 @@ export default function SellerDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sales</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.sales}</div>
+             {loading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <div className="text-2xl font-bold">{dashboardStats.totalOrders}</div>
+            )}
             <p className="text-xs text-muted-foreground">
-              +19% from last month (Static)
+              Total orders received
             </p>
           </CardContent>
         </Card>
@@ -94,7 +107,7 @@ export default function SellerDashboardPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="h-8 w-16 animate-pulse rounded-md bg-muted"></div>
+              <Skeleton className="h-8 w-16" />
             ) : (
               <div className="text-2xl font-bold">{dashboardStats.activeProducts}</div>
             )}
@@ -103,15 +116,15 @@ export default function SellerDashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Sales</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalOrders}</div>
+            <div className="text-2xl font-bold">{dashboardStats.sales}</div>
             <p className="text-xs text-muted-foreground">
-              (Static Data)
+              +19% from last month (Static)
             </p>
           </CardContent>
         </Card>
@@ -120,13 +133,13 @@ export default function SellerDashboardPage() {
         <Card className="xl:col-span-2">
           <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
-              <CardTitle>Your Recent Products</CardTitle>
+              <CardTitle>Recent Orders</CardTitle>
               <CardDescription>
-                A quick look at products you manage.
+                A quick look at your most recent orders.
               </CardDescription>
             </div>
             <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="/seller/products">
+              <Link href="/seller/orders">
                 View All
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
@@ -136,45 +149,57 @@ export default function SellerDashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead className="hidden xl:table-column">
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="hidden xl:table-cell">
+                    Order ID
+                  </TableHead>
+                  <TableHead className="hidden xl:table-cell">
                     Status
                   </TableHead>
                   <TableHead className="hidden md:table-cell">
-                    Stock
+                    Date
                   </TableHead>
-                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   [...Array(3)].map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell><div className="h-4 w-32 animate-pulse rounded-md bg-muted"></div></TableCell>
-                      <TableCell className="hidden xl:table-column"><div className="h-4 w-16 animate-pulse rounded-md bg-muted"></div></TableCell>
-                      <TableCell className="hidden md:table-cell"><div className="h-4 w-12 animate-pulse rounded-md bg-muted"></div></TableCell>
-                      <TableCell className="text-right"><div className="h-4 w-20 ml-auto animate-pulse rounded-md bg-muted"></div></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell className="hidden xl:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell className="hidden xl:table-cell"><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                     </TableRow>
                   ))
-                ) : recentProducts.map(product => (
-                  <TableRow key={product.id}>
+                ) : recentOrders.length > 0 ? (
+                  recentOrders.map(order => (
+                  <TableRow key={order.id}>
                     <TableCell>
-                      <div className="font-medium">{product.name}</div>
+                      <div className="font-medium">{order.customerName || 'N/A'}</div>
                       <div className="hidden text-sm text-muted-foreground md:inline">
-                        {product.brand}
+                        {/* Customer email could be here if available */}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      <Badge className="text-xs" variant={product.isActive ? 'default' : 'outline'}>
-                        {product.isActive ? 'Active' : 'Draft'}
+                    <TableCell className="hidden xl:table-cell">#{order.orderNumber}</TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <Badge className="text-xs capitalize" variant="outline">
+                        {order.orderStatus}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {product.stockQuantity}
+                        {new Date(order.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right">₦{product.price.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">₦{order.grandTotal.toFixed(2)}</TableCell>
                   </TableRow>
-                ))}
+                ))) : (
+                   <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No recent orders.
+                      </TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

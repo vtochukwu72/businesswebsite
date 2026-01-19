@@ -52,3 +52,13 @@ export type ContactMessage = {
   subject: string;
   message: string;
 };
+
+export type Order = {
+  id: string;
+  userId: string; // The customer's ID
+  orderNumber: string;
+  customerName?: string; // Denormalized customer name
+  orderStatus: string;
+  createdAt: any; // Should be a Firestore Timestamp, but 'any' for simplicity client-side
+  grandTotal: number;
+};
