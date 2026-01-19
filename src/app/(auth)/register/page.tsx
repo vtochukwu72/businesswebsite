@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -114,6 +113,16 @@ export default function RegisterPage() {
 
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists() && userDoc.data().role !== 'customer') {
+        toast({
+          variant: 'destructive',
+          title: 'Sign-Up Failed',
+          description: 'An account with this email already exists with a different role. Please use the appropriate login page.',
+        });
+        await auth.signOut();
+        return;
+      }
 
       if (!userDoc.exists()) {
         await setDoc(userRef, {

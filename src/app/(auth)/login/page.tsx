@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -90,6 +89,16 @@ export default function LoginPage() {
 
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists() && userDoc.data().role !== 'customer') {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'This is not a customer account. Please use the appropriate login page.',
+        });
+        await auth.signOut();
+        return;
+      }
 
       if (!userDoc.exists()) {
         await setDoc(userRef, {
