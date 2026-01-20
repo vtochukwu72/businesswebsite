@@ -102,7 +102,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             {loading ? <Skeleton className="h-8 w-32" /> : <div className="text-2xl font-bold">₦{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
             <p className="text-xs text-muted-foreground">
-              +25.1% from last month (Static)
+              From a total of {stats.totalSales} sales
             </p>
           </CardContent>
         </Card>

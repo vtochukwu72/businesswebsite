@@ -89,7 +89,7 @@ export default function SellerDashboardPage() {
               <div className="text-2xl font-bold">₦{dashboardStats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              +20.1% from last month (Static)
+              From a total of {dashboardStats.totalSales} sales
             </p>
           </CardContent>
         </Card>
