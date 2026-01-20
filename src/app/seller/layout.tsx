@@ -24,8 +24,9 @@ import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
+import { getOrdersBySeller } from '@/services/order-service';
 
-function SellerDashboard({ children }: { children: React.ReactNode }) {
+function SellerDashboard({ children, pendingOrderCount }: { children: React.ReactNode; pendingOrderCount: number }) {
   return (
     <SidebarProvider>
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -45,14 +46,16 @@ function SellerDashboard({ children }: { children: React.ReactNode }) {
                   <SidebarMenuItem>
                       <SidebarMenuButton href="/seller/orders" leftIcon={<ShoppingCart/>}>
                           Orders
-                           <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">6</Badge>
+                           {pendingOrderCount > 0 && (
+                            <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">{pendingOrderCount}</Badge>
+                           )}
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                    <SidebarMenuItem>
                       <SidebarMenuButton href="/seller/products" leftIcon={<Package/>}>Products</SidebarMenuButton>
                   </SidebarMenuItem>
                    <SidebarMenuItem>
-                      <SidebarMenuButton href="#" leftIcon={<Users/>}>Customers</SidebarMenuButton>
+                      <SidebarMenuButton href="/seller/customers" leftIcon={<Users/>}>Customers</SidebarMenuButton>
                   </SidebarMenuItem>
                </SidebarMenu>
              </SidebarGroup>
@@ -99,6 +102,7 @@ export default function SellerLayout({
   const { user, userData, loading } = useAuth();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   useEffect(() => {
     setIsClient(true);
@@ -109,6 +113,22 @@ export default function SellerLayout({
       router.push('/seller-login');
     }
   }, [user, userData, loading, router]);
+
+  useEffect(() => {
+    async function fetchPendingOrders() {
+      if (user) {
+        const orders = await getOrdersBySeller(user.uid);
+        const pendingCount = orders.filter(
+          (order) => order.orderStatus.toLowerCase() === 'pending'
+        ).length;
+        setPendingOrderCount(pendingCount);
+      }
+    }
+
+    if (user) {
+      fetchPendingOrders();
+    }
+  }, [user]);
 
   if (loading || !user || userData?.role !== 'seller') {
     return (
@@ -124,6 +144,6 @@ export default function SellerLayout({
   }
 
   return (
-    <SellerDashboard>{children}</SellerDashboard>
+    <SellerDashboard pendingOrderCount={pendingOrderCount}>{children}</SellerDashboard>
   );
 }
