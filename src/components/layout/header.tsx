@@ -33,7 +33,7 @@ import {
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { products as staticProducts } from '@/lib/static-data';
-import { useAuth } from '@/context/auth-context';
+import { useAuth, type AuthContextType } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -95,13 +95,13 @@ export function Header() {
 
         <div className="flex items-center md:hidden">
           <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="mr-4">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-              </SheetTrigger>
-             {isClient && (
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="mr-4">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            {isClient && (
               <SheetContent side="left" className="flex flex-col">
                 <SheetHeader>
                   <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
@@ -154,8 +154,8 @@ export function Header() {
                   </div>
                 </div>
               </SheetContent>
-             )}
-            </Sheet>
+            )}
+          </Sheet>
 
           <Link href="/" className="flex items-center gap-2 md:hidden">
             <Icons.logo className="h-6 w-6 text-primary" />
@@ -164,11 +164,11 @@ export function Header() {
         </div>
 
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
-                {isClient && (
+          {isClient && (
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
                       <ListItem href="/products" title="All Products">
@@ -184,17 +184,17 @@ export function Header() {
                       ))}
                     </ul>
                   </NavigationMenuContent>
-                )}
-              </NavigationMenuItem>
-              {otherLinks.map((link) => (
-                <NavigationMenuItem key={link.href}>
-                    <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                      <Link href={link.href}>{link.label}</Link>
-                    </NavigationMenuLink>
                 </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
+                {otherLinks.map((link) => (
+                  <NavigationMenuItem key={link.href}>
+                      <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                        <Link href={link.href}>{link.label}</Link>
+                      </NavigationMenuLink>
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
+          )}
         </div>
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-2">
