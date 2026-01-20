@@ -1,3 +1,4 @@
+
 'use client';
 import {
     File,
@@ -35,8 +36,7 @@ import {
   import { Info } from 'lucide-react';
   import { useAuth } from '@/context/auth-context';
   import { getProductsBySeller } from '@/services/product-service';
-  import { getVendor } from '@/services/vendor-service';
-  import type { Product, Vendor } from '@/lib/types';
+  import type { Product } from '@/lib/types';
   import { Skeleton } from '@/components/ui/skeleton';
   
   function ProductRowSkeleton() {
@@ -62,30 +62,26 @@ import {
   }
 
   export default function SellerProductsPage() {
-    const { user } = useAuth();
+    const { user, vendorData, loading: authLoading } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
-    const [vendor, setVendor] = useState<Vendor | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [productsLoading, setProductsLoading] = useState(true);
     const [filter, setFilter] = useState('all');
 
-    const isApproved = vendor?.status === 'approved';
+    const isApproved = vendorData?.status === 'approved';
+    const loading = authLoading || productsLoading;
 
     useEffect(() => {
-      async function fetchData() {
+      async function fetchProducts() {
         if (user) {
-          setLoading(true);
-          const [sellerProducts, sellerVendor] = await Promise.all([
-            getProductsBySeller(user.uid),
-            getVendor(user.uid)
-          ]);
+          setProductsLoading(true);
+          const sellerProducts = await getProductsBySeller(user.uid);
           setProducts(sellerProducts);
-          setVendor(sellerVendor);
-          setLoading(false);
+          setProductsLoading(false);
         } else {
-            setLoading(false);
+            setProductsLoading(false);
         }
       }
-      fetchData();
+      fetchProducts();
     }, [user]);
 
     const filteredProducts = useMemo(() => {

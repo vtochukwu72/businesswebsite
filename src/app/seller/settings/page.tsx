@@ -17,7 +17,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { updateVendorSettings } from './actions';
-import { getVendor } from '@/services/vendor-service';
 import type { Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -64,10 +63,8 @@ function SettingsSkeleton() {
 }
 
 export default function SellerSettingsPage() {
-  const { user } = useAuth();
+  const { user, vendorData, loading } = useAuth();
   const { toast } = useToast();
-  const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     storeName: '',
     storeDescription: '',
@@ -84,25 +81,17 @@ export default function SellerSettingsPage() {
   });
 
   useEffect(() => {
-    if (!user) return;
-    async function fetchVendor() {
-      setLoading(true);
-      const vendorData = await getVendor(user!.uid);
-      setVendor(vendorData);
-      if (vendorData) {
-        setFormData({
-            storeName: vendorData.storeName || '',
-            storeDescription: vendorData.storeDescription || '',
-            nin: vendorData.nin || '',
-            businessName: vendorData.payoutDetails?.businessName || '',
-            accountNumber: vendorData.payoutDetails?.accountNumber || '',
-            bankName: vendorData.payoutDetails?.bankName || '',
-        });
-      }
-      setLoading(false);
+    if (vendorData) {
+      setFormData({
+          storeName: vendorData.storeName || '',
+          storeDescription: vendorData.storeDescription || '',
+          nin: vendorData.nin || '',
+          businessName: vendorData.payoutDetails?.businessName || '',
+          accountNumber: vendorData.payoutDetails?.accountNumber || '',
+          bankName: vendorData.payoutDetails?.bankName || '',
+      });
     }
-    fetchVendor();
-  }, [user]);
+  }, [vendorData]);
 
   useEffect(() => {
     if (state.success) {
@@ -175,11 +164,11 @@ export default function SellerSettingsPage() {
         <CardContent>
           {loading ? (
             <SettingsSkeleton />
-          ) : !vendor ? (
-            <p className="text-muted-foreground">Could not load vendor data.</p>
+          ) : !vendorData ? (
+            <p className="text-muted-foreground">Could not load vendor data. Please ensure your vendor profile is set up.</p>
           ) : (
             <form action={formAction} className="space-y-8">
-              {getStatusAlert(vendor.status)}
+              {getStatusAlert(vendorData.status)}
 
               <input type="hidden" name="vendorId" value={user!.uid} />
               
@@ -244,5 +233,3 @@ export default function SellerSettingsPage() {
     </main>
   );
 }
-
-    

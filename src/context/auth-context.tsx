@@ -16,6 +16,7 @@ const db = getFirestore(app);
 export interface AuthContextType {
   user: User | null;
   userData: DocumentData | null;
+  vendorData: DocumentData | null;
   loading: boolean;
   logout: () => Promise<void>;
 }
@@ -23,6 +24,7 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   userData: null,
+  vendorData: null,
   loading: true,
   logout: async () => {},
 });
@@ -30,13 +32,17 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<DocumentData | null>(null);
+  const [vendorData, setVendorData] = useState<DocumentData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setLoading(true); // Set loading to true whenever auth state might be changing
       setUser(user);
       if (!user) {
+        // If no user, clear all data and stop loading
         setUserData(null);
+        setVendorData(null);
         setLoading(false);
       }
     });
@@ -45,28 +51,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      const userDocRef = doc(db, 'users', user.uid);
-      const unsubscribeFirestore = onSnapshot(
-        userDocRef, 
-        (doc) => {
-          if (doc.exists()) {
-            setUserData(doc.data());
-          } else {
-            setUserData(null);
-          }
-          setLoading(false);
-        }, 
-        (error) => {
-          console.error('Error fetching user data:', error);
-          setUserData(null);
-          setLoading(false);
-        }
-      );
-
-      return () => unsubscribeFirestore();
+    if (!user) {
+        return; // No user, so no data to fetch
     }
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribeFirestore = onSnapshot(
+      userDocRef, 
+      (doc) => {
+        if (doc.exists()) {
+          setUserData(doc.data());
+        } else {
+          setUserData(null);
+          setLoading(false); // No user data, stop loading
+        }
+      }, 
+      (error) => {
+        console.error('Error fetching user data:', error);
+        setUserData(null);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribeFirestore();
   }, [user]);
+
+  useEffect(() => {
+    if (!user || userData === null) {
+      // If there is a user but we are waiting for userData, don't do anything yet.
+      // If there's no user, the auth useEffect handles setting loading to false.
+      if (user && userData === null) {
+        // This case can happen briefly. We wait for userData to populate.
+      }
+      return;
+    }
+
+    if (userData.role === 'seller') {
+      const vendorDocRef = doc(db, 'vendors', user.uid);
+      const unsubscribeVendor = onSnapshot(vendorDocRef, (vendorDoc) => {
+        if (vendorDoc.exists()) {
+          setVendorData(vendorDoc.data());
+        } else {
+          setVendorData(null);
+        }
+        setLoading(false); // We have all relevant data now.
+      }, (error) => {
+        console.error('Error fetching vendor data:', error);
+        setVendorData(null);
+        setLoading(false);
+      });
+
+      return () => unsubscribeVendor();
+    } else {
+      // Not a seller, clear vendor data and stop loading.
+      setVendorData(null);
+      setLoading(false);
+    }
+  }, [user, userData]);
+
 
   const logout = async () => {
     try {
@@ -89,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userData, loading, logout }}>
+    <AuthContext.Provider value={{ user, userData, vendorData, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );
