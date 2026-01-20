@@ -9,7 +9,8 @@ import {
   Package2,
   ShoppingCart,
   Users,
-  LineChart
+  LineChart,
+  Store,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +55,9 @@ function AdminDashboard({ children }: { children: React.ReactNode }) {
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                     <SidebarMenuButton href="/admin/customers" leftIcon={<Users/>}>Customers</SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton href="/admin/vendors" leftIcon={<Store/>}>Vendors</SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                     <SidebarMenuButton href="#" leftIcon={<LineChart/>}>Analytics</SidebarMenuButton>
@@ -133,3 +137,5 @@ export default function AdminLayout({
     <AdminDashboard>{children}</AdminDashboard>
   );
 }
+
+    

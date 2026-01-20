@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { createSession } from '@/app/(auth)/actions';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -63,7 +63,11 @@ export default function SellerRegisterPage() {
 
         await updateProfile(user, { displayName });
 
-        await setDoc(doc(db, 'users', user.uid), {
+        const userRef = doc(db, 'users', user.uid);
+        const vendorRef = doc(db, 'vendors', user.uid);
+        const batch = writeBatch(db);
+
+        batch.set(userRef, {
             id: user.uid,
             email: user.email,
             fname,
@@ -73,6 +77,25 @@ export default function SellerRegisterPage() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
+
+        batch.set(vendorRef, {
+            id: user.uid,
+            email: user.email,
+            storeName: `${displayName}'s Store`, // A default store name
+            status: 'pending', // Default status is pending
+            storeDescription: '',
+            storeLogo: '',
+            phone: '',
+            address: '',
+            nin: '',
+            payoutDetails: {
+                businessName: '',
+                accountNumber: '',
+                bankName: '',
+            }
+        });
+
+        await batch.commit();
         
         toast({
             title: 'Account Created!',
@@ -193,3 +216,5 @@ export default function SellerRegisterPage() {
     </div>
   );
 }
+
+    

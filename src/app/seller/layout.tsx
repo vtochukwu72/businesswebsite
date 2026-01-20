@@ -8,6 +8,7 @@ import {
   Package2,
   ShoppingCart,
   Users,
+  Settings
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -86,6 +87,9 @@ function SellerDashboard({ children, pendingOrderCount, authProps }: { children:
                    <SidebarMenuItem>
                       <SidebarMenuButton href="/seller/customers" leftIcon={<Users/>}>Customers</SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton href="/seller/settings" leftIcon={<Settings/>}>Settings</SidebarMenuButton>
+                  </SidebarMenuItem>
                </SidebarMenu>
              </SidebarGroup>
              <SidebarGroup className="mt-auto">
@@ -131,7 +135,7 @@ function SellerDashboard({ children, pendingOrderCount, authProps }: { children:
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link href="/seller">Dashboard</Link></DropdownMenuItem>
-                <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/seller/settings">Settings</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
@@ -200,3 +204,5 @@ export default function SellerLayout({
     <SellerDashboard pendingOrderCount={pendingOrderCount} authProps={authProps}>{children}</SellerDashboard>
   );
 }
+
+    

@@ -81,6 +81,14 @@ service cloud.firestore {
     }
 
     /**
+     * @description Checks if a vendor is approved.
+     */
+    function isApprovedSeller(vendorId) {
+        return exists(/databases/$(database)/documents/vendors/$(vendorId)) &&
+               get(/databases/$(database)/documents/vendors/$(vendorId)).data.status == 'approved';
+    }
+
+    /**
      * @description Checks for super admin role.
      */
     function isSuperAdmin() {
@@ -179,7 +187,7 @@ service cloud.firestore {
      * @principle Allows public read of vendor profiles but restricts writes to the owner or admins.
      */
     match /vendors/{vendorId} {
-      allow get, list: if true;
+      allow get, list: if isOwner(vendorId) || isAdminOrSuperAdmin();
       allow create: if isOwner(vendorId) && request.resource.data.id == vendorId;
       allow update: if isExistingDocument() && (isOwner(vendorId) || isAdminOrSuperAdmin());
       allow delete: if isExistingDocument() && isSuperAdmin();
@@ -198,8 +206,14 @@ service cloud.firestore {
      */
     match /products/{productId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid && userHasAnyRole(['seller']);
-      allow update, delete: if isExistingDocument() && (isOwner(resource.data.sellerId) || canManageContent());
+      allow create: if isSignedIn() && 
+                    request.resource.data.sellerId == request.auth.uid &&
+                    userHasAnyRole(['seller']) &&
+                    isApprovedSeller(request.auth.uid);
+      allow update, delete: if isExistingDocument() && 
+                            ( canManageContent() || 
+                              ( isOwner(resource.data.sellerId) && isApprovedSeller(resource.data.sellerId) )
+                            );
     }
 
     /**
@@ -316,3 +330,4 @@ service cloud.firestore {
     }
   }
 }
+    

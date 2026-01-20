@@ -464,6 +464,33 @@
         "status": {
           "type": "string",
           "description": "Status of the vendor (pending, approved, suspended)."
+        },
+        "nin": {
+          "type": "string",
+          "description": "National Identification Number for verification."
+        },
+        "payoutDetails": {
+          "type": "object",
+          "description": "Bank account details for payouts.",
+          "properties": {
+            "businessName": {
+              "type": "string",
+              "description": "The legal business name associated with the bank account."
+            },
+            "accountNumber": {
+              "type": "string",
+              "description": "Bank account number."
+            },
+            "bankName": {
+              "type": "string",
+              "description": "Name of the bank."
+            }
+          },
+          "required": [
+            "businessName",
+            "accountNumber",
+            "bankName"
+          ]
         }
       },
       "required": [

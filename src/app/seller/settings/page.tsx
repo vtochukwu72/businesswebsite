@@ -1,0 +1,223 @@
+'use client';
+
+import { useActionState, useEffect, useState } from 'react';
+import { useFormStatus } from 'react-dom';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/auth-context';
+import { updateVendorSettings } from './actions';
+import { getVendor } from '@/services/vendor-service';
+import type { Vendor } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending} className="w-full md:w-auto">
+      {pending ? 'Saving...' : 'Save Settings'}
+    </Button>
+  );
+}
+
+function SettingsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    </div>
+  );
+}
+
+export default function SellerSettingsPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [state, formAction] = useActionState(updateVendorSettings, {
+    success: false,
+    errors: {},
+    message: '',
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchVendor() {
+      setLoading(true);
+      const vendorData = await getVendor(user!.uid);
+      setVendor(vendorData);
+      setLoading(false);
+    }
+    fetchVendor();
+  }, [user]);
+
+  useEffect(() => {
+    if (state.success) {
+      toast({
+        title: 'Success!',
+        description: state.message,
+      });
+    } else if (state.message) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: state.message,
+      });
+    }
+  }, [state, toast]);
+
+  const getStatusAlert = (status: Vendor['status']) => {
+    switch (status) {
+        case 'pending':
+            return (
+                <Alert variant="default" className="bg-yellow-50 border-yellow-200 text-yellow-800">
+                    <Info className="h-4 w-4 !text-yellow-800" />
+                    <AlertTitle>Account Pending</AlertTitle>
+                    <AlertDescription>
+                        Your account is under review. You will not be able to list products until your account is approved by an administrator.
+                    </AlertDescription>
+                </Alert>
+            );
+        case 'approved':
+             return (
+                <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
+                    <Info className="h-4 w-4 !text-green-800" />
+                    <AlertTitle>Account Approved</AlertTitle>
+                    <AlertDescription>
+                        Your account is approved. You can now create and manage your product listings.
+                    </AlertDescription>
+                </Alert>
+            );
+        case 'suspended':
+             return (
+                <Alert variant="destructive">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Account Suspended</AlertTitle>
+                    <AlertDescription>
+                        Your account has been suspended. Please contact support for more information.
+                    </AlertDescription>
+                </Alert>
+            );
+        default:
+            return null;
+    }
+  }
+
+  return (
+    <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Vendor Settings</CardTitle>
+          <CardDescription>
+            Manage your store details and payment information. Your details must
+            be approved before you can list products.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <SettingsSkeleton />
+          ) : !vendor ? (
+            <p className="text-muted-foreground">Could not load vendor data.</p>
+          ) : (
+            <form action={formAction} className="space-y-8">
+              {getStatusAlert(vendor.status)}
+
+              <input type="hidden" name="vendorId" value={user!.uid} />
+              
+              <div className="space-y-4">
+                 <h3 className="text-lg font-medium">Store Information</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="storeName">Store Name</Label>
+                    <Input id="storeName" name="storeName" defaultValue={vendor.storeName}/>
+                     {state.errors?.storeName && (
+                        <p className="text-sm text-destructive">{state.errors.storeName.join(', ')}</p>
+                    )}
+                  </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="storeDescription">Store Description</Label>
+                    <Textarea id="storeDescription" name="storeDescription" defaultValue={vendor.storeDescription}/>
+                  </div>
+              </div>
+
+               <div className="space-y-4">
+                 <h3 className="text-lg font-medium">Verification Details</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="nin">National Identification Number (NIN)</Label>
+                    <Input id="nin" name="nin" defaultValue={vendor.nin}/>
+                     {state.errors?.nin && (
+                        <p className="text-sm text-destructive">{state.errors.nin.join(', ')}</p>
+                    )}
+                  </div>
+              </div>
+
+               <div className="space-y-4">
+                 <h3 className="text-lg font-medium">Payout Details</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="businessName">Legal Business Name</Label>
+                        <Input id="businessName" name="businessName" defaultValue={vendor.payoutDetails?.businessName || ''}/>
+                        {state.errors?.businessName && (
+                            <p className="text-sm text-destructive">{state.errors.businessName.join(', ')}</p>
+                        )}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="bankName">Bank Name</Label>
+                        <Input id="bankName" name="bankName" defaultValue={vendor.payoutDetails?.bankName || ''}/>
+                         {state.errors?.bankName && (
+                            <p className="text-sm text-destructive">{state.errors.bankName.join(', ')}</p>
+                        )}
+                    </div>
+                 </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountNumber">Account Number</Label>
+                    <Input id="accountNumber" name="accountNumber" defaultValue={vendor.payoutDetails?.accountNumber || ''}/>
+                     {state.errors?.accountNumber && (
+                        <p className="text-sm text-destructive">{state.errors.accountNumber.join(', ')}</p>
+                    )}
+                  </div>
+              </div>
+              
+              <SubmitButton />
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </main>
+  );
+}
+
+    

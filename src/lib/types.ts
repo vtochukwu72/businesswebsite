@@ -32,6 +32,22 @@ export type User = {
   photoURL?: string;
 };
 
+export type Vendor = {
+  id: string;
+  storeName: string;
+  storeDescription: string;
+  storeLogo: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: 'pending' | 'approved' | 'suspended';
+  nin: string;
+  payoutDetails: {
+    businessName: string;
+    accountNumber: string;
+    bankName: string;
+  };
+};
 
 export type Category = {
   name: string;
@@ -74,3 +90,5 @@ export type Order = {
   createdAt: any; // Should be a Firestore Timestamp, but 'any' for simplicity client-side
   grandTotal: number;
 };
+
+    
