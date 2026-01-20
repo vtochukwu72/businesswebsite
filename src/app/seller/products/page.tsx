@@ -4,6 +4,7 @@ import {
     PlusCircle,
   } from 'lucide-react'
   import Image from 'next/image';
+  import Link from 'next/link';
   import { useEffect, useState, useMemo } from 'react';
   
   import { Badge } from '@/components/ui/badge'
@@ -30,9 +31,12 @@ import {
     TabsList,
     TabsTrigger,
   } from '@/components/ui/tabs'
+  import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+  import { Info } from 'lucide-react';
   import { useAuth } from '@/context/auth-context';
   import { getProductsBySeller } from '@/services/product-service';
-  import type { Product } from '@/lib/types';
+  import { getVendor } from '@/services/vendor-service';
+  import type { Product, Vendor } from '@/lib/types';
   import { Skeleton } from '@/components/ui/skeleton';
   
   function ProductRowSkeleton() {
@@ -60,26 +64,34 @@ import {
   export default function SellerProductsPage() {
     const { user } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
+    const [vendor, setVendor] = useState<Vendor | null>(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
 
+    const isApproved = vendor?.status === 'approved';
+
     useEffect(() => {
-      async function fetchProducts() {
+      async function fetchData() {
         if (user) {
           setLoading(true);
-          const sellerProducts = await getProductsBySeller(user.uid);
+          const [sellerProducts, sellerVendor] = await Promise.all([
+            getProductsBySeller(user.uid),
+            getVendor(user.uid)
+          ]);
           setProducts(sellerProducts);
+          setVendor(sellerVendor);
           setLoading(false);
+        } else {
+            setLoading(false);
         }
       }
-      fetchProducts();
+      fetchData();
     }, [user]);
 
     const filteredProducts = useMemo(() => {
       if (filter === 'all') return products;
       if (filter === 'active') return products.filter(p => p.isActive);
       if (filter === 'draft') return products.filter(p => !p.isActive);
-      if (filter === 'archived') return []; // No archived state in data model yet
       return products;
     }, [products, filter]);
 
@@ -91,9 +103,6 @@ import {
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="active">Active</TabsTrigger>
               <TabsTrigger value="draft">Draft</TabsTrigger>
-              <TabsTrigger value="archived" className="hidden sm:flex">
-                Archived
-              </TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
               <Button size="sm" variant="outline" className="h-8 gap-1">
@@ -102,15 +111,26 @@ import {
                   Export
                 </span>
               </Button>
-              <Button size="sm" className="h-8 gap-1">
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Add Product
-                </span>
+              <Button asChild size="sm" className="h-8 gap-1" disabled={!isApproved}>
+                <Link href="/seller/products/new">
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Add Product
+                  </span>
+                </Link>
               </Button>
             </div>
           </div>
           <TabsContent value={filter}>
+             {!loading && !isApproved && (
+              <Alert variant="default" className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800">
+                <Info className="h-4 w-4 !text-yellow-800" />
+                <AlertTitle>Account Not Approved</AlertTitle>
+                <AlertDescription>
+                  Your account is not yet approved, so you cannot add new products. Please complete your profile in <Link href="/seller/settings" className="font-semibold underline">Settings</Link> and wait for admin approval.
+                </AlertDescription>
+              </Alert>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle>Your Products</CardTitle>
@@ -192,4 +212,3 @@ import {
       </main>
     )
   }
-  
