@@ -164,11 +164,11 @@ export function Header() {
         </div>
 
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
-          {isClient ? (
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
+                {isClient && (
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
                       <ListItem href="/products" title="All Products">
@@ -184,24 +184,17 @@ export function Header() {
                       ))}
                     </ul>
                   </NavigationMenuContent>
+                )}
+              </NavigationMenuItem>
+              {otherLinks.map((link) => (
+                <NavigationMenuItem key={link.href}>
+                    <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                      <Link href={link.href}>{link.label}</Link>
+                    </NavigationMenuLink>
                 </NavigationMenuItem>
-                {otherLinks.map((link) => (
-                  <NavigationMenuItem key={link.href}>
-                      <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                        <Link href={link.href}>{link.label}</Link>
-                      </NavigationMenuLink>
-                  </NavigationMenuItem>
-                ))}
-              </NavigationMenuList>
-            </NavigationMenu>
-          ) : (
-            <nav className="relative z-10 flex max-w-max flex-1 items-center justify-center">
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-24" />
-              </div>
-            </nav>
-          )}
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
         </div>
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-2">
