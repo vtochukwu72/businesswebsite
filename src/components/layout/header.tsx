@@ -93,7 +93,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center md:hidden">
-          {isClient && (
+          {isClient ? (
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="mr-4">
@@ -154,6 +154,11 @@ export function Header() {
                 </div>
               </SheetContent>
             </Sheet>
+            ) : (
+            <Button variant="outline" size="icon" className="mr-4" disabled>
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+            </Button>
           )}
           <Link href="/" className="flex items-center gap-2 md:hidden">
             <Icons.logo className="h-6 w-6 text-primary" />
