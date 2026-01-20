@@ -1,6 +1,7 @@
 'use client';
-import { File, ListFilter } from 'lucide-react';
+import { File } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,14 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -92,6 +85,21 @@ export default function SellerOrdersPage() {
     }
   }
 
+  const handleExport = () => {
+    const dataToExport = filteredOrders.map(order => ({
+      'Order ID': order.orderNumber,
+      'Customer Name': order.customerName || 'N/A',
+      'Status': order.orderStatus,
+      'Date': new Date(order.createdAt).toLocaleDateString(),
+      'Total (₦)': order.grandTotal.toFixed(2),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+    XLSX.writeFile(workbook, `seller-orders-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <Tabs defaultValue="all" onValueChange={setStatusFilter}>
@@ -103,10 +111,16 @@ export default function SellerOrdersPage() {
             <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
           </TabsList>
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" className="h-8 gap-1">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-8 gap-1"
+              onClick={handleExport}
+              disabled={loading || filteredOrders.length === 0}
+            >
               <File className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Export
+                Export to Excel
               </span>
             </Button>
           </div>
