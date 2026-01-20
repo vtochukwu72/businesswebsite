@@ -1,6 +1,6 @@
 'use server';
 
-import { getFirestore, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import type { Order } from '@/lib/types';
 
@@ -53,6 +53,32 @@ export async function getAllOrders(count?: number): Promise<Order[]> {
     return orderList;
   } catch (error) {
     console.error("Error fetching all orders: ", error);
+    return [];
+  }
+}
+
+export async function getOrdersByUser(userId: string): Promise<Order[]> {
+  if (!userId) return [];
+  try {
+    const ordersCol = collection(db, 'orders');
+    const q = query(ordersCol, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const orderSnapshot = await getDocs(q);
+    
+    if (orderSnapshot.empty) {
+      return [];
+    }
+
+    const orderList = orderSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id, 
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        } as Order;
+    });
+    return orderList;
+  } catch (error) {
+    console.error(`Error fetching orders for user ${userId}: `, error);
     return [];
   }
 }
