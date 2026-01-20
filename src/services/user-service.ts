@@ -1,8 +1,9 @@
 'use server';
 
-import { getFirestore, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { app } from '@/firebase/config';
 import type { User } from '@/lib/types';
+import { getOrdersBySeller } from './order-service';
 
 const db = getFirestore(app);
 
@@ -25,6 +26,56 @@ export async function getUsers(count?: number): Promise<User[]> {
     return userList;
   } catch (error) {
     console.error("Error fetching users: ", error);
+    return [];
+  }
+}
+
+
+export async function getCustomersForSeller(sellerId: string): Promise<User[]> {
+  if (!sellerId) return [];
+  try {
+    const sellerOrders = await getOrdersBySeller(sellerId);
+    if (sellerOrders.length === 0) {
+      return [];
+    }
+
+    const customerIds = [...new Set(sellerOrders.map(order => order.userId))];
+
+    if (customerIds.length === 0) {
+        return [];
+    }
+
+    // Firestore 'in' query is limited to 30 elements.
+    // We need to chunk the requests if there are more.
+    const customerChunks: string[][] = [];
+    for (let i = 0; i < customerIds.length; i += 30) {
+      customerChunks.push(customerIds.slice(i, i + 30));
+    }
+
+    const customerPromises = customerChunks.map(chunk => {
+      const usersCol = collection(db, 'users');
+      // The `id` field in the user document is the same as the doc id (uid)
+      const q = query(usersCol, where('id', 'in', chunk));
+      return getDocs(q);
+    });
+
+    const customerSnapshots = await Promise.all(customerPromises);
+
+    const customers: User[] = [];
+    customerSnapshots.forEach(snapshot => {
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        customers.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        } as User);
+      });
+    });
+
+    return customers;
+  } catch (error) {
+    console.error(`Error fetching customers for seller ${sellerId}:`, error);
     return [];
   }
 }

@@ -1,11 +1,10 @@
 'use client';
 import {
     File,
-    ListFilter,
     PlusCircle,
   } from 'lucide-react'
   import Image from 'next/image';
-  import { useEffect, useState } from 'react';
+  import { useEffect, useState, useMemo } from 'react';
   
   import { Badge } from '@/components/ui/badge'
   import { Button } from '@/components/ui/button'
@@ -17,14 +16,6 @@ import {
     CardHeader,
     CardTitle,
   } from '@/components/ui/card'
-  import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-  } from '@/components/ui/dropdown-menu'
   import {
     Table,
     TableBody,
@@ -70,6 +61,7 @@ import {
     const { user } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');
 
     useEffect(() => {
       async function fetchProducts() {
@@ -83,9 +75,17 @@ import {
       fetchProducts();
     }, [user]);
 
+    const filteredProducts = useMemo(() => {
+      if (filter === 'all') return products;
+      if (filter === 'active') return products.filter(p => p.isActive);
+      if (filter === 'draft') return products.filter(p => !p.isActive);
+      if (filter === 'archived') return []; // No archived state in data model yet
+      return products;
+    }, [products, filter]);
+
     return (
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-        <Tabs defaultValue="all">
+        <Tabs defaultValue="all" onValueChange={setFilter}>
           <div className="flex items-center">
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
@@ -96,27 +96,6 @@ import {
               </TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1">
-                    <ListFilter className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Filter
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem checked>
-                    Active
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>Draft</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>
-                    Archived
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
               <Button size="sm" variant="outline" className="h-8 gap-1">
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -131,10 +110,10 @@ import {
               </Button>
             </div>
           </div>
-          <TabsContent value="all">
+          <TabsContent value={filter}>
             <Card>
               <CardHeader>
-                <CardTitle>Products</CardTitle>
+                <CardTitle>Your Products</CardTitle>
                 <CardDescription>
                   Manage your products and view their sales performance.
                 </CardDescription>
@@ -162,9 +141,10 @@ import {
                         <ProductRowSkeleton />
                         <ProductRowSkeleton />
                         <ProductRowSkeleton />
+                        <ProductRowSkeleton />
                       </>
-                    ) : products.length > 0 ? (
-                      products.map(product => (
+                    ) : filteredProducts.length > 0 ? (
+                      filteredProducts.map(product => (
                         <TableRow key={product.id}>
                           <TableCell className="hidden sm:table-cell">
                             <Image
@@ -194,7 +174,7 @@ import {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">
-                          No products found.
+                          No products found. Add a product to get started.
                         </TableCell>
                       </TableRow>
                     )}
@@ -203,7 +183,7 @@ import {
               </CardContent>
               <CardFooter>
                 <div className="text-xs text-muted-foreground">
-                  Showing <strong>1-{products.length > 0 ? products.length : 0}</strong> of <strong>{products.length}</strong> products
+                  Showing <strong>1-{filteredProducts.length}</strong> of <strong>{filteredProducts.length}</strong> products
                 </div>
               </CardFooter>
             </Card>
