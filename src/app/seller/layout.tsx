@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -91,19 +92,6 @@ function SellerDashboard({ children, pendingOrderCount, authProps }: { children:
                       <SidebarMenuButton href="/seller/settings" leftIcon={<Settings/>}>Settings</SidebarMenuButton>
                   </SidebarMenuItem>
                </SidebarMenu>
-             </SidebarGroup>
-             <SidebarGroup className="mt-auto">
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Upgrade to Pro</CardTitle>
-                      <CardDescription>
-                          Unlock all features and get unlimited access to our support team.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <Button size="sm" className="w-full">Upgrade</Button>
-                  </CardContent>
-              </Card>
              </SidebarGroup>
           </SidebarContent>
         </Sidebar>

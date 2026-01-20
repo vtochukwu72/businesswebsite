@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -67,6 +68,14 @@ export default function SellerSettingsPage() {
   const { toast } = useToast();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    storeName: '',
+    storeDescription: '',
+    nin: '',
+    businessName: '',
+    accountNumber: '',
+    bankName: '',
+  });
 
   const [state, formAction] = useActionState(updateVendorSettings, {
     success: false,
@@ -80,6 +89,16 @@ export default function SellerSettingsPage() {
       setLoading(true);
       const vendorData = await getVendor(user!.uid);
       setVendor(vendorData);
+      if (vendorData) {
+        setFormData({
+            storeName: vendorData.storeName || '',
+            storeDescription: vendorData.storeDescription || '',
+            nin: vendorData.nin || '',
+            businessName: vendorData.payoutDetails?.businessName || '',
+            accountNumber: vendorData.payoutDetails?.accountNumber || '',
+            bankName: vendorData.payoutDetails?.bankName || '',
+        });
+      }
       setLoading(false);
     }
     fetchVendor();
@@ -99,6 +118,12 @@ export default function SellerSettingsPage() {
       });
     }
   }, [state, toast]);
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
 
   const getStatusAlert = (status: Vendor['status']) => {
     switch (status) {
@@ -162,14 +187,14 @@ export default function SellerSettingsPage() {
                  <h3 className="text-lg font-medium">Store Information</h3>
                   <div className="space-y-2">
                     <Label htmlFor="storeName">Store Name</Label>
-                    <Input id="storeName" name="storeName" defaultValue={vendor.storeName}/>
+                    <Input id="storeName" name="storeName" value={formData.storeName} onChange={handleInputChange} />
                      {state.errors?.storeName && (
                         <p className="text-sm text-destructive">{state.errors.storeName.join(', ')}</p>
                     )}
                   </div>
                    <div className="space-y-2">
                     <Label htmlFor="storeDescription">Store Description</Label>
-                    <Textarea id="storeDescription" name="storeDescription" defaultValue={vendor.storeDescription}/>
+                    <Textarea id="storeDescription" name="storeDescription" value={formData.storeDescription} onChange={handleInputChange} />
                   </div>
               </div>
 
@@ -177,7 +202,7 @@ export default function SellerSettingsPage() {
                  <h3 className="text-lg font-medium">Verification Details</h3>
                   <div className="space-y-2">
                     <Label htmlFor="nin">National Identification Number (NIN)</Label>
-                    <Input id="nin" name="nin" defaultValue={vendor.nin}/>
+                    <Input id="nin" name="nin" value={formData.nin} onChange={handleInputChange} />
                      {state.errors?.nin && (
                         <p className="text-sm text-destructive">{state.errors.nin.join(', ')}</p>
                     )}
@@ -189,14 +214,14 @@ export default function SellerSettingsPage() {
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="businessName">Legal Business Name</Label>
-                        <Input id="businessName" name="businessName" defaultValue={vendor.payoutDetails?.businessName || ''}/>
+                        <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleInputChange} />
                         {state.errors?.businessName && (
                             <p className="text-sm text-destructive">{state.errors.businessName.join(', ')}</p>
                         )}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="bankName">Bank Name</Label>
-                        <Input id="bankName" name="bankName" defaultValue={vendor.payoutDetails?.bankName || ''}/>
+                        <Input id="bankName" name="bankName" value={formData.bankName} onChange={handleInputChange} />
                          {state.errors?.bankName && (
                             <p className="text-sm text-destructive">{state.errors.bankName.join(', ')}</p>
                         )}
@@ -204,7 +229,7 @@ export default function SellerSettingsPage() {
                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="accountNumber">Account Number</Label>
-                    <Input id="accountNumber" name="accountNumber" defaultValue={vendor.payoutDetails?.accountNumber || ''}/>
+                    <Input id="accountNumber" name="accountNumber" value={formData.accountNumber} onChange={handleInputChange} />
                      {state.errors?.accountNumber && (
                         <p className="text-sm text-destructive">{state.errors.accountNumber.join(', ')}</p>
                     )}
