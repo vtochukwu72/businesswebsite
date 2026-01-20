@@ -6,7 +6,6 @@ import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { getFirestore, doc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { getApps, initializeApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
-import { useRouter } from 'next/navigation';
 
 // Ensure Firebase is initialized
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
@@ -35,11 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [vendorData, setVendorData] = useState<DocumentData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Step 1: Handle authentication state changes
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setLoading(true); // Set loading to true whenever auth state might be changing
-      setUser(user);
-      if (!user) {
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+      setUser(authUser);
+      if (authUser) {
+        setLoading(true); // Start loading process when user is found
+      } else {
         // If no user, clear all data and stop loading
         setUserData(null);
         setVendorData(null);
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribeAuth();
   }, []);
 
+  // Step 2: Fetch user data when authUser is available
   useEffect(() => {
     if (!user) {
         return; // No user, so no data to fetch
@@ -60,10 +62,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userDocRef, 
       (doc) => {
         if (doc.exists()) {
-          setUserData(doc.data());
+          const data = doc.data();
+          setUserData(data);
+          // If the user is NOT a seller, we have all their data, so we can stop loading.
+          if (data.role !== 'seller') {
+            setVendorData(null);
+            setLoading(false);
+          }
         } else {
+          // User document doesn't exist.
           setUserData(null);
-          setLoading(false); // No user data, stop loading
+          setLoading(false);
         }
       }, 
       (error) => {
@@ -76,13 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribeFirestore();
   }, [user]);
 
+  // Step 3: Fetch vendor data only if the user is a seller
   useEffect(() => {
-    if (!user || userData === null) {
-      // If there is a user but we are waiting for userData, don't do anything yet.
-      // If there's no user, the auth useEffect handles setting loading to false.
-      if (user && userData === null) {
-        // This case can happen briefly. We wait for userData to populate.
-      }
+    if (!user || !userData) {
+      // Don't do anything if we don't have user or userData yet
       return;
     }
 
@@ -94,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setVendorData(null);
         }
-        setLoading(false); // We have all relevant data now.
+        setLoading(false); // Loading is complete for the seller
       }, (error) => {
         console.error('Error fetching vendor data:', error);
         setVendorData(null);
@@ -102,11 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       return () => unsubscribeVendor();
-    } else {
-      // Not a seller, clear vendor data and stop loading.
-      setVendorData(null);
-      setLoading(false);
     }
+    // If user is not a seller, the previous useEffect already handled setting loading to false.
   }, [user, userData]);
 
 
