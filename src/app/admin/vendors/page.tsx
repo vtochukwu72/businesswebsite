@@ -1,5 +1,8 @@
+
 'use client';
-import { useEffect, useState, useMemo, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,7 +27,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getVendors } from '@/services/vendor-service';
 import type { Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal } from 'lucide-react';
@@ -57,13 +59,21 @@ export default function AdminVendorsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchVendors() {
-      setLoading(true);
-      const fetchedVendors = await getVendors();
+    setLoading(true);
+    const vendorsCollection = collection(db, 'vendors');
+    const q = query(vendorsCollection);
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedVendors: Vendor[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedVendors.push({ id: doc.id, ...doc.data() } as Vendor);
+      });
       setVendors(fetchedVendors);
       setLoading(false);
-    }
-    fetchVendors();
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const handleStatusChange = (
@@ -73,9 +83,7 @@ export default function AdminVendorsPage() {
     startTransition(async () => {
       const result = await updateVendorStatus(vendorId, status);
       if (result.success) {
-        setVendors((prevVendors) =>
-          prevVendors.map((v) => (v.id === vendorId ? { ...v, status } : v))
-        );
+        // Local state update is no longer needed; onSnapshot will handle it.
         toast({
           title: 'Status Updated',
           description: result.message,
@@ -205,5 +213,3 @@ export default function AdminVendorsPage() {
     </main>
   );
 }
-
-    
