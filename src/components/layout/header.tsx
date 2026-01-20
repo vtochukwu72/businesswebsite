@@ -95,14 +95,14 @@ export function Header() {
         </div>
 
         <div className="flex items-center md:hidden">
-          {isClient ? (
-            <Sheet>
+          <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="mr-4">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle navigation menu</span>
                 </Button>
               </SheetTrigger>
+             {isClient && (
               <SheetContent side="left" className="flex flex-col">
                 <SheetHeader>
                   <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
@@ -139,7 +139,7 @@ export function Header() {
                     ))}
                   </nav>
                   <div className="mt-auto">
-                    {!loading && !user && isClient && (
+                    {!loading && !user && (
                         <>
                             <Separator className="my-4" />
                             <div className="grid gap-2">
@@ -155,19 +155,16 @@ export function Header() {
                   </div>
                 </div>
               </SheetContent>
+             )}
             </Sheet>
-            ) : (
-            <Button variant="outline" size="icon" className="mr-4" disabled>
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
+
           <Link href="/" className="flex items-center gap-2 md:hidden">
             <Icons.logo className="h-6 w-6 text-primary" />
             <span className="font-bold sr-only sm:not-sr-only">E-Commerce</span>
           </Link>
         </div>
 
-        <nav className="hidden items-center gap-4 text-sm font-medium md:flex">
+        <div className="hidden items-center gap-4 text-sm font-medium md:flex">
           {isClient ? (
             <NavigationMenu>
               <NavigationMenuList>
@@ -199,12 +196,12 @@ export function Header() {
               </NavigationMenuList>
             </NavigationMenu>
           ) : (
-             <div className="flex items-center gap-4">
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-5 w-20" />
+             <div className="flex items-center gap-1">
+                <Skeleton className="h-10 w-24 rounded-md" />
+                <Skeleton className="h-10 w-24 rounded-md" />
             </div>
           )}
-        </nav>
+        </div>
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-2">
           <div className="w-full flex-1 md:w-auto md:flex-none">
@@ -227,7 +224,7 @@ export function Header() {
             </Button>
           </Link>
 
-          {!isClient || loading ? (
+          {loading || !isClient ? (
             <div className="hidden sm:flex items-center gap-2">
                 <Skeleton className="h-10 w-10 rounded-full" />
             </div>
