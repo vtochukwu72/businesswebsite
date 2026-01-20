@@ -93,23 +93,29 @@ export default function AdminLoginPage() {
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
       
-      const userData = userDoc.data();
-
-      if (userDoc.exists() && !['admin', 'super_admin'].includes(userData?.role)) {
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'This is not an admin account.' });
+      if (!userDoc.exists()) {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'No admin account found with this email.',
+        });
         await auth.signOut();
+        router.push('/admin-register');
         return;
       }
-      
-      if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          id: user.uid,
-          displayName: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          role: 'admin',
-          createdAt: serverTimestamp(),
-        });
+
+      const userData = userDoc.data();
+
+      if (!['admin', 'super_admin'].includes(userData?.role)) {
+        const role = userData.role || 'user';
+        let loginPath = '/login';
+        if (role === 'customer') loginPath = '/login';
+        if (role === 'seller') loginPath = '/seller-login';
+
+        toast({ variant: 'destructive', title: 'Incorrect Role', description: `This is a ${role} account. Please use the correct login page.` });
+        await auth.signOut();
+        router.push(loginPath);
+        return;
       }
       
       const idToken = await user.getIdToken();
@@ -123,6 +129,7 @@ export default function AdminLoginPage() {
         router.push('/admin');
       } else {
         toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: sessionResult.message });
+        await auth.signOut();
       }
     } catch (error: any) {
       toast({

@@ -87,30 +87,38 @@ export default function LoginPage() {
       const userCredential = await signInWithPopup(auth, provider);
       const user = userCredential.user;
 
-      const userRef = doc(db, "users", user.uid);
+      const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
 
-      if (userDoc.exists() && userDoc.data().role !== 'customer') {
+      // User does not have a record in our database
+      if (!userDoc.exists()) {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: 'This is not a customer account. Please use the appropriate login page.',
+          description: 'No account found with this email. Please register first.',
         });
         await auth.signOut();
+        router.push('/register');
         return;
       }
+      
+      const userData = userDoc.data();
 
-      if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          id: user.uid,
-          displayName: user.displayName,
-          fname: user.displayName?.split(' ')[0] || '',
-          lname: user.displayName?.split(' ')[1] || '',
-          email: user.email,
-          photoURL: user.photoURL,
-          role: 'customer',
-          createdAt: serverTimestamp(),
-        });
+      // Check for correct role
+      if (userData.role !== 'customer') {
+          const role = userData.role || 'user';
+          let loginPath = '/login'; // default
+          if (role === 'seller') loginPath = '/seller-login';
+          if (['admin', 'super_admin'].includes(role)) loginPath = '/admin-login';
+          
+          toast({
+            variant: 'destructive',
+            title: 'Incorrect Role',
+            description: `This is a ${role} account. Please use the correct login page.`,
+          });
+          await auth.signOut();
+          router.push(loginPath);
+          return;
       }
       
       const idToken = await user.getIdToken();
@@ -124,6 +132,7 @@ export default function LoginPage() {
         router.push('/');
       } else {
         toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: sessionResult.message });
+        await auth.signOut();
       }
     } catch (error: any) {
       toast({

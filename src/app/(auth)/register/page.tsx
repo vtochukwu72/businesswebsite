@@ -114,17 +114,30 @@ export default function RegisterPage() {
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
       
-      if (userDoc.exists() && userDoc.data().role !== 'customer') {
-        toast({
-          variant: 'destructive',
-          title: 'Sign-Up Failed',
-          description: 'An account with this email already exists with a different role. Please use the appropriate login page.',
-        });
-        await auth.signOut();
-        return;
-      }
+      // If user already exists, handle redirection or login
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.role === 'customer') {
+            // This is just a login attempt for an existing customer
+            toast({ title: 'Welcome Back!', description: 'You already have an account. Logging you in.' });
+        } else {
+            // User exists but has a different role
+            const role = userData.role || 'user';
+            let loginPath = '/login'; // default
+            if (role === 'seller') loginPath = '/seller-login';
+            if (['admin', 'super_admin'].includes(role)) loginPath = '/admin-login';
 
-      if (!userDoc.exists()) {
+            toast({
+                variant: 'destructive',
+                title: 'Account Exists',
+                description: `An account with this email already exists as a ${role}. Please use the correct login page.`,
+            });
+            await auth.signOut();
+            router.push(loginPath);
+            return;
+        }
+      } else {
+        // User does not exist, create a new customer account
         await setDoc(userRef, {
           id: user.uid,
           displayName: user.displayName,
@@ -148,15 +161,11 @@ export default function RegisterPage() {
 
         toast({
           title: 'Account Created!',
-          description: 'Welcome! Redirecting you to the homepage.',
-        });
-      } else {
-        toast({
-          title: 'Welcome Back!',
-          description: 'Redirecting you to the homepage.',
+          description: 'Welcome! You are now logged in.',
         });
       }
       
+      // Proceed to create session and log the user in
       const idToken = await user.getIdToken();
       const sessionResult = await createSession(idToken);
 
@@ -164,6 +173,7 @@ export default function RegisterPage() {
         router.push('/');
       } else {
         toast({ variant: 'destructive', title: 'Sign-Up Failed', description: sessionResult.message });
+        await auth.signOut();
       }
     } catch (error: any) {
       toast({

@@ -92,23 +92,29 @@ export default function SellerLoginPage() {
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
 
-      if (userDoc.exists() && userDoc.data().role !== 'seller') {
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'This is not a seller account.' });
+      if (!userDoc.exists()) {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'No seller account found. Please register as a seller first.',
+        });
         await auth.signOut();
+        router.push('/seller-register');
         return;
       }
-      
-      if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          id: user.uid,
-          displayName: user.displayName,
-          fname: user.displayName?.split(' ')[0] || '',
-          lname: user.displayName?.split(' ')[1] || '',
-          email: user.email,
-          photoURL: user.photoURL,
-          role: 'seller',
-          createdAt: serverTimestamp(),
-        });
+
+      const userData = userDoc.data();
+
+      if (userData.role !== 'seller') {
+          const role = userData.role || 'user';
+          let loginPath = '/login'; // default
+          if (role === 'customer') loginPath = '/login';
+          if (['admin', 'super_admin'].includes(role)) loginPath = '/admin-login';
+
+          toast({ variant: 'destructive', title: 'Incorrect Role', description: `This is a ${role} account. Please use the correct login page.` });
+          await auth.signOut();
+          router.push(loginPath);
+          return;
       }
       
       const idToken = await user.getIdToken();
@@ -122,6 +128,7 @@ export default function SellerLoginPage() {
         router.push('/seller');
       } else {
         toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: sessionResult.message });
+        await auth.signOut();
       }
     } catch (error: any) {
       toast({
