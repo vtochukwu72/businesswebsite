@@ -2,11 +2,12 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getApps, initializeApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getAdminApp } from '@/firebase/admin-config';
+import { revalidatePath } from 'next/cache';
 
 
 // Ensure Firebase is initialized
@@ -107,3 +108,27 @@ export async function saveUserAddress(prevState: any, formData: FormData) {
   }
 }
 
+export async function toggleWishlist(userId: string, productId: string, isInWishlist: boolean) {
+  if (!userId) {
+    return { success: false, message: 'User not logged in.' };
+  }
+
+  const userRef = doc(db, 'users', userId);
+
+  try {
+    if (isInWishlist) {
+      await updateDoc(userRef, {
+        wishlist: arrayRemove(productId)
+      });
+    } else {
+      await updateDoc(userRef, {
+        wishlist: arrayUnion(productId)
+      });
+    }
+    revalidatePath('/account/wishlist');
+    return { success: true, message: isInWishlist ? 'Removed from wishlist' : 'Added to wishlist' };
+  } catch (error) {
+    console.error("Error toggling wishlist:", error);
+    return { success: false, message: 'An unexpected error occurred.' };
+  }
+}

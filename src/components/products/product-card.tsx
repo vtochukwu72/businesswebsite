@@ -13,6 +13,9 @@ import {
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/auth-context';
+import { toggleWishlist } from '@/app/(main)/account/actions';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   product: Product;
@@ -21,9 +24,13 @@ interface ProductCardProps {
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const { toast } = useToast();
+  const { user, userData } = useAuth();
+  const router = useRouter();
 
   const hasDiscount =
     product.discountedPrice && product.discountedPrice < product.price;
+  
+  const isInWishlist = userData?.wishlist?.includes(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -33,6 +40,33 @@ export function ProductCard({ product, className }: ProductCardProps) {
     })
   }
 
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: "Please log in",
+        description: "You need to be logged in to manage your wishlist.",
+      });
+      router.push('/login');
+      return;
+    }
+    const result = await toggleWishlist(user.uid, product.id, !!isInWishlist);
+    if (result.success) {
+      toast({
+        title: result.message,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: "Something went wrong",
+        description: result.message || "Could not update your wishlist.",
+      });
+    }
+  };
+
+
   return (
     <Card
       className={cn(
@@ -41,6 +75,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
       )}
     >
       <CardHeader className="relative p-0">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="absolute top-2 left-2 z-10 h-8 w-8 rounded-full bg-background/70 hover:bg-background"
+          onClick={handleWishlistToggle}
+          aria-label="Toggle Wishlist"
+        >
+          <Heart className={cn("h-4 w-4", isInWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
+        </Button>
+
         <Link href={`/products/${product.id}`} className="block">
           <Image
             src={product.images[0]}

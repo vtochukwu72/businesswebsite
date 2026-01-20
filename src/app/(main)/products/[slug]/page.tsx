@@ -1,6 +1,6 @@
 'use client';
 import Image from 'next/image';
-import { Star, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { Star, Plus, Minus, ShoppingCart, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,6 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Product, Review } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { getProduct } from '@/services/product-service';
+import { useAuth } from '@/context/auth-context';
+import { toggleWishlist } from '@/app/(main)/account/actions';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export default function ProductDetailPage({
   params,
@@ -16,6 +21,11 @@ export default function ProductDetailPage({
 }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user, userData } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const isInWishlist = userData?.wishlist?.includes(params.slug);
   
   useEffect(() => {
     async function fetchProduct() {
@@ -26,6 +36,32 @@ export default function ProductDetailPage({
     }
     fetchProduct();
   }, [params.slug]);
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: "Please log in",
+            description: "You need to be logged in to manage your wishlist.",
+        });
+        router.push('/login');
+        return;
+    }
+    const result = await toggleWishlist(user.uid, params.slug, !!isInWishlist);
+    if (result.success) {
+        toast({
+            title: result.message,
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: "Something went wrong",
+            description: result.message || "Could not update your wishlist.",
+        });
+    }
+  }
+
 
   // Placeholder for reviews
   const reviews: Review[] = [];
@@ -116,6 +152,9 @@ export default function ProductDetailPage({
             </div>
             <Button size="lg" className="flex-1">
               <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+            </Button>
+            <Button size="icon" variant="outline" onClick={handleWishlistToggle} aria-label="Toggle Wishlist">
+              <Heart className={cn("h-5 w-5", isInWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
             </Button>
           </div>
         </div>
