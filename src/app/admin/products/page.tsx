@@ -36,8 +36,8 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { getProducts } from '@/services/product-service';
-import { getUsers } from '@/services/user-service';
-import type { Product, User } from '@/lib/types';
+import { getVendors } from '@/services/vendor-service';
+import type { Product, Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function ProductRowSkeleton() {
@@ -51,26 +51,27 @@ function ProductRowSkeleton() {
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
     </TableRow>
   );
 }
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [users, setUsers] = useState<Map<string, User>>(new Map());
+  const [vendors, setVendors] = useState<Map<string, Vendor>>(new Map());
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const [fetchedProducts, fetchedUsers] = await Promise.all([
+      const [fetchedProducts, fetchedVendors] = await Promise.all([
         getProducts(),
-        getUsers()
+        getVendors()
       ]);
       setProducts(fetchedProducts);
-      const userMap = new Map(fetchedUsers.map(user => [user.id, user]));
-      setUsers(userMap);
+      const vendorMap = new Map(fetchedVendors.map(vendor => [vendor.id, vendor]));
+      setVendors(vendorMap);
       setLoading(false);
     }
     fetchData();
@@ -85,8 +86,25 @@ export default function AdminProductsPage() {
   }, [products, filter]);
 
   const getSellerName = (sellerId: string) => {
-    return users.get(sellerId)?.displayName || sellerId;
+    return vendors.get(sellerId)?.storeName || sellerId;
   }
+  
+  const getVendorStatus = (sellerId: string): Vendor['status'] | undefined => {
+    return vendors.get(sellerId)?.status;
+  }
+  
+  const getVendorBadgeVariant = (status: Vendor['status'] | undefined) => {
+    switch (status) {
+      case 'approved':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'suspended':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
 
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -139,6 +157,9 @@ export default function AdminProductsPage() {
                       Seller
                     </TableHead>
                     <TableHead className="hidden md:table-cell">
+                      Vendor Status
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell">
                       Stock
                     </TableHead>
                   </TableRow>
@@ -175,13 +196,23 @@ export default function AdminProductsPage() {
                           {getSellerName(product.sellerId)}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
+                          {(() => {
+                            const status = getVendorStatus(product.sellerId);
+                            return (
+                              <Badge variant={getVendorBadgeVariant(status)} className="capitalize">
+                                {status || 'Unknown'}
+                              </Badge>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {product.stockQuantity}
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                      <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell colSpan={7} className="h-24 text-center">
                         No products found.
                       </TableCell>
                     </TableRow>
