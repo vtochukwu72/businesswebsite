@@ -54,6 +54,7 @@ export default function LoginPage() {
         if (!userDoc.exists() || userDoc.data().role !== 'customer') {
              setErrors({ general: 'Access Denied: Not a customer account.'});
              toast({ variant: 'destructive', title: 'Login Failed', description: 'Access Denied: Not a customer account.' });
+             await auth.signOut();
              return;
         }
 

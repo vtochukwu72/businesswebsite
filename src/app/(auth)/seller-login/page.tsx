@@ -55,6 +55,7 @@ export default function SellerLoginPage() {
         if (!userDoc.exists() || userDoc.data().role !== 'seller') {
              setErrors({ general: 'Access Denied: Not a seller account.'});
              toast({ variant: 'destructive', title: 'Login Failed', description: 'Access Denied: Not a seller account.' });
+             await auth.signOut();
              return;
         }
 

@@ -56,6 +56,7 @@ export default function AdminLoginPage() {
         if (!userDoc.exists() || !['admin', 'super_admin'].includes(userDoc.data().role)) {
              setErrors({ general: 'Access Denied: Not an admin account.'});
              toast({ variant: 'destructive', title: 'Login Failed', description: 'Access Denied: Not an admin account.' });
+             await auth.signOut();
              return;
         }
 
