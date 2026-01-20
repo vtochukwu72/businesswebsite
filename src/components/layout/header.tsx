@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -164,26 +165,27 @@ export function Header() {
         </div>
 
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
-          {isClient && (
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
-                      <ListItem href="/products" title="All Products">
-                        Browse our full collection of amazing products.
-                      </ListItem>
-                      <ListItem href="/products" title="Deals">
-                        Check out our latest deals and special offers.
-                      </ListItem>
-                      {categories.map((category) => (
-                        <ListItem key={category} href="/products" title={category}>
-                          Shop all items in the {category} category.
+                   {isClient && (
+                    <NavigationMenuContent>
+                        <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                        <ListItem href="/products" title="All Products">
+                            Browse our full collection of amazing products.
                         </ListItem>
-                      ))}
-                    </ul>
-                  </NavigationMenuContent>
+                        <ListItem href="/products" title="Deals">
+                            Check out our latest deals and special offers.
+                        </ListItem>
+                        {categories.map((category) => (
+                            <ListItem key={category} href="/products" title={category}>
+                            Shop all items in the {category} category.
+                            </ListItem>
+                        ))}
+                        </ul>
+                    </NavigationMenuContent>
+                   )}
                 </NavigationMenuItem>
                 {otherLinks.map((link) => (
                   <NavigationMenuItem key={link.href}>
@@ -194,7 +196,6 @@ export function Header() {
                 ))}
               </NavigationMenuList>
             </NavigationMenu>
-          )}
         </div>
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-2">
@@ -220,7 +221,8 @@ export function Header() {
 
           {loading || !isClient ? (
             <div className="hidden sm:flex items-center gap-2">
-                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
             </div>
           ) : user ? (
             <DropdownMenu>
