@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -10,7 +9,15 @@ import {
   ShoppingCart,
   Users,
 } from 'lucide-react';
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,13 +27,35 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useAuth } from '@/context/auth-context';
+import { useAuth, AuthContextType } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
 import { getOrdersBySeller } from '@/services/order-service';
+import { useToast } from '@/hooks/use-toast';
 
-function SellerDashboard({ children, pendingOrderCount }: { children: React.ReactNode; pendingOrderCount: number }) {
+function SellerDashboard({ children, pendingOrderCount, authProps }: { children: React.ReactNode; pendingOrderCount: number, authProps: AuthContextType }) {
+  const { user, userData, logout } = authProps;
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/seller-login');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'An error occurred while logging out.',
+      });
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -80,10 +109,33 @@ function SellerDashboard({ children, pendingOrderCount }: { children: React.Reac
             <div className="w-full flex-1">
               {/* Can add a search bar here if needed */}
             </div>
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Toggle notifications</span>
+             <Button variant="outline" size="icon" className="relative h-8 w-8">
+                <Bell className="h-4 w-4" />
+                 {pendingOrderCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full p-0 text-xs">{pendingOrderCount}</Badge>
+                )}
+                <span className="sr-only">Toggle notifications</span>
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={user?.photoURL || userData?.photoURL || ''} alt={userData?.displayName || 'Seller'} />
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {(userData?.fname?.[0] || userData?.displayName?.[0] || user?.email?.[0] || 'S').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link href="/seller">Dashboard</Link></DropdownMenuItem>
+                <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </header>
           <SidebarInset>
              {children}
@@ -99,7 +151,8 @@ export default function SellerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, userData, loading } = useAuth();
+  const authProps = useAuth();
+  const { user, userData, loading } = authProps;
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
@@ -144,6 +197,6 @@ export default function SellerLayout({
   }
 
   return (
-    <SellerDashboard pendingOrderCount={pendingOrderCount}>{children}</SellerDashboard>
+    <SellerDashboard pendingOrderCount={pendingOrderCount} authProps={authProps}>{children}</SellerDashboard>
   );
 }

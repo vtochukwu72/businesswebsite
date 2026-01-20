@@ -13,7 +13,7 @@ const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   userData: DocumentData | null;
   loading: boolean;
