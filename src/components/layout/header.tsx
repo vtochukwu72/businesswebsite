@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -94,66 +95,72 @@ export function Header() {
         </div>
 
         <div className="flex items-center md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="mr-4">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              <SheetHeader>
-                <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
-              </SheetHeader>
-              <div className="flex h-full flex-col">
-                <nav className="grid gap-6 text-lg font-medium">
-                  <Link
-                    href="/"
-                    className="flex items-center gap-2 text-lg font-semibold"
-                  >
-                    <Icons.logo className="h-6 w-6 text-primary" />
-                    <span>E-Commerce</span>
-                  </Link>
-                  <Link href="/products" className="hover:text-foreground">
-                    Shop
-                  </Link>
-                  {categories.map((category) => (
+          {isClient ? (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="mr-4">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col">
+                <SheetHeader>
+                  <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
+                </SheetHeader>
+                <div className="flex h-full flex-col">
+                  <nav className="grid gap-6 text-lg font-medium">
                     <Link
-                      href="/products"
-                      key={category}
-                      className="text-muted-foreground hover:text-foreground"
+                      href="/"
+                      className="flex items-center gap-2 text-lg font-semibold"
                     >
-                      {category}
+                      <Icons.logo className="h-6 w-6 text-primary" />
+                      <span>E-Commerce</span>
                     </Link>
-                  ))}
-                  {otherLinks.map((link) => (
-                    <Link
-                      href={link.href}
-                      key={link.href + link.label}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {link.label}
+                    <Link href="/products" className="hover:text-foreground">
+                      Shop
                     </Link>
-                  ))}
-                </nav>
-                <div className="mt-auto">
-                  {!loading && !user && isClient && (
-                      <>
-                          <Separator className="my-4" />
-                          <div className="grid gap-2">
-                              <Button asChild>
-                                  <Link href="/login">Sign In</Link>
-                              </Button>
-                              <Button asChild variant="outline">
-                                  <Link href="/register">Register</Link>
-                              </Button>
-                          </div>
-                      </>
-                  )}
+                    {categories.map((category) => (
+                      <Link
+                        href="/products"
+                        key={category}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {category}
+                      </Link>
+                    ))}
+                    {otherLinks.map((link) => (
+                      <Link
+                        href={link.href}
+                        key={link.href + link.label}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </nav>
+                  <div className="mt-auto">
+                    {!loading && !user && isClient && (
+                        <>
+                            <Separator className="my-4" />
+                            <div className="grid gap-2">
+                                <Button asChild>
+                                    <Link href="/login">Sign In</Link>
+                                </Button>
+                                <Button asChild variant="outline">
+                                    <Link href="/register">Register</Link>
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+            ) : (
+            <Button variant="outline" size="icon" className="mr-4" disabled>
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
           <Link href="/" className="flex items-center gap-2 md:hidden">
             <Icons.logo className="h-6 w-6 text-primary" />
             <span className="font-bold sr-only sm:not-sr-only">E-Commerce</span>
@@ -161,35 +168,42 @@ export function Header() {
         </div>
 
         <nav className="hidden items-center gap-4 text-sm font-medium md:flex">
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
-                    <ListItem href="/products" title="All Products">
-                      Browse our full collection of amazing products.
-                    </ListItem>
-                    <ListItem href="/products" title="Deals">
-                      Check out our latest deals and special offers.
-                    </ListItem>
-                    {categories.map((category) => (
-                      <ListItem key={category} href="/products" title={category}>
-                        Shop all items in the {category} category.
+          {isClient ? (
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                      <ListItem href="/products" title="All Products">
+                        Browse our full collection of amazing products.
                       </ListItem>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              {otherLinks.map((link) => (
-                <NavigationMenuItem key={link.href}>
-                    <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                      <Link href={link.href}>{link.label}</Link>
-                    </NavigationMenuLink>
+                      <ListItem href="/products" title="Deals">
+                        Check out our latest deals and special offers.
+                      </ListItem>
+                      {categories.map((category) => (
+                        <ListItem key={category} href="/products" title={category}>
+                          Shop all items in the {category} category.
+                        </ListItem>
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
                 </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
+                {otherLinks.map((link) => (
+                  <NavigationMenuItem key={link.href}>
+                      <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                        <Link href={link.href}>{link.label}</Link>
+                      </NavigationMenuLink>
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
+          ) : (
+             <div className="flex items-center gap-4">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-20" />
+            </div>
+          )}
         </nav>
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-2">
