@@ -1,44 +1,84 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useMemo, Suspense } from 'react';
+import { useMemo, Suspense, useEffect, useState } from 'react';
 import type { Product } from '@/lib/types';
 import { ProductCard } from '@/components/products/product-card';
-import { products as staticProducts } from '@/lib/static-data';
+import { getProducts } from '@/services/product-service';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function ProductSkeleton() {
+  return (
+    <div className="flex flex-col space-y-3">
+      <Skeleton className="h-[250px] w-full rounded-xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[200px]" />
+        <Skeleton className="h-4 w-[150px]" />
+      </div>
+    </div>
+  )
+}
+
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const q = searchParams.get('q');
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      setLoading(true);
+      const fetchedProducts = await getProducts();
+      setAllProducts(fetchedProducts);
+      setLoading(false);
+    }
+    fetchProducts();
+  }, []);
   
-  const products = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     if (!q) return [];
-    return staticProducts.filter(p => p.name.toLowerCase().includes(q.toLowerCase()));
-  }, [q]);
+    const lowerCaseQuery = q.toLowerCase();
+    return allProducts.filter(p => 
+        p.name.toLowerCase().includes(lowerCaseQuery) ||
+        p.description.toLowerCase().includes(lowerCaseQuery) ||
+        p.category.toLowerCase().includes(lowerCaseQuery) ||
+        p.brand.toLowerCase().includes(lowerCaseQuery)
+    );
+  }, [q, allProducts]);
 
   return (
     <div className="container py-8">
       <h1 className="text-3xl font-bold mb-6">
-        {q ? `${products.length} results for "${q}"` : 'Please enter a search term'}
+        {loading && q
+          ? `Searching for "${q}"...`
+          : q
+          ? `${filteredProducts.length} results for "${q}"`
+          : 'Please enter a search term'}
       </h1>
       
       {q ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products?.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        loading ? (
+           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => <ProductSkeleton key={i} />)}
+          </div>
+        ) : filteredProducts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold">No products found</h2>
+            <p className="text-muted-foreground mt-2">
+              We couldn&apos;t find any products matching your search for "{q}".
+            </p>
+          </div>
+        )
       ) : (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Please enter a search term in the header to find products.</p>
-        </div>
-      )}
-
-      {products?.length === 0 && q && (
-        <div className="text-center py-12">
-          <h2 className="text-xl font-semibold">No products found</h2>
-          <p className="text-muted-foreground mt-2">
-            We couldn&apos;t find any products matching your search.
-          </p>
         </div>
       )}
     </div>
