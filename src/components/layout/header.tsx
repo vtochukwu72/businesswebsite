@@ -196,10 +196,12 @@ export function Header() {
               </NavigationMenuList>
             </NavigationMenu>
           ) : (
-             <div className="flex items-center gap-1">
-                <Skeleton className="h-10 w-24 rounded-md" />
-                <Skeleton className="h-10 w-24 rounded-md" />
-            </div>
+            <nav className="relative z-10 flex max-w-max flex-1 items-center justify-center">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </nav>
           )}
         </div>
 
