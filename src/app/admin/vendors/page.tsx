@@ -1,9 +1,7 @@
 'use client';
-import { useEffect, useState, useTransition, useMemo } from 'react';
-import { collection, query, onSnapshot, doc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -24,7 +22,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -43,6 +40,7 @@ import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 
 function VendorRowSkeleton() {
   return (
@@ -66,17 +64,16 @@ export default function AdminVendorsPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const { toast } = useToast();
 
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Only fetch data if an authenticated user is present
-    if (!user) {
-        if (!authLoading) {
-            setDataLoading(false);
-        }
+    if (!user && !authLoading) {
+        setDataLoading(false);
         return;
     }
+    if (!user) return;
+
 
     setDataLoading(true);
     const vendorsCollection = collection(db, 'vendors');
@@ -104,30 +101,22 @@ export default function AdminVendorsPage() {
       }
     );
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [user, authLoading, toast]);
-  
-  // This effect ensures that the data in the dialog is always live.
-  // It listens for changes in the main `vendors` list and updates `selectedVendor`
-  // if it's currently open in the dialog.
-  useEffect(() => {
-    if (selectedVendor) {
-      const updatedVendor = vendors.find(v => v.id === selectedVendor.id);
-      if (updatedVendor) {
-        setSelectedVendor(updatedVendor);
-      } else {
-        // The vendor was deleted, so close the dialog.
-        setDetailsDialogOpen(false);
-        setSelectedVendor(null);
-      }
-    }
-  }, [vendors, selectedVendor]);
 
-  const handleViewDetails = (vendor: Vendor) => {
-    setSelectedVendor(vendor);
+  const handleViewDetails = (vendorId: string) => {
+    setSelectedVendorId(vendorId);
     setDetailsDialogOpen(true);
   };
+
+  const handleDialogClose = (open: boolean) => {
+    setDetailsDialogOpen(open);
+    if (!open) {
+        setSelectedVendorId(null);
+    }
+  }
+
+  const selectedVendor = selectedVendorId ? vendors.find(v => v.id === selectedVendorId) : null;
   
   const isLoading = authLoading || dataLoading;
 
@@ -182,7 +171,7 @@ export default function AdminVendorsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                              <DropdownMenuItem
-                              onSelect={() => handleViewDetails(vendor)}
+                              onSelect={() => handleViewDetails(vendor.id)}
                             >
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
@@ -205,83 +194,85 @@ export default function AdminVendorsPage() {
         </Card>
       </main>
 
-      {selectedVendor && (
-        <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+      
+        <Dialog open={detailsDialogOpen} onOpenChange={handleDialogClose}>
           <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Vendor Details</DialogTitle>
-              <DialogDescription>
-                Full profile for{' '}
-                <span className="font-semibold">
-                  {selectedVendor.storeName}
-                </span>
-                . Data is live.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6 text-sm">
-              <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Store Name</Label>
-                <div className="col-span-3 font-semibold">{selectedVendor.storeName}</div>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-x-4 gap-y-2">
-                <Label className="text-right mt-1 text-muted-foreground">Description</Label>
-                <div className="col-span-3">
-                  {selectedVendor.storeDescription || 'N/A'}
-                </div>
-              </div>
+            {!selectedVendor ? (
+                 <DialogHeader>
+                    <DialogTitle>Loading...</DialogTitle>
+                    <div className="py-4">
+                        <Skeleton className="h-4 w-1/2 mb-4"/>
+                        <Skeleton className="h-20 w-full"/>
+                    </div>
+                </DialogHeader>
+            ) : (
+                <>
+                    <DialogHeader>
+                    <DialogTitle>{selectedVendor.storeName}</DialogTitle>
+                    <DialogDescription>
+                        Live details for this vendor. Last updated: {selectedVendor.updatedAt ? new Date(selectedVendor.updatedAt.seconds * 1000).toLocaleString() : 'N/A'}
+                    </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto pr-6 text-sm">
+                        
+                        {/* Store Information */}
+                        <div>
+                            <h3 className="text-lg font-medium mb-2">Store Information</h3>
+                            <Separator />
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                                <Label className="text-muted-foreground">Store Name</Label>
+                                <div className="md:col-span-2 font-semibold">{selectedVendor.storeName}</div>
+                                
+                                <Label className="text-muted-foreground">Email</Label>
+                                <div className="md:col-span-2">{selectedVendor.email}</div>
 
-              <Separator className="my-2" />
+                                <Label className="text-muted-foreground">Phone</Label>
+                                <div className="md:col-span-2">{selectedVendor.phone || 'N/A'}</div>
 
-               <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Email</Label>
-                <div className="col-span-3">{selectedVendor.email}</div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Phone</Label>
-                <div className="col-span-3">{selectedVendor.phone || 'N/A'}</div>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-x-4 gap-y-2">
-                <Label className="text-right mt-1 text-muted-foreground">Address</Label>
-                <div className="col-span-3">{selectedVendor.address || 'N/A'}</div>
-              </div>
+                                <Label className="text-muted-foreground">Address</Label>
+                                <div className="md:col-span-2">{selectedVendor.address || 'N/A'}</div>
 
-               <Separator className="my-2" />
-               <h4 className="font-medium col-span-4 -mb-2">Verification</h4>
+                                <Label className="text-muted-foreground pt-1">Description</Label>
+                                <div className="md:col-span-2 whitespace-pre-wrap">{selectedVendor.storeDescription || 'N/A'}</div>
+                            </div>
+                        </div>
 
-               <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">NIN</Label>
-                <div className="col-span-3 font-mono">{selectedVendor.nin || 'Not Provided'}</div>
-              </div>
+                        {/* Verification Details */}
+                        <div>
+                            <h3 className="text-lg font-medium mb-2">Verification</h3>
+                            <Separator />
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                                <Label className="text-muted-foreground">NIN</Label>
+                                <div className="md:col-span-2 font-mono">{selectedVendor.nin || 'Not Provided'}</div>
+                            </div>
+                        </div>
 
-              <Separator className="my-2" />
-              <h4 className="font-medium col-span-4 -mb-2">Payout Details</h4>
-              <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Account Name</Label>
-                <div className="col-span-3">
-                  {selectedVendor.payoutDetails?.businessName || 'Not Provided'}
-                </div>
-              </div>
-               <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Bank Name</Label>
-                <div className="col-span-3">
-                  {selectedVendor.payoutDetails?.bankName || 'Not Provided'}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Account No.</Label>
-                <div className="col-span-3 font-mono">
-                  {selectedVendor.payoutDetails?.accountNumber || 'Not Provided'}
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button">Close</Button>
-              </DialogClose>
-            </DialogFooter>
+                        {/* Payout Details */}
+                        <div>
+                            <h3 className="text-lg font-medium mb-2">Payout Details</h3>
+                            <Separator />
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                                <Label className="text-muted-foreground">Account Name</Label>
+                                <div className="md:col-span-2">{selectedVendor.payoutDetails?.businessName || 'Not Provided'}</div>
+
+                                <Label className="text-muted-foreground">Bank Name</Label>
+                                <div className="md:col-span-2">{selectedVendor.payoutDetails?.bankName || 'Not Provided'}</div>
+                                
+                                <Label className="text-muted-foreground">Account Number</Label>
+                                <div className="md:col-span-2 font-mono">{selectedVendor.payoutDetails?.accountNumber || 'Not Provided'}</div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button">Close</Button>
+                    </DialogClose>
+                    </DialogFooter>
+                </>
+            )}
           </DialogContent>
         </Dialog>
-      )}
     </>
   );
 }
