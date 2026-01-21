@@ -8,6 +8,8 @@ import {
   import Image from 'next/image';
   import Link from 'next/link';
   import { useEffect, useState, useMemo } from 'react';
+  import { collection, query, where, onSnapshot } from 'firebase/firestore';
+  import { db } from '@/firebase/config';
   
   import { Badge } from '@/components/ui/badge'
   import { Button } from '@/components/ui/button'
@@ -35,7 +37,6 @@ import {
   } from '@/components/ui/tabs'
   import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
   import { useAuth } from '@/context/auth-context';
-  import { getProductsBySeller } from '@/services/product-service';
   import type { Product } from '@/lib/types';
   import { Skeleton } from '@/components/ui/skeleton';
   
@@ -71,18 +72,30 @@ import {
     const loading = authLoading || productsLoading;
 
     useEffect(() => {
-      async function fetchProducts() {
-        if (user) {
-          setProductsLoading(true);
-          const sellerProducts = await getProductsBySeller(user.uid);
-          setProducts(sellerProducts);
+        if (!user) {
           setProductsLoading(false);
-        } else {
-            setProductsLoading(false);
+          return;
         }
-      }
-      fetchProducts();
-    }, [user]);
+    
+        setProductsLoading(true);
+        const productsCollection = collection(db, 'products');
+        const q = query(productsCollection, where('sellerId', '==', user.uid));
+    
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const fetchedProducts: Product[] = [];
+          querySnapshot.forEach((doc) => {
+            fetchedProducts.push({ id: doc.id, ...doc.data() } as Product);
+          });
+          setProducts(fetchedProducts);
+          setProductsLoading(false);
+        }, (error) => {
+            console.error("Error fetching real-time products: ", error);
+            setProductsLoading(false);
+        });
+    
+        // Cleanup subscription on unmount
+        return () => unsubscribe();
+      }, [user]);
 
     const filteredProducts = useMemo(() => {
       if (filter === 'all') return products;

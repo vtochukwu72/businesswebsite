@@ -1,7 +1,8 @@
 'use client';
-import { File, ListFilter, PlusCircle } from 'lucide-react';
+import { File, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,14 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -105,6 +98,22 @@ export default function AdminProductsPage() {
         return 'outline';
     }
   };
+  
+  const handleExport = () => {
+    const dataToExport = filteredProducts.map(product => ({
+      'Product Name': product.name,
+      'Status': product.isActive ? 'Active' : 'Draft',
+      'Price (₦)': product.price.toFixed(2),
+      'Seller': getSellerName(product.sellerId),
+      'Vendor Status': getVendorStatus(product.sellerId) || 'Unknown',
+      'Stock': product.stockQuantity,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
+    XLSX.writeFile(workbook, `products-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -119,7 +128,13 @@ export default function AdminProductsPage() {
             </TabsTrigger>
           </TabsList>
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" className="h-8 gap-1">
+            <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 gap-1"
+                onClick={handleExport}
+                disabled={loading || filteredProducts.length === 0}
+            >
               <File className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Export
