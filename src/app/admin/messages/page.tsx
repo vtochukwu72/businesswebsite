@@ -1,5 +1,5 @@
 'use client';
-import { Mail, Trash2, MoreVertical, Archive, User as UserIcon } from 'lucide-react';
+import { Mail, Trash2, MoreVertical, Archive, User as UserIcon, Eye } from 'lucide-react';
 import { useEffect, useState, useTransition, useMemo } from 'react';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -29,7 +29,16 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import type { ContactMessage, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +53,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 function MessageRowSkeleton() {
   return (
@@ -74,8 +85,12 @@ export default function AdminMessagesPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  
+  type EnrichedContactMessage = ContactMessage & { sender: User | null };
+  const [selectedMessage, setSelectedMessage] = useState<EnrichedContactMessage | null>(null);
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -134,7 +149,7 @@ export default function AdminMessagesPage() {
     };
   }, [toast]);
 
-  const enrichedMessages = useMemo(() => {
+  const enrichedMessages: EnrichedContactMessage[] = useMemo(() => {
     const userEmailMap = new Map(users.map(u => [u.email, u]));
     return messages.map(msg => ({
       ...msg,
@@ -155,8 +170,8 @@ export default function AdminMessagesPage() {
   };
 
   const handleDeleteClick = (message: ContactMessage) => {
-    setSelectedMessage(message);
-    setDialogOpen(true);
+    setSelectedMessage(message as EnrichedContactMessage);
+    setDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = () => {
@@ -168,12 +183,23 @@ export default function AdminMessagesPage() {
       } else {
         toast({ variant: 'destructive', title: 'Error', description: result.message });
       }
-      setDialogOpen(false);
+      setDeleteDialogOpen(false);
       setSelectedMessage(null);
     });
   };
 
-  const getRoleBadgeVariant = (role: string) => {
+  const handleViewMessage = (message: EnrichedContactMessage) => {
+    setSelectedMessage(message);
+    setViewDialogOpen(true);
+    if (!message.isRead) {
+        // Automatically mark as read on view
+        startTransition(async () => {
+            await toggleMessageReadStatus(message.id, false);
+        });
+    }
+  };
+
+  const getRoleBadgeVariant = (role: string | null) => {
     switch (role) {
       case 'admin':
       case 'super_admin':
@@ -194,7 +220,7 @@ export default function AdminMessagesPage() {
         <CardHeader>
           <CardTitle>Inbox</CardTitle>
           <CardDescription>
-            Live messages from users, vendors, and guests.
+            Live messages from users, vendors, and guests. Click a message to view and reply.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -222,18 +248,18 @@ export default function AdminMessagesPage() {
                   const senderName = message.sender?.displayName || message.name;
 
                   return (
-                    <TableRow key={message.id} className={!message.isRead ? 'bg-muted/50' : ''}>
+                    <TableRow key={message.id} className={cn('cursor-pointer', !message.isRead && 'bg-muted/50 font-medium')} onClick={() => handleViewMessage(message)}>
                         <TableCell>
                             <div className="flex items-center gap-2">
-                                <p className={`font-medium ${!message.isRead ? 'font-bold' : ''}`}>{senderName}</p>
+                                <p className="font-semibold">{senderName}</p>
                                 <Badge variant={getRoleBadgeVariant(senderRole)} className="capitalize">{senderRole}</Badge>
                             </div>
-                            <a href={`mailto:${message.email}`} className="text-sm text-muted-foreground hover:underline">
+                            <a href={`mailto:${message.email}`} onClick={e => e.stopPropagation()} className="text-sm text-muted-foreground hover:underline">
                                 {message.email}
                             </a>
                         </TableCell>
                         <TableCell>
-                        <p className={`font-medium ${!message.isRead ? 'font-bold' : ''}`}>{message.subject}</p>
+                        <p>{message.subject}</p>
                         <p className="text-sm text-muted-foreground truncate max-w-xs">{message.message}</p>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
@@ -242,18 +268,23 @@ export default function AdminMessagesPage() {
                         <TableCell>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <Button aria-haspopup="true" size="icon" variant="ghost" onClick={(e) => e.stopPropagation()}>
                                         <MoreVertical className="h-4 w-4" />
                                         <span className="sr-only">Toggle menu</span>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onSelect={() => handleToggleRead(message)}>
-                                        {!message.isRead ? <Mail className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
+                                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleViewMessage(message); }}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View & Reply
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleToggleRead(message); }}>
+                                        {message.isRead ? <Mail className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
                                         Mark as {message.isRead ? 'Unread' : 'Read'}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleDeleteClick(message)} className="text-destructive">
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDeleteClick(message); }} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Delete
                                     </DropdownMenuItem>
@@ -276,7 +307,35 @@ export default function AdminMessagesPage() {
       </Card>
     </main>
 
-    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    {selectedMessage && (
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="truncate pr-8">{selectedMessage.subject}</DialogTitle>
+            <DialogDescription>
+              From: {selectedMessage.name} ({selectedMessage.email})
+            </DialogDescription>
+          </DialogHeader>
+          <Separator />
+          <div className="py-4 whitespace-pre-wrap text-sm max-h-[50vh] overflow-y-auto">
+            {selectedMessage.message}
+          </div>
+          <Separator />
+          <DialogFooter>
+             <Button type="button" variant="secondary" onClick={() => setViewDialogOpen(false)}>
+              Close
+            </Button>
+            <Button asChild>
+                <a href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject)}&body=${encodeURIComponent(`\n\n---\nOn ${new Date(selectedMessage.createdAt).toLocaleString()}, ${selectedMessage.name} wrote:\n\n> ${selectedMessage.message.replace(/\n/g, '\n> ')}`)}`}>
+                    <Mail className="mr-2 h-4 w-4" /> Reply via Email
+                </a>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
