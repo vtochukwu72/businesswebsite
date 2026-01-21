@@ -87,7 +87,7 @@ function AdminDashboard({ children, notificationCount, authProps }: { children: 
                     <SidebarMenuButton href="/admin/messages" leftIcon={<MessageSquare />}>Messages</SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <SidebarMenuButton href="#" leftIcon={<LineChart/>}>Analytics</SidebarMenuButton>
+                    <SidebarMenuButton href="/admin/analytics" leftIcon={<LineChart/>}>Analytics</SidebarMenuButton>
                 </SidebarMenuItem>
              </SidebarMenu>
            </SidebarGroup>
