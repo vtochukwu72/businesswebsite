@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useMemo } from 'react';
 import { collection, query, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,7 @@ import type { Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Eye } from 'lucide-react';
 import { updateVendorStatus } from './actions';
+import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -64,8 +65,9 @@ function VendorRowSkeleton() {
 }
 
 export default function AdminVendorsPage() {
+  const { user, loading: authLoading } = useAuth();
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -73,7 +75,15 @@ export default function AdminVendorsPage() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
+    // Only fetch data if an authenticated user is present
+    if (!user) {
+        if (!authLoading) {
+            setDataLoading(false);
+        }
+        return;
+    }
+
+    setDataLoading(true);
     const vendorsCollection = collection(db, 'vendors');
     const q = query(vendorsCollection);
 
@@ -85,59 +95,40 @@ export default function AdminVendorsPage() {
           fetchedVendors.push({ id: doc.id, ...doc.data() } as Vendor);
         });
         setVendors(fetchedVendors);
-        setLoading(false);
+        setDataLoading(false);
       },
       (error) => {
         console.error('Error fetching vendors in real-time:', error);
-        setLoading(false);
+        setDataLoading(false);
         toast({
           variant: 'destructive',
-          title: 'Error Fetching Vendors',
+          title: 'Permission Error',
           description:
-            'Could not load vendor data in real-time. Please try refreshing the page.',
+            'Could not load vendor data. You may not have the required permissions.',
         });
       }
     );
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [toast]);
-
+  }, [user, authLoading, toast]);
+  
+  // This effect ensures that the data in the dialog is always live.
+  // It listens for changes in the main `vendors` list and updates `selectedVendor`
+  // if it's currently open in the dialog.
   useEffect(() => {
-    if (!detailsDialogOpen || !selectedVendor?.id) {
-      return;
-    }
-
-    const vendorDocRef = doc(db, 'vendors', selectedVendor.id);
-    const unsubscribe = onSnapshot(
-      vendorDocRef,
-      (doc) => {
-        if (doc.exists()) {
-          // Update the state for the dialog with the latest data
-          setSelectedVendor({ id: doc.id, ...doc.data() } as Vendor);
-        } else {
-          // Vendor was deleted, so close the dialog and show a message
-          setDetailsDialogOpen(false);
-          toast({
-            variant: 'destructive',
-            title: 'Vendor Not Found',
-            description: 'This vendor may have been deleted.',
-          });
-        }
-      },
-      (error) => {
-        console.error('Error listening to vendor details:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Real-time Error',
-          description: 'Could not get live updates for this vendor.',
-        });
+    if (selectedVendor) {
+      const updatedVendor = vendors.find(v => v.id === selectedVendor.id);
+      if (updatedVendor) {
+        setSelectedVendor(updatedVendor);
+      } else {
+        // The vendor was deleted, so close the dialog.
+        setDetailsDialogOpen(false);
+        setSelectedVendor(null);
       }
-    );
+    }
+  }, [vendors, selectedVendor]);
 
-    // Cleanup the single-document listener when the dialog closes or component unmounts
-    return () => unsubscribe();
-  }, [detailsDialogOpen, selectedVendor?.id, toast]);
 
   const handleStatusChange = (
     vendorId: string,
@@ -177,6 +168,8 @@ export default function AdminVendorsPage() {
         return 'outline';
     }
   };
+  
+  const isLoading = authLoading || dataLoading;
 
   return (
     <>
@@ -202,7 +195,7 @@ export default function AdminVendorsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
+                {isLoading ? (
                   <>
                     <VendorRowSkeleton />
                     <VendorRowSkeleton />
@@ -298,7 +291,7 @@ export default function AdminVendorsPage() {
                 <span className="font-semibold">
                   {selectedVendor.storeName}
                 </span>
-                .
+                . Data is live.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6 text-sm">
