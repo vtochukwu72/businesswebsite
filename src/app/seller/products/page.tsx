@@ -3,6 +3,7 @@
 import {
     File,
     PlusCircle,
+    Info
   } from 'lucide-react'
   import Image from 'next/image';
   import Link from 'next/link';
@@ -33,7 +34,6 @@ import {
     TabsTrigger,
   } from '@/components/ui/tabs'
   import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-  import { Info } from 'lucide-react';
   import { useAuth } from '@/context/auth-context';
   import { getProductsBySeller } from '@/services/product-service';
   import type { Product } from '@/lib/types';

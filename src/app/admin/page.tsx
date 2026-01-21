@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
   const recentSignups = users.slice(0, 5);
   const recentOrders = orders.slice(0, 5);
 
-  const getBadgeVariant = (status: string) => {
+  const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status.toLowerCase()) {
       case 'fulfilled':
       case 'shipped':
@@ -90,6 +90,18 @@ export default function AdminDashboardPage() {
         return 'outline';
     }
   };
+  
+   const getRoleBadgeVariant = (role: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (role) {
+      case 'admin':
+      case 'super_admin':
+        return 'destructive';
+      case 'seller':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  }
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -102,7 +114,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             {loading ? <Skeleton className="h-8 w-32" /> : <div className="text-2xl font-bold">₦{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
             <p className="text-xs text-muted-foreground">
-              From a total of {stats.totalSales} sales
+              From {stats.totalSales.toLocaleString()} total sales
             </p>
           </CardContent>
         </Card>
@@ -112,7 +124,7 @@ export default function AdminDashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-20"/> : <div className="text-2xl font-bold">+{stats.totalSales}</div>}
+            {loading ? <Skeleton className="h-8 w-20"/> : <div className="text-2xl font-bold">+{stats.totalSales.toLocaleString()}</div>}
             <p className="text-xs text-muted-foreground">
               +15% from last month (Static)
             </p>
@@ -124,9 +136,9 @@ export default function AdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-8 w-16"/> : <div className="text-2xl font-bold">+{stats.totalUsers}</div>}
+            {loading ? <Skeleton className="h-8 w-16"/> : <div className="text-2xl font-bold">+{stats.totalUsers.toLocaleString()}</div>}
             <p className="text-xs text-muted-foreground">
-              Total users on the platform
+              Total customers, sellers, and admins
             </p>
           </CardContent>
         </Card>
@@ -204,8 +216,11 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Signups</CardTitle>
+            <CardDescription>
+              Newest users who joined the platform.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-8">
+          <CardContent className="grid gap-6">
             {loading ? (
                 <div className="text-sm text-muted-foreground">Loading users...</div>
             ) : recentSignups.length > 0 ? (
@@ -215,14 +230,15 @@ export default function AdminDashboardPage() {
                     <AvatarImage src={user.photoURL} alt="Avatar" />
                     <AvatarFallback>{(user.displayName || user.email).charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
+                  <div className="grid gap-1 flex-1">
+                    <p className="text-sm font-medium leading-none truncate">
                       {user.displayName || user.email}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground truncate">
                       {user.email}
                     </p>
                   </div>
+                   <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{user.role.replace('_', ' ')}</Badge>
                 </div>
               ))
             ) : (
