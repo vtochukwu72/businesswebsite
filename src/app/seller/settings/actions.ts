@@ -8,7 +8,12 @@ const vendorSettingsSchema = z.object({
   vendorId: z.string().min(1),
   storeName: z.string().min(3, 'Store name must be at least 3 characters'),
   storeDescription: z.string().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
   nin: z.string().min(11, 'NIN must be 11 digits').max(11, 'NIN must be 11 digits'),
+  businessLicenseUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  taxId: z.string().optional(),
+  sellerHistory: z.string().optional(),
   businessName: z.string().min(1, 'Account name is required'),
   accountNumber: z.string().min(10, 'Account number must be 10 digits').max(10, 'Account number must be 10 digits'),
   bankName: z.string().min(1, 'Bank name is required'),
@@ -25,7 +30,8 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
         };
     }
 
-    const { vendorId, storeName, storeDescription, nin, businessName, accountNumber, bankName } = parsed.data;
+    const { vendorId, ...vendorData } = parsed.data;
+    const { businessName, accountNumber, bankName, ...restOfData } = vendorData;
 
     try {
         const adminApp = getAdminApp();
@@ -33,9 +39,7 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
         const vendorRef = db.collection('vendors').doc(vendorId);
 
         await vendorRef.update({
-            storeName,
-            storeDescription,
-            nin,
+            ...restOfData,
             payoutDetails: {
                 businessName,
                 accountNumber,
@@ -56,3 +60,5 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
         };
     }
 }
+
+    

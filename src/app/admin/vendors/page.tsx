@@ -1,7 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { useEffect, useState, useMemo, useTransition } from 'react';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
+import { getProductsBySeller } from '@/services/product-service';
+import type { Vendor, Product } from '@/lib/types';
+
 import {
   Card,
   CardContent,
@@ -23,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -33,14 +37,19 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import type { Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Eye } from 'lucide-react';
+import { MoreHorizontal, Eye, ShieldCheck, ShieldX } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { reviewVendor } from './actions';
+import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import Link from 'next/link';
 
 function VendorRowSkeleton() {
   return (
@@ -50,6 +59,9 @@ function VendorRowSkeleton() {
       </TableCell>
       <TableCell>
         <Skeleton className="h-4 w-40" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-6 w-20 rounded-full" />
       </TableCell>
       <TableCell>
         <Skeleton className="h-8 w-8 ml-auto" />
@@ -62,18 +74,25 @@ export default function AdminVendorsPage() {
   const { user, loading: authLoading } = useAuth();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
   const { toast } = useToast();
 
-  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [vendorProducts, setVendorProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [riskScore, setRiskScore] = useState(5);
+  const [justification, setJustification] = useState('');
+
+  const isLoading = authLoading || dataLoading;
 
   useEffect(() => {
-    if (!user && !authLoading) {
-        setDataLoading(false);
-        return;
+    if (authLoading) return;
+    if (!user) {
+      setDataLoading(false);
+      return;
     }
-    if (!user) return;
-
 
     setDataLoading(true);
     const vendorsCollection = collection(db, 'vendors');
@@ -104,175 +123,276 @@ export default function AdminVendorsPage() {
     return () => unsubscribe();
   }, [user, authLoading, toast]);
 
-  const handleViewDetails = (vendorId: string) => {
-    setSelectedVendorId(vendorId);
-    setDetailsDialogOpen(true);
+  useEffect(() => {
+    if (selectedVendor && reviewDialogOpen) {
+      setProductsLoading(true);
+      getProductsBySeller(selectedVendor.id)
+        .then(setVendorProducts)
+        .finally(() => setProductsLoading(false));
+      setRiskScore(selectedVendor.compliance?.riskScore || 5);
+      setJustification(selectedVendor.compliance?.justification || '');
+    }
+  }, [selectedVendor, reviewDialogOpen]);
+  
+  const filteredVendors = useMemo(() => {
+    if (filter === 'all') return vendors;
+    return vendors.filter(vendor => vendor.status === filter);
+  }, [vendors, filter]);
+
+  const handleReviewClick = (vendor: Vendor) => {
+    setSelectedVendor(vendor);
+    setReviewDialogOpen(true);
   };
 
-  const handleDialogClose = (open: boolean) => {
-    setDetailsDialogOpen(open);
-    if (!open) {
-        setSelectedVendorId(null);
-    }
+  const handleReviewSubmit = (decision: 'approved' | 'rejected') => {
+    if (!selectedVendor || !user) return;
+    startTransition(async () => {
+        const result = await reviewVendor({
+            vendorId: selectedVendor.id,
+            decision,
+            riskScore,
+            justification,
+            adminUserId: user.uid
+        });
+        if (result.success) {
+            toast({
+                title: 'Review Submitted',
+                description: result.message,
+            });
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: result.message,
+            });
+        }
+        setReviewDialogOpen(false);
+    });
   }
 
-  const selectedVendor = selectedVendorId ? vendors.find(v => v.id === selectedVendorId) : null;
-  
-  const isLoading = authLoading || dataLoading;
+  const getStatusBadgeVariant = (status: Vendor['status']) => {
+    switch (status) {
+      case 'approved':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'rejected':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
 
   return (
     <>
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Vendors</CardTitle>
-            <CardDescription>
-              Manage vendor accounts and their details. Data is updated
-              in real-time.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Store Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <>
-                    <VendorRowSkeleton />
-                    <VendorRowSkeleton />
-                    <VendorRowSkeleton />
-                  </>
-                ) : vendors.length > 0 ? (
-                  vendors.map((vendor) => (
-                    <TableRow key={vendor.id}>
-                      <TableCell className="font-medium">
-                        {vendor.storeName}
-                      </TableCell>
-                      <TableCell>{vendor.email}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              aria-haspopup="true"
-                              size="icon"
-                              variant="ghost"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                             <DropdownMenuItem
-                              onSelect={() => handleViewDetails(vendor.id)}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
-                      No vendors found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+         <Tabs defaultValue="all" onValueChange={setFilter}>
+            <div className="flex items-center">
+                <TabsList>
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="pending">Pending</TabsTrigger>
+                    <TabsTrigger value="approved">Approved</TabsTrigger>
+                    <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                </TabsList>
+            </div>
+            <TabsContent value={filter}>
+                <Card>
+                <CardHeader>
+                    <CardTitle>Vendors</CardTitle>
+                    <CardDescription>
+                    Review vendor applications, manage their status, and view details.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Store Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>
+                            <span className="sr-only">Actions</span>
+                        </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                        <>
+                            <VendorRowSkeleton />
+                            <VendorRowSkeleton />
+                            <VendorRowSkeleton />
+                        </>
+                        ) : filteredVendors.length > 0 ? (
+                        filteredVendors.map((vendor) => (
+                            <TableRow key={vendor.id}>
+                            <TableCell className="font-medium">
+                                {vendor.storeName}
+                            </TableCell>
+                            <TableCell>{vendor.email}</TableCell>
+                             <TableCell>
+                                <Badge variant={getStatusBadgeVariant(vendor.status)} className="capitalize">{vendor.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                    aria-haspopup="true"
+                                    size="icon"
+                                    variant="ghost"
+                                    >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                    onSelect={() => handleReviewClick(vendor)}
+                                    >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Review Application
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                            </TableRow>
+                        ))
+                        ) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                            No vendors found for this filter.
+                            </TableCell>
+                        </TableRow>
+                        )}
+                    </TableBody>
+                    </Table>
+                </CardContent>
+                </Card>
+            </TabsContent>
+         </Tabs>
       </main>
 
-      
-        <Dialog open={detailsDialogOpen} onOpenChange={handleDialogClose}>
-          <DialogContent className="sm:max-w-[600px]">
-            {!selectedVendor ? (
-                 <DialogHeader>
-                    <DialogTitle>Loading...</DialogTitle>
-                    <div className="py-4">
-                        <Skeleton className="h-4 w-1/2 mb-4"/>
-                        <Skeleton className="h-20 w-full"/>
-                    </div>
-                </DialogHeader>
-            ) : (
-                <>
-                    <DialogHeader>
-                    <DialogTitle>{selectedVendor.storeName}</DialogTitle>
-                    <DialogDescription>
-                        Live details for this vendor. Last updated: {selectedVendor.updatedAt ? new Date(selectedVendor.updatedAt.seconds * 1000).toLocaleString() : 'N/A'}
-                    </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto pr-6 text-sm">
-                        
-                        {/* Store Information */}
-                        <div>
-                            <h3 className="text-lg font-medium mb-2">Store Information</h3>
-                            <Separator />
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                                <Label className="text-muted-foreground">Store Name</Label>
-                                <div className="md:col-span-2 font-semibold">{selectedVendor.storeName}</div>
-                                
-                                <Label className="text-muted-foreground">Email</Label>
-                                <div className="md:col-span-2">{selectedVendor.email}</div>
+      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+              {!selectedVendor ? (
+                  <DialogHeader>
+                      <DialogTitle>Loading Vendor...</DialogTitle>
+                      <div className="py-4">
+                          <Skeleton className="h-4 w-1/2 mb-4"/>
+                          <Skeleton className="h-20 w-full"/>
+                      </div>
+                  </DialogHeader>
+              ) : (
+                  <>
+                      <DialogHeader>
+                          <DialogTitle>Review Application: {selectedVendor.storeName}</DialogTitle>
+                          <DialogDescription>
+                              Review the vendor's submitted information and product catalog to make a compliance decision.
+                          </DialogDescription>
+                      </DialogHeader>
 
-                                <Label className="text-muted-foreground">Phone</Label>
-                                <div className="md:col-span-2">{selectedVendor.phone || 'N/A'}</div>
-
-                                <Label className="text-muted-foreground">Address</Label>
-                                <div className="md:col-span-2">{selectedVendor.address || 'N/A'}</div>
-
-                                <Label className="text-muted-foreground pt-1">Description</Label>
-                                <div className="md:col-span-2 whitespace-pre-wrap">{selectedVendor.storeDescription || 'N/A'}</div>
+                      <div className="grid md:grid-cols-2 gap-6 py-4 overflow-y-auto flex-1 pr-2">
+                        {/* Left Side: Vendor Details & Review Form */}
+                        <div className="space-y-6">
+                             <div>
+                                <h3 className="text-lg font-medium mb-2">Compliance Details</h3>
+                                <Separator />
+                                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                                    <Label className="text-muted-foreground">Tax ID</Label>
+                                    <div className="md:col-span-2 font-mono">{selectedVendor.taxId || 'Not Provided'}</div>
+                                    
+                                    <Label className="text-muted-foreground">Business License</Label>
+                                    <div className="md:col-span-2">
+                                        {selectedVendor.businessLicenseUrl ? (
+                                            <Link href={selectedVendor.businessLicenseUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">View Document</Link>
+                                        ) : 'Not Provided'}
+                                    </div>
+                                    
+                                    <Label className="text-muted-foreground pt-1">Seller History</Label>
+                                    <div className="md:col-span-2 whitespace-pre-wrap">{selectedVendor.sellerHistory || 'Not Provided'}</div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-lg font-medium mb-2">Compliance Review</h3>
+                                <Separator />
+                                <div className="mt-4 space-y-4">
+                                     <div className="space-y-2">
+                                        <Label htmlFor="risk-score">Risk Score: {riskScore}</Label>
+                                        <p className="text-xs text-muted-foreground">1 = Very Low Risk, 10 = Very High Risk</p>
+                                        <Slider
+                                            id="risk-score"
+                                            min={1}
+                                            max={10}
+                                            step={1}
+                                            value={[riskScore]}
+                                            onValueChange={(value) => setRiskScore(value[0])}
+                                            disabled={isPending}
+                                        />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="justification">Justification / Notes</Label>
+                                        <Textarea 
+                                            id="justification"
+                                            placeholder="Provide a bulleted list or notes for approval or rejection..."
+                                            value={justification}
+                                            onChange={(e) => setJustification(e.target.value)}
+                                            disabled={isPending}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Verification Details */}
-                        <div>
-                            <h3 className="text-lg font-medium mb-2">Verification</h3>
-                            <Separator />
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                                <Label className="text-muted-foreground">NIN</Label>
-                                <div className="md:col-span-2 font-mono">{selectedVendor.nin || 'Not Provided'}</div>
-                            </div>
+                        {/* Right Side: Product Catalog */}
+                        <div className="space-y-4">
+                             <h3 className="text-lg font-medium">Product Catalog ({vendorProducts.length})</h3>
+                             <Separator/>
+                             <div className="border rounded-lg max-h-96 overflow-y-auto">
+                                 {productsLoading ? (
+                                    <div className="p-4 text-sm text-muted-foreground">Loading products...</div>
+                                 ) : vendorProducts.length > 0 ? (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Product</TableHead>
+                                                <TableHead className="text-right">Price</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {vendorProducts.map(p => (
+                                                <TableRow key={p.id}>
+                                                    <TableCell className="font-medium">{p.name}</TableCell>
+                                                    <TableCell className="text-right">₦{p.price.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                 ) : (
+                                     <div className="p-4 text-center text-sm text-muted-foreground">No products found for this vendor.</div>
+                                 )}
+                             </div>
                         </div>
 
-                        {/* Payout Details */}
-                        <div>
-                            <h3 className="text-lg font-medium mb-2">Payout Details</h3>
-                            <Separator />
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                                <Label className="text-muted-foreground">Account Name</Label>
-                                <div className="md:col-span-2">{selectedVendor.payoutDetails?.businessName || 'Not Provided'}</div>
+                      </div>
 
-                                <Label className="text-muted-foreground">Bank Name</Label>
-                                <div className="md:col-span-2">{selectedVendor.payoutDetails?.bankName || 'Not Provided'}</div>
-                                
-                                <Label className="text-muted-foreground">Account Number</Label>
-                                <div className="md:col-span-2 font-mono">{selectedVendor.payoutDetails?.accountNumber || 'Not Provided'}</div>
-                            </div>
-                        </div>
-
-                    </div>
-                    <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button">Close</Button>
-                    </DialogClose>
-                    </DialogFooter>
-                </>
-            )}
+                      <DialogFooter>
+                          <DialogClose asChild><Button type="button" variant="ghost" disabled={isPending}>Cancel</Button></DialogClose>
+                          <Button type="button" variant="destructive" onClick={() => handleReviewSubmit('rejected')} disabled={isPending}>
+                            <ShieldX className="mr-2 h-4 w-4" />
+                            {isPending ? 'Rejecting...' : 'Reject'}
+                          </Button>
+                          <Button type="button" onClick={() => handleReviewSubmit('approved')} disabled={isPending}>
+                             <ShieldCheck className="mr-2 h-4 w-4" />
+                             {isPending ? 'Approving...' : 'Approve'}
+                          </Button>
+                      </DialogFooter>
+                  </>
+              )}
           </DialogContent>
-        </Dialog>
+      </Dialog>
     </>
   );
 }
+
+    

@@ -69,7 +69,11 @@ service cloud.firestore {
      * Caches the result of the get() call for the duration of the rule evaluation.
      */
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      // Use exists() for a safe check before accessing .data
+      if (exists(/databases/$(database)/documents/users/$(request.auth.uid))) {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      }
+      return null;
     }
 
     /**
@@ -77,9 +81,8 @@ service cloud.firestore {
      * This is the core of the RBAC (Role-Based Access Control) system.
      */
     function userHasAnyRole(allowedRoles) {
-      return isSignedIn() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             getUserData().role in allowedRoles;
+      let userData = getUserData();
+      return isSignedIn() && userData != null && userData.role in allowedRoles;
     }
 
     /**
@@ -123,6 +126,27 @@ service cloud.firestore {
     function canReadAnalytics() {
       return userHasAnyRole(['finance_manager', 'admin', 'super_admin']);
     }
+    
+    /**
+     * @description Retrieves a vendor's data.
+     */
+    function getVendorData(vendorId) {
+       if (exists(/databases/$(database)/documents/vendors/$(vendorId))) {
+        return get(/databases/$(database)/documents/vendors/$(vendorId)).data;
+      }
+      return null;
+    }
+
+    /**
+     * @description Checks if a vendor is allowed to create products.
+     */
+    function canVendorCreateProducts() {
+      let vendorData = getVendorData(request.auth.uid);
+      return userHasAnyRole(['seller']) &&
+             vendorData != null &&
+             vendorData.status != 'rejected';
+    }
+
 
     // --------------------------------------------------------------------------
     // Admin & Analytics Collections
@@ -202,7 +226,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isSignedIn() && 
                     request.resource.data.sellerId == request.auth.uid &&
-                    userHasAnyRole(['seller']);
+                    canVendorCreateProducts();
       allow update, delete: if isExistingDocument() && 
                             ( canManageContent() || 
                               isOwner(resource.data.sellerId)
@@ -229,7 +253,7 @@ service cloud.firestore {
      * @principle Restricts access to the order owner and authorized order managers.
      */
     match /orders/{orderId} {
-      allow get: if isOwner(resource.data.userId) || canManageOrders();
+      allow get: if (isExistingDocument() && isOwner(resource.data.userId)) || canManageOrders();
       allow list: if canManageOrders();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isExistingDocument() && canManageOrders();
@@ -323,4 +347,5 @@ service cloud.firestore {
     }
   }
 }
+
     

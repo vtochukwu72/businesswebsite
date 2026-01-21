@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -16,7 +15,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { createSession } from '@/app/(auth)/actions';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { getFirestore, doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { app } from '@/firebase/config';
@@ -81,8 +79,8 @@ export default function SellerRegisterPage() {
         batch.set(vendorRef, {
             id: user.uid,
             email: user.email,
-            storeName: `${displayName}'s Store`, // A default store name
-            status: 'pending', // Default status is pending
+            storeName: `${displayName}'s Store`,
+            status: 'pending',
             storeDescription: '',
             storeLogo: '',
             phone: '',
@@ -92,7 +90,12 @@ export default function SellerRegisterPage() {
                 businessName: '',
                 accountNumber: '',
                 bankName: '',
-            }
+            },
+            businessLicenseUrl: '',
+            taxId: '',
+            sellerHistory: '',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
         });
 
         await batch.commit();
@@ -216,5 +219,3 @@ export default function SellerRegisterPage() {
     </div>
   );
 }
-
-    

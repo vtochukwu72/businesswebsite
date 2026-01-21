@@ -18,6 +18,7 @@ import { useAuth } from '@/context/auth-context';
 import { updateVendorSettings } from './actions';
 import type { Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -65,7 +66,12 @@ export default function SellerSettingsPage() {
   const [formData, setFormData] = useState({
     storeName: '',
     storeDescription: '',
+    phone: '',
+    address: '',
     nin: '',
+    businessLicenseUrl: '',
+    taxId: '',
+    sellerHistory: '',
     businessName: '',
     accountNumber: '',
     bankName: '',
@@ -82,7 +88,12 @@ export default function SellerSettingsPage() {
       setFormData({
           storeName: vendorData.storeName || '',
           storeDescription: vendorData.storeDescription || '',
+          phone: vendorData.phone || '',
+          address: vendorData.address || '',
           nin: vendorData.nin || '',
+          businessLicenseUrl: vendorData.businessLicenseUrl || '',
+          taxId: vendorData.taxId || '',
+          sellerHistory: vendorData.sellerHistory || '',
           businessName: vendorData.payoutDetails?.businessName || '',
           accountNumber: vendorData.payoutDetails?.accountNumber || '',
           bankName: vendorData.payoutDetails?.bankName || '',
@@ -116,7 +127,7 @@ export default function SellerSettingsPage() {
         <CardHeader>
           <CardTitle>Vendor Settings</CardTitle>
           <CardDescription>
-            Manage your store details and payment information.
+            Manage your store details and compliance information.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,7 +141,8 @@ export default function SellerSettingsPage() {
               
               <div className="space-y-4">
                  <h3 className="text-lg font-medium">Store Information</h3>
-                  <div className="space-y-2">
+                 <Separator/>
+                  <div className="space-y-2 pt-2">
                     <Label htmlFor="storeName">Store Name</Label>
                     <Input id="storeName" name="storeName" value={formData.storeName} onChange={handleInputChange} />
                      {state.errors?.storeName && (
@@ -141,22 +153,51 @@ export default function SellerSettingsPage() {
                     <Label htmlFor="storeDescription">Store Description</Label>
                     <Textarea id="storeDescription" name="storeDescription" value={formData.storeDescription} onChange={handleInputChange} />
                   </div>
-              </div>
-
-               <div className="space-y-4">
-                 <h3 className="text-lg font-medium">Verification Details</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="nin">National Identification Number (NIN)</Label>
-                    <Input id="nin" name="nin" value={formData.nin} onChange={handleInputChange} />
-                     {state.errors?.nin && (
-                        <p className="text-sm text-destructive">{state.errors.nin.join(', ')}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="phone">Contact Phone</Label>
+                        <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} />
+                      </div>
+                       <div className="space-y-2">
+                        <Label htmlFor="address">Business Address</Label>
+                        <Input id="address" name="address" value={formData.address} onChange={handleInputChange} />
+                      </div>
                   </div>
               </div>
 
                <div className="space-y-4">
+                 <h3 className="text-lg font-medium">Compliance & Verification</h3>
+                  <Separator/>
+                  <div className="pt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="nin">National Identification Number (NIN)</Label>
+                        <Input id="nin" name="nin" value={formData.nin} onChange={handleInputChange} />
+                        {state.errors?.nin && (
+                            <p className="text-sm text-destructive">{state.errors.nin.join(', ')}</p>
+                        )}
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="taxId">Tax ID (Optional)</Label>
+                        <Input id="taxId" name="taxId" value={formData.taxId} onChange={handleInputChange} />
+                      </div>
+                  </div>
+                   <div className="space-y-2">
+                        <Label htmlFor="businessLicenseUrl">Business License URL (Optional)</Label>
+                        <Input id="businessLicenseUrl" name="businessLicenseUrl" value={formData.businessLicenseUrl} onChange={handleInputChange} placeholder="https://example.com/license.pdf"/>
+                         {state.errors?.businessLicenseUrl && (
+                            <p className="text-sm text-destructive">{state.errors.businessLicenseUrl.join(', ')}</p>
+                        )}
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="sellerHistory">Past Seller History (Optional)</Label>
+                        <Textarea id="sellerHistory" name="sellerHistory" value={formData.sellerHistory} onChange={handleInputChange} placeholder="Briefly describe your previous selling experience..."/>
+                    </div>
+              </div>
+
+               <div className="space-y-4">
                  <h3 className="text-lg font-medium">Payout Details</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <Separator/>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                     <div className="space-y-2">
                         <Label htmlFor="businessName">Account Name</Label>
                         <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleInputChange} />
@@ -189,3 +230,5 @@ export default function SellerSettingsPage() {
     </main>
   );
 }
+
+    

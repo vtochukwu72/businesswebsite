@@ -46,6 +46,18 @@ export type Vendor = {
     accountNumber: string;
     bankName: string;
   };
+  status: 'pending' | 'approved' | 'rejected';
+  businessLicenseUrl?: string;
+  taxId?: string;
+  sellerHistory?: string;
+  compliance?: {
+    riskScore: number;
+    justification: string;
+    reviewedBy: string;
+    reviewedAt: any; // Firestore Timestamp
+  };
+  createdAt?: any;
+  updatedAt?: any;
 };
 
 export type Category = {
@@ -92,3 +104,5 @@ export type Order = {
   createdAt: any; // Should be a Firestore Timestamp, but 'any' for simplicity client-side
   grandTotal: number;
 };
+
+    

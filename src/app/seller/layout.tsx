@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -37,7 +36,7 @@ import { getOrdersBySeller } from '@/services/order-service';
 import { useToast } from '@/hooks/use-toast';
 
 function SellerDashboard({ children, pendingOrderCount, authProps }: { children: React.ReactNode; pendingOrderCount: number, authProps: AuthContextType }) {
-  const { user, userData, logout } = authProps;
+  const { user, userData, vendorData, logout } = authProps;
   const router = useRouter();
   const { toast } = useToast();
 
@@ -130,6 +129,24 @@ function SellerDashboard({ children, pendingOrderCount, authProps }: { children:
             </DropdownMenu>
           </header>
           <SidebarInset>
+            {vendorData && vendorData.status !== 'approved' && (
+              <div className="p-4 sm:px-6">
+                  <Card className={vendorData.status === 'pending' ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}>
+                    <CardHeader>
+                      <CardTitle className={vendorData.status === 'pending' ? 'text-blue-800' : 'text-red-800'}>
+                        {vendorData.status === 'pending'
+                          ? 'Application Pending Review'
+                          : 'Application Rejected'}
+                      </CardTitle>
+                      <CardDescription className={vendorData.status === 'pending' ? 'text-blue-700' : 'text-red-700'}>
+                        {vendorData.status === 'pending'
+                          ? 'Your vendor application is currently under review by our compliance team. You can continue to set up your store and add products, but they will not be publicly visible until your application is approved.'
+                          : `Your application was rejected. Reason: ${vendorData.compliance?.justification || 'No reason provided.'}. Please correct the issues and contact support.`}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+              </div>
+            )}
              {children}
           </SidebarInset>
         </div>
