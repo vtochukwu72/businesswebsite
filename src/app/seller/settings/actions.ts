@@ -4,8 +4,6 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
 
-const db = getFirestore(getAdminApp());
-
 const vendorSettingsSchema = z.object({
   vendorId: z.string().min(1),
   storeName: z.string().min(3, 'Store name must be at least 3 characters'),
@@ -30,7 +28,10 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
     const { vendorId, storeName, storeDescription, nin, businessName, accountNumber, bankName } = parsed.data;
 
     try {
+        const adminApp = getAdminApp();
+        const db = getFirestore(adminApp);
         const vendorRef = db.collection('vendors').doc(vendorId);
+
         await vendorRef.update({
             storeName,
             storeDescription,
