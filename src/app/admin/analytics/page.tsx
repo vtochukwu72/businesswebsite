@@ -18,8 +18,6 @@ import {
   BarChart,
   Area,
   AreaChart,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   Cell,
@@ -36,9 +34,11 @@ import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import type { Order, User } from '@/lib/types';
 import { subDays, format } from 'date-fns';
-import { DollarSign, Users, CreditCard } from 'lucide-react';
+import { DollarSign, Users, CreditCard, File } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import * as XLSX from 'xlsx';
 
 // Analytics Page Component
 export default function AdminAnalyticsPage() {
@@ -185,6 +185,34 @@ export default function AdminAnalyticsPage() {
     sellers: { label: 'Sellers', color: 'hsl(var(--chart-2))' },
   } satisfies ChartConfig;
 
+  const handleExport = () => {
+    const workbook = XLSX.utils.book_new();
+
+    const summaryData = [
+      { Metric: 'Total Revenue', Value: `₦${totalRevenue.toLocaleString()}` },
+      { Metric: 'Total Orders', Value: totalOrders },
+      { Metric: 'Total Users', Value: totalUsers },
+    ];
+    const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+
+    const formattedSalesData = salesData.map(d => ({ 'Date': d.name, 'Revenue (₦)': d.revenue }));
+    const salesSheet = XLSX.utils.json_to_sheet(formattedSalesData);
+    XLSX.utils.book_append_sheet(workbook, salesSheet, 'Sales (Last 30 Days)');
+    
+    const formattedSignupsData = signupsData.map(d => ({ 'Date': d.name, 'New Customers': d.customers, 'New Sellers': d.sellers }));
+    const signupsSheet = XLSX.utils.json_to_sheet(formattedSignupsData);
+    XLSX.utils.book_append_sheet(workbook, signupsSheet, 'Signups (Last 30 Days)');
+    
+    const roleSheet = XLSX.utils.json_to_sheet(roleDistribution.map(d => ({'Role': d.name, 'Count': d.value})));
+    XLSX.utils.book_append_sheet(workbook, roleSheet, 'User Role Distribution');
+
+    const statusSheet = XLSX.utils.json_to_sheet(orderStatusDistribution.map(d => ({'Status': d.name, 'Count': d.value})));
+    XLSX.utils.book_append_sheet(workbook, statusSheet, 'Order Status Distribution');
+    
+    XLSX.writeFile(workbook, `analytics-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
 
   if (loading) {
     return (
@@ -206,6 +234,18 @@ export default function AdminAnalyticsPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+      <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+            <Button
+                onClick={handleExport}
+                disabled={loading}
+                variant="outline"
+                size="sm"
+            >
+                <File className="mr-2 h-4 w-4" />
+                Export to Excel
+            </Button>
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
             <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
