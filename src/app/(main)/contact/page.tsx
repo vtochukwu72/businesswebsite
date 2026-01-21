@@ -13,7 +13,6 @@ import {
   MessageSquare,
   Twitter,
   Facebook,
-  Github,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ContactForm } from '@/components/contact/contact-form';
@@ -126,9 +125,6 @@ export default function ContactPage() {
               </Link>
               <Link href="#" aria-label="Facebook">
                 <Facebook className="h-6 w-6 text-muted-foreground hover:text-primary" />
-              </Link>
-              <Link href="#" aria-label="GitHub">
-                <Github className="h-6 w-6 text-muted-foreground hover:text-primary" />
               </Link>
             </div>
           </div>

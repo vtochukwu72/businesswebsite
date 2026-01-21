@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
-import { Github, Twitter, Facebook } from 'lucide-react';
+import { Twitter, Facebook } from 'lucide-react';
 import { NewsletterForm } from '../newsletter-form';
 
 
@@ -63,7 +63,6 @@ export function Footer() {
           <div className="flex items-center gap-4">
             <Link href="https://x.com/TradeFlow265522?t=ULI7fpVl64l-DWn3ioEczQ&s=09" aria-label="Twitter"><Twitter className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
             <Link href="https://www.facebook.com/profile.php?id=61586132977087" aria-label="Facebook"><Facebook className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
-            <Link href="#" aria-label="GitHub"><Github className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
           </div>
         </div>
       </div>
