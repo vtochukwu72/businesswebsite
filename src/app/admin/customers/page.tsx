@@ -1,6 +1,7 @@
 'use client';
-import { File, ListFilter, PlusCircle } from 'lucide-react';
+import { File } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
@@ -91,6 +92,20 @@ export default function AdminCustomersPage() {
     }
   }
 
+  const handleExport = () => {
+    const dataToExport = filteredUsers.map(user => ({
+      'Name': user.displayName || `${user.fname} ${user.lname}` || 'N/A',
+      'Email': user.email,
+      'Role': user.role.replace('_', ' '),
+      'Joined Date': new Date(user.createdAt).toLocaleDateString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+    XLSX.writeFile(workbook, `users-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <Tabs defaultValue="all" onValueChange={setFilter}>
@@ -102,16 +117,16 @@ export default function AdminCustomersPage() {
             <TabsTrigger value="admin">Admins</TabsTrigger>
           </TabsList>
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" className="h-8 gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1"
+              onClick={handleExport}
+              disabled={loading || filteredUsers.length === 0}
+            >
               <File className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Export
-              </span>
-            </Button>
-            <Button size="sm" className="h-8 gap-1">
-              <PlusCircle className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Add User
+                Export to Excel
               </span>
             </Button>
           </div>
