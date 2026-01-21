@@ -103,6 +103,11 @@ export default function AdminMessagesPage() {
       checkAllLoaded();
     }, (error) => {
         console.error("Error fetching messages:", error);
+        toast({
+            variant: "destructive",
+            title: "Permission Denied",
+            description: "Could not load messages."
+        });
         messagesLoaded = true;
         checkAllLoaded();
     });
@@ -114,6 +119,11 @@ export default function AdminMessagesPage() {
         checkAllLoaded();
     }, (error) => {
         console.error("Error fetching users:", error);
+        toast({
+            variant: "destructive",
+            title: "Permission Denied",
+            description: "Could not load user data for messages."
+        });
         usersLoaded = true;
         checkAllLoaded();
     });
@@ -122,7 +132,7 @@ export default function AdminMessagesPage() {
         messagesUnsub();
         usersUnsub();
     };
-  }, []);
+  }, [toast]);
 
   const enrichedMessages = useMemo(() => {
     const userEmailMap = new Map(users.map(u => [u.email, u]));

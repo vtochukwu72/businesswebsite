@@ -38,12 +38,14 @@ import type { Order, User } from '@/lib/types';
 import { subDays, format } from 'date-fns';
 import { DollarSign, Users, CreditCard } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 // Analytics Page Component
 export default function AdminAnalyticsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -66,6 +68,16 @@ export default function AdminAnalyticsPage() {
       setOrders(orderList);
       ordersLoaded = true;
       doneLoading();
+    }, (error) => {
+        console.error("Analytics (orders) snapshot error: ", error);
+        toast({
+          variant: "destructive",
+          title: "Permission Denied",
+          description: "Could not load live order data for analytics."
+        });
+        ordersLoaded = true;
+        setOrders([]);
+        doneLoading();
     });
 
     const usersUnsub = onSnapshot(query(collection(db, 'users'), orderBy('createdAt', 'desc')), (snapshot) => {
@@ -80,13 +92,23 @@ export default function AdminAnalyticsPage() {
       setUsers(userList);
       usersLoaded = true;
       doneLoading();
+    }, (error) => {
+        console.error("Analytics (users) snapshot error: ", error);
+        toast({
+          variant: "destructive",
+          title: "Permission Denied",
+          description: "Could not load live user data for analytics."
+        });
+        usersLoaded = true;
+        setUsers([]);
+        doneLoading();
     });
 
     return () => {
       ordersUnsub();
       usersUnsub();
     };
-  }, []);
+  }, [toast]);
 
   const { totalRevenue, totalOrders, totalUsers, salesData, signupsData } = useMemo(() => {
     const totalRevenue = orders.reduce((sum, order) => sum + order.grandTotal, 0);

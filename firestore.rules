@@ -77,7 +77,9 @@ service cloud.firestore {
      * This is the core of the RBAC (Role-Based Access Control) system.
      */
     function userHasAnyRole(allowedRoles) {
-      return isSignedIn() && getUserData().role in allowedRoles;
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserData().role in allowedRoles;
     }
 
     /**

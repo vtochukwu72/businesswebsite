@@ -39,6 +39,7 @@ import {
   import { useAuth } from '@/context/auth-context';
   import type { Product } from '@/lib/types';
   import { Skeleton } from '@/components/ui/skeleton';
+  import { useToast } from '@/hooks/use-toast';
   
   function ProductRowSkeleton() {
     return (
@@ -67,6 +68,7 @@ import {
     const [products, setProducts] = useState<Product[]>([]);
     const [productsLoading, setProductsLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const { toast } = useToast();
 
     const isApproved = vendorData?.status === 'approved';
     const loading = authLoading || productsLoading;
@@ -90,12 +92,18 @@ import {
           setProductsLoading(false);
         }, (error) => {
             console.error("Error fetching real-time products: ", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error Loading Products',
+                description: 'Could not load your products. Please try again later.',
+            });
+            setProducts([]);
             setProductsLoading(false);
         });
     
         // Cleanup subscription on unmount
         return () => unsubscribe();
-      }, [user]);
+      }, [user, toast]);
 
     const filteredProducts = useMemo(() => {
       if (filter === 'all') return products;

@@ -177,6 +177,9 @@ export default function AdminLayout({
         unsubVendors = onSnapshot(vendorsQuery, (snapshot) => {
             pendingVendorsCount = snapshot.size;
             updateTotal();
+        }, (error) => {
+            console.error("Notification (vendors) snapshot error:", error);
+            // Don't show a toast for background listeners, just log it.
         });
 
         // Listen for unread messages
@@ -184,6 +187,8 @@ export default function AdminLayout({
         unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
             unreadMessagesCount = snapshot.size;
             updateTotal();
+        }, (error) => {
+            console.error("Notification (messages) snapshot error:", error);
         });
     }
 

@@ -31,11 +31,13 @@ import {
 import Link from 'next/link';
 import type { Order, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -65,7 +67,13 @@ export default function AdminDashboardPage() {
       },
       (err) => {
         console.error("Error fetching orders snapshot:", err);
+        toast({
+          variant: "destructive",
+          title: "Permission Denied",
+          description: "Could not load live order data."
+        });
         ordersLoaded = true;
+        setOrders([]);
         doneLoading();
       }
     );
@@ -87,7 +95,13 @@ export default function AdminDashboardPage() {
       },
       (err) => {
         console.error("Error fetching users snapshot:", err);
+        toast({
+          variant: "destructive",
+          title: "Permission Denied",
+          description: "Could not load live user data."
+        });
         usersLoaded = true;
+        setUsers([]);
         doneLoading();
       }
     );
@@ -96,7 +110,7 @@ export default function AdminDashboardPage() {
       ordersUnsub();
       usersUnsub();
     };
-  }, []);
+  }, [toast]);
 
   const stats = useMemo(() => {
     const totalRevenue = orders.reduce((sum, order) => sum + order.grandTotal, 0);

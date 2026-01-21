@@ -91,11 +91,17 @@ export default function AdminCustomersPage() {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching real-time users: ", error);
+      toast({
+        variant: "destructive",
+        title: "Permission Denied",
+        description: "You do not have permission to view the list of users."
+      });
+      setUsers([]);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const filteredUsers = useMemo(() => {
     if (filter === 'all') return users;
