@@ -2,17 +2,11 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore, doc, updateDoc, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { getApps, initializeApp } from 'firebase/app';
-import { firebaseConfig } from '@/firebase/config';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
 
-
-// Ensure Firebase is initialized
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 // Use a separate schema for server-side validation.
 const profileSchema = z.object({
@@ -40,6 +34,7 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
   try {
     const adminApp = getAdminApp();
     const adminAuth = getAdminAuth(adminApp);
+    const db = getFirestore(adminApp);
     
     // Update Firebase Auth display name
     await adminAuth.updateUser(userId, {
@@ -47,12 +42,14 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
     });
 
     // Update Firestore document
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
       ...profileData,
       fullName: fullName,
-      updatedAt: serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
+    
+    revalidatePath('/account/profile');
     return { success: true, errors: {} };
   } catch (error: any) {
     console.error("Error updating user profile:", error);
@@ -61,7 +58,7 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
         message = 'User not found. Could not update profile.';
     }
     return {
-      message: message,
+      message: error.message || message,
       success: false,
       errors: {},
     };
@@ -93,15 +90,17 @@ export async function saveUserAddress(prevState: any, formData: FormData) {
   const { userId, ...addressData } = parsed.data;
 
   try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    const adminApp = getAdminApp();
+    const db = getFirestore(adminApp);
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
       shippingAddress: addressData,
-      updatedAt: serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
     return { success: true, errors: {} };
   } catch (error: any) {
     return {
-      message: 'An unexpected error occurred.',
+      message: error.message || 'An unexpected error occurred.',
       success: false,
       errors: {},
     };
@@ -113,22 +112,24 @@ export async function toggleWishlist(userId: string, productId: string, isInWish
     return { success: false, message: 'User not logged in.' };
   }
 
-  const userRef = doc(db, 'users', userId);
-
   try {
+    const adminApp = getAdminApp();
+    const db = getFirestore(adminApp);
+    const userRef = db.collection('users').doc(userId);
+
     if (isInWishlist) {
-      await updateDoc(userRef, {
-        wishlist: arrayRemove(productId)
+      await userRef.update({
+        wishlist: FieldValue.arrayRemove(productId)
       });
     } else {
-      await updateDoc(userRef, {
-        wishlist: arrayUnion(productId)
+      await userRef.update({
+        wishlist: FieldValue.arrayUnion(productId)
       });
     }
     revalidatePath('/account/wishlist');
     return { success: true, message: isInWishlist ? 'Removed from wishlist' : 'Added to wishlist' };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error toggling wishlist:", error);
-    return { success: false, message: 'An unexpected error occurred.' };
+    return { success: false, message: error.message || 'An unexpected error occurred.' };
   }
 }

@@ -55,10 +55,8 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
         console.error("Error updating vendor settings:", error);
         return {
             success: false,
-            message: 'An unexpected error occurred while updating settings.',
+            message: error.message || 'An unexpected error occurred while updating settings.',
             errors: {},
         };
     }
 }
-
-    
