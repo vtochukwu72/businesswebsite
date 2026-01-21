@@ -1,15 +1,10 @@
 'use client';
-import {
-  Mail,
-  Trash2,
-  MoreVertical,
-  Archive,
-  ArchiveX,
-} from 'lucide-react';
-import { useEffect, useState, useTransition } from 'react';
+import { Mail, Trash2, MoreVertical, Archive, User as UserIcon } from 'lucide-react';
+import { useEffect, useState, useTransition, useMemo } from 'react';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,35 +24,40 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { ContactMessage } from '@/lib/types';
+import type { ContactMessage, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { toggleMessageReadStatus, deleteMessage } from './actions';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
 function MessageRowSkeleton() {
   return (
     <TableRow>
       <TableCell className="font-medium">
-        <Skeleton className="h-4 w-32" />
+        <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
         <Skeleton className="h-3 w-40 mt-1" />
       </TableCell>
       <TableCell>
         <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-3 w-64 mt-1" />
       </TableCell>
       <TableCell className="hidden md:table-cell">
         <Skeleton className="h-4 w-24" />
@@ -71,6 +71,7 @@ function MessageRowSkeleton() {
 
 export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -79,25 +80,58 @@ export default function AdminMessagesPage() {
 
   useEffect(() => {
     setLoading(true);
-    const messagesCollection = collection(db, 'contacts');
-    const q = query(messagesCollection, orderBy('createdAt', 'desc'));
+    let messagesLoaded = false;
+    let usersLoaded = false;
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const fetchedMessages: ContactMessage[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        fetchedMessages.push({
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-        } as ContactMessage);
+    const checkAllLoaded = () => {
+        if(messagesLoaded && usersLoaded) {
+            setLoading(false);
+        }
+    }
+
+    const messagesUnsub = onSnapshot(query(collection(db, 'contacts'), orderBy('createdAt', 'desc')), (snapshot) => {
+      const fetchedMessages: ContactMessage[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          } as ContactMessage;
       });
       setMessages(fetchedMessages);
-      setLoading(false);
+      messagesLoaded = true;
+      checkAllLoaded();
+    }, (error) => {
+        console.error("Error fetching messages:", error);
+        messagesLoaded = true;
+        checkAllLoaded();
+    });
+    
+    const usersUnsub = onSnapshot(query(collection(db, 'users')), (snapshot) => {
+        const userList: User[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+        setUsers(userList);
+        usersLoaded = true;
+        checkAllLoaded();
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        usersLoaded = true;
+        checkAllLoaded();
     });
 
-    return () => unsubscribe();
+    return () => {
+        messagesUnsub();
+        usersUnsub();
+    };
   }, []);
+
+  const enrichedMessages = useMemo(() => {
+    const userEmailMap = new Map(users.map(u => [u.email, u]));
+    return messages.map(msg => ({
+      ...msg,
+      sender: userEmailMap.get(msg.email) || null
+    }));
+  }, [messages, users]);
+
 
   const handleToggleRead = (message: ContactMessage) => {
     startTransition(async () => {
@@ -129,6 +163,20 @@ export default function AdminMessagesPage() {
     });
   };
 
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin':
+      case 'super_admin':
+        return 'destructive';
+      case 'seller':
+        return 'secondary';
+      case 'customer':
+        return 'default';
+      default:
+        return 'outline';
+    }
+  };
+
   return (
     <>
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -136,7 +184,7 @@ export default function AdminMessagesPage() {
         <CardHeader>
           <CardTitle>Inbox</CardTitle>
           <CardDescription>
-            Messages sent from the website contact form.
+            Live messages from users, vendors, and guests.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,43 +206,53 @@ export default function AdminMessagesPage() {
                   <MessageRowSkeleton />
                   <MessageRowSkeleton />
                 </>
-              ) : messages.length > 0 ? (
-                messages.map((message) => (
-                  <TableRow key={message.id} className={!message.isRead ? 'bg-muted/50 font-bold' : ''}>
-                    <TableCell>
-                      <div className="font-medium">{message.name}</div>
-                      <div className="text-sm text-muted-foreground">{message.email}</div>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{message.subject}</p>
-                      <p className="text-sm text-muted-foreground truncate max-w-xs">{message.message}</p>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
-                    </TableCell>
-                    <TableCell>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreVertical className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => handleToggleRead(message)}>
-                                    {message.isRead ? <Archive className="mr-2 h-4 w-4" /> : <Mail className="mr-2 h-4 w-4" />}
-                                    Mark as {message.isRead ? 'Unread' : 'Read'}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleDeleteClick(message)} className="text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+              ) : enrichedMessages.length > 0 ? (
+                enrichedMessages.map((message) => {
+                  const senderRole = message.sender ? message.sender.role.replace('_', ' ') : 'Guest';
+                  const senderName = message.sender?.displayName || message.name;
+
+                  return (
+                    <TableRow key={message.id} className={!message.isRead ? 'bg-muted/50' : ''}>
+                        <TableCell>
+                            <div className="flex items-center gap-2">
+                                <p className={`font-medium ${!message.isRead ? 'font-bold' : ''}`}>{senderName}</p>
+                                <Badge variant={getRoleBadgeVariant(senderRole)} className="capitalize">{senderRole}</Badge>
+                            </div>
+                            <a href={`mailto:${message.email}`} className="text-sm text-muted-foreground hover:underline">
+                                {message.email}
+                            </a>
+                        </TableCell>
+                        <TableCell>
+                        <p className={`font-medium ${!message.isRead ? 'font-bold' : ''}`}>{message.subject}</p>
+                        <p className="text-sm text-muted-foreground truncate max-w-xs">{message.message}</p>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                        {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+                        </TableCell>
+                        <TableCell>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreVertical className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onSelect={() => handleToggleRead(message)}>
+                                        {!message.isRead ? <Mail className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
+                                        Mark as {message.isRead ? 'Unread' : 'Read'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleDeleteClick(message)} className="text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
