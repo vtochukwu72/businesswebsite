@@ -43,7 +43,6 @@ function ProductRowSkeleton() {
       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
-      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
     </TableRow>
   );
@@ -82,30 +81,12 @@ export default function AdminProductsPage() {
     return vendors.get(sellerId)?.storeName || sellerId;
   }
   
-  const getVendorStatus = (sellerId: string): Vendor['status'] | undefined => {
-    return vendors.get(sellerId)?.status;
-  }
-  
-  const getVendorBadgeVariant = (status: Vendor['status'] | undefined) => {
-    switch (status) {
-      case 'approved':
-        return 'default';
-      case 'pending':
-        return 'secondary';
-      case 'suspended':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-  
   const handleExport = () => {
     const dataToExport = filteredProducts.map(product => ({
       'Product Name': product.name,
       'Status': product.isActive ? 'Active' : 'Draft',
       'Price (₦)': product.price.toFixed(2),
       'Seller': getSellerName(product.sellerId),
-      'Vendor Status': getVendorStatus(product.sellerId) || 'Unknown',
       'Stock': product.stockQuantity,
     }));
 
@@ -172,9 +153,6 @@ export default function AdminProductsPage() {
                       Seller
                     </TableHead>
                     <TableHead className="hidden md:table-cell">
-                      Vendor Status
-                    </TableHead>
-                    <TableHead className="hidden md:table-cell">
                       Stock
                     </TableHead>
                   </TableRow>
@@ -211,23 +189,13 @@ export default function AdminProductsPage() {
                           {getSellerName(product.sellerId)}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {(() => {
-                            const status = getVendorStatus(product.sellerId);
-                            return (
-                              <Badge variant={getVendorBadgeVariant(status)} className="capitalize">
-                                {status || 'Unknown'}
-                              </Badge>
-                            );
-                          })()}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
                           {product.stockQuantity}
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                      <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={6} className="h-24 text-center">
                         No products found.
                       </TableCell>
                     </TableRow>

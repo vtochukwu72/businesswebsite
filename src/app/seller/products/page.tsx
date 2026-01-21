@@ -3,7 +3,6 @@
 import {
     File,
     PlusCircle,
-    Info
   } from 'lucide-react'
   import Image from 'next/image';
   import Link from 'next/link';
@@ -35,7 +34,6 @@ import {
     TabsList,
     TabsTrigger,
   } from '@/components/ui/tabs'
-  import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
   import { useAuth } from '@/context/auth-context';
   import type { Product } from '@/lib/types';
   import { Skeleton } from '@/components/ui/skeleton';
@@ -64,13 +62,12 @@ import {
   }
 
   export default function SellerProductsPage() {
-    const { user, vendorData, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [productsLoading, setProductsLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const { toast } = useToast();
 
-    const isApproved = vendorData?.status === 'approved';
     const loading = authLoading || productsLoading;
 
     useEffect(() => {
@@ -128,7 +125,7 @@ import {
                   Export
                 </span>
               </Button>
-              <Button asChild size="sm" className="h-8 gap-1" disabled={!isApproved}>
+              <Button asChild size="sm" className="h-8 gap-1">
                 <Link href="/seller/products/new">
                   <PlusCircle className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -139,15 +136,6 @@ import {
             </div>
           </div>
           <TabsContent value={filter}>
-             {!loading && !isApproved && (
-              <Alert variant="default" className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800">
-                <Info className="h-4 w-4 !text-yellow-800" />
-                <AlertTitle>Account Not Approved</AlertTitle>
-                <AlertDescription>
-                  Your account is not yet approved, so you cannot add new products. Please complete your profile in <Link href="/seller/settings" className="font-semibold underline">Settings</Link> and wait for admin approval.
-                </AlertDescription>
-              </Alert>
-            )}
             <Card>
               <CardHeader>
                 <CardTitle>Your Products</CardTitle>

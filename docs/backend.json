@@ -461,10 +461,6 @@
           "type": "string",
           "description": "Vendor's store address."
         },
-        "status": {
-          "type": "string",
-          "description": "Status of the vendor (pending, approved, suspended)."
-        },
         "nin": {
           "type": "string",
           "description": "National Identification Number for verification."
@@ -495,8 +491,7 @@
       },
       "required": [
         "id",
-        "storeName",
-        "status"
+        "storeName"
       ]
     },
     "Contact": {

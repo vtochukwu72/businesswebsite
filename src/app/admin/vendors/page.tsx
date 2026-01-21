@@ -39,7 +39,6 @@ import {
 import type { Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Eye } from 'lucide-react';
-import { updateVendorStatus } from './actions';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -55,9 +54,6 @@ function VendorRowSkeleton() {
         <Skeleton className="h-4 w-40" />
       </TableCell>
       <TableCell>
-        <Skeleton className="h-6 w-20" />
-      </TableCell>
-      <TableCell>
         <Skeleton className="h-8 w-8 ml-auto" />
       </TableCell>
     </TableRow>
@@ -68,7 +64,6 @@ export default function AdminVendorsPage() {
   const { user, loading: authLoading } = useAuth();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
-  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
@@ -129,44 +124,9 @@ export default function AdminVendorsPage() {
     }
   }, [vendors, selectedVendor]);
 
-
-  const handleStatusChange = (
-    vendorId: string,
-    status: 'approved' | 'suspended' | 'pending'
-  ) => {
-    startTransition(async () => {
-      const result = await updateVendorStatus(vendorId, status);
-      if (result.success) {
-        toast({
-          title: 'Status Updated',
-          description: result.message,
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: result.message,
-        });
-      }
-    });
-  };
-
   const handleViewDetails = (vendor: Vendor) => {
     setSelectedVendor(vendor);
     setDetailsDialogOpen(true);
-  };
-
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'default';
-      case 'pending':
-        return 'secondary';
-      case 'suspended':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
   };
   
   const isLoading = authLoading || dataLoading;
@@ -178,7 +138,7 @@ export default function AdminVendorsPage() {
           <CardHeader>
             <CardTitle>Vendors</CardTitle>
             <CardDescription>
-              Manage vendor accounts and their approval status. Data is updated
+              Manage vendor accounts and their details. Data is updated
               in real-time.
             </CardDescription>
           </CardHeader>
@@ -188,7 +148,6 @@ export default function AdminVendorsPage() {
                 <TableRow>
                   <TableHead>Store Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -209,14 +168,6 @@ export default function AdminVendorsPage() {
                       </TableCell>
                       <TableCell>{vendor.email}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={getBadgeVariant(vendor.status)}
-                          className="capitalize"
-                        >
-                          {vendor.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -236,33 +187,6 @@ export default function AdminVendorsPage() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleStatusChange(vendor.id, 'approved')
-                              }
-                              disabled={isPending || vendor.status === 'approved'}
-                            >
-                              Approve
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleStatusChange(vendor.id, 'suspended')
-                              }
-                              disabled={
-                                isPending || vendor.status === 'suspended'
-                              }
-                            >
-                              Suspend
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleStatusChange(vendor.id, 'pending')
-                              }
-                              disabled={isPending || vendor.status === 'pending'}
-                            >
-                              Set to Pending
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -270,7 +194,7 @@ export default function AdminVendorsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={3} className="h-24 text-center">
                       No vendors found.
                     </TableCell>
                   </TableRow>
@@ -303,17 +227,6 @@ export default function AdminVendorsPage() {
                 <Label className="text-right mt-1 text-muted-foreground">Description</Label>
                 <div className="col-span-3">
                   {selectedVendor.storeDescription || 'N/A'}
-                </div>
-              </div>
-               <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Status</Label>
-                <div className="col-span-3">
-                     <Badge
-                        variant={getBadgeVariant(selectedVendor.status)}
-                        className="capitalize"
-                        >
-                        {selectedVendor.status}
-                    </Badge>
                 </div>
               </div>
 

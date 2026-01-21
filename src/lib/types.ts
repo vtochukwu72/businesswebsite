@@ -40,7 +40,6 @@ export type Vendor = {
   email: string;
   phone: string;
   address: string;
-  status: 'pending' | 'approved' | 'suspended';
   nin: string;
   payoutDetails: {
     businessName: string;
