@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -11,23 +10,49 @@ import {
   Users,
   LineChart,
   Store,
+  MessageSquare,
 } from 'lucide-react';
-
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { useAuth } from '@/context/auth-context';
+import { useAuth, AuthContextType } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { useToast } from '@/hooks/use-toast';
 
-function AdminDashboard({ children }: { children: React.ReactNode }) {
+function AdminDashboard({ children, notificationCount, authProps }: { children: React.ReactNode, notificationCount: number, authProps: AuthContextType }) {
+  const { user, userData, logout } = authProps;
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/admin-login');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'An error occurred while logging out.',
+      });
+    }
+  };
+    
   return (
     <SidebarProvider>
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -47,7 +72,6 @@ function AdminDashboard({ children }: { children: React.ReactNode }) {
                 <SidebarMenuItem>
                     <SidebarMenuButton href="/admin/orders" leftIcon={<ShoppingCart/>}>
                         Orders
-                         <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">12</Badge>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
@@ -59,23 +83,13 @@ function AdminDashboard({ children }: { children: React.ReactNode }) {
                  <SidebarMenuItem>
                     <SidebarMenuButton href="/admin/vendors" leftIcon={<Store/>}>Vendors</SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton href="/admin/messages" leftIcon={<MessageSquare />}>Messages</SidebarMenuButton>
+                </SidebarMenuItem>
                  <SidebarMenuItem>
                     <SidebarMenuButton href="#" leftIcon={<LineChart/>}>Analytics</SidebarMenuButton>
                 </SidebarMenuItem>
              </SidebarMenu>
-           </SidebarGroup>
-           <SidebarGroup className="mt-auto">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Need Help?</CardTitle>
-                    <CardDescription>
-                        Contact our support team for any questions.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button size="sm" className="w-full">Contact Support</Button>
-                </CardContent>
-            </Card>
            </SidebarGroup>
         </SidebarContent>
       </Sidebar>
@@ -85,10 +99,35 @@ function AdminDashboard({ children }: { children: React.ReactNode }) {
           <div className="w-full flex-1">
             {/* Can add a search bar here if needed */}
           </div>
-          <Button variant="outline" size="icon" className="h-8 w-8">
+          <Button variant="outline" size="icon" className="relative h-8 w-8">
             <Bell className="h-4 w-4" />
+             {notificationCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full p-0 text-xs">
+                    {notificationCount}
+                </Badge>
+            )}
             <span className="sr-only">Toggle notifications</span>
           </Button>
+           <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={user?.photoURL || userData?.photoURL || ''} alt={userData?.displayName || 'Admin'} />
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {(userData?.fname?.[0] || userData?.displayName?.[0] || user?.email?.[0] || 'A').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link href="/admin">Dashboard</Link></DropdownMenuItem>
+                <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         </header>
         <SidebarInset>
            {children}
@@ -104,9 +143,11 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, userData, loading } = useAuth();
+  const authProps = useAuth();
+  const { user, userData, loading } = authProps;
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     setIsClient(true);
@@ -119,6 +160,38 @@ export default function AdminLayout({
       }
     }
   }, [user, userData, loading, router]);
+  
+  useEffect(() => {
+    let pendingVendorsCount = 0;
+    let unreadMessagesCount = 0;
+    let unsubVendors: () => void = () => {};
+    let unsubMessages: () => void = () => {};
+
+    const updateTotal = () => {
+        setNotificationCount(pendingVendorsCount + unreadMessagesCount);
+    }
+    
+    if (user) {
+        // Listen for pending vendors
+        const vendorsQuery = query(collection(db, 'vendors'), where('status', '==', 'pending'));
+        unsubVendors = onSnapshot(vendorsQuery, (snapshot) => {
+            pendingVendorsCount = snapshot.size;
+            updateTotal();
+        });
+
+        // Listen for unread messages
+        const messagesQuery = query(collection(db, 'contacts'), where('isRead', '==', false));
+        unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
+            unreadMessagesCount = snapshot.size;
+            updateTotal();
+        });
+    }
+
+    return () => {
+        unsubVendors();
+        unsubMessages();
+    }
+  }, [user]);
 
   if (loading || !user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
     return (
@@ -134,8 +207,8 @@ export default function AdminLayout({
   }
 
   return (
-    <AdminDashboard>{children}</AdminDashboard>
+    <AdminDashboard notificationCount={notificationCount} authProps={authProps}>
+        {children}
+    </AdminDashboard>
   );
 }
-
-    

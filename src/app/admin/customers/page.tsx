@@ -1,6 +1,6 @@
 'use client';
-import { File } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { File, MoreHorizontal } from 'lucide-react';
+import { useEffect, useState, useMemo, useTransition } from 'react';
 import * as XLSX from 'xlsx';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -15,6 +15,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Table,
   TableBody,
@@ -31,6 +48,8 @@ import {
 } from '@/components/ui/tabs';
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { deleteUser } from './actions';
 
 function UserRowSkeleton() {
   return (
@@ -39,6 +58,7 @@ function UserRowSkeleton() {
       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
     </TableRow>
   );
 }
@@ -47,6 +67,10 @@ export default function AdminCustomersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [isPending, startTransition] = useTransition();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -60,7 +84,6 @@ export default function AdminCustomersPage() {
         fetchedUsers.push({
           id: doc.id,
           ...data,
-          // Convert Firestore Timestamp to a format that can be serialized
           createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
         } as User);
       });
@@ -71,7 +94,6 @@ export default function AdminCustomersPage() {
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -84,12 +106,38 @@ export default function AdminCustomersPage() {
     switch (role) {
       case 'admin':
       case 'super_admin':
-        return 'default';
+        return 'destructive';
       case 'seller':
         return 'secondary';
       default:
-        return 'outline';
+        return 'default';
     }
+  }
+
+  const handleDeleteClick = (user: User) => {
+    setSelectedUser(user);
+    setDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!selectedUser) return;
+    startTransition(async () => {
+        const result = await deleteUser(selectedUser.id);
+        if (result.success) {
+            toast({
+                title: 'User Deleted',
+                description: result.message,
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: result.message,
+            });
+        }
+        setDialogOpen(false);
+        setSelectedUser(null);
+    });
   }
 
   const handleExport = () => {
@@ -107,6 +155,7 @@ export default function AdminCustomersPage() {
   };
 
   return (
+    <>
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <Tabs defaultValue="all" onValueChange={setFilter}>
         <div className="flex items-center">
@@ -134,9 +183,9 @@ export default function AdminCustomersPage() {
         <TabsContent value={filter}>
           <Card>
             <CardHeader>
-              <CardTitle>Customers</CardTitle>
+              <CardTitle>Platform Users</CardTitle>
               <CardDescription>
-                Manage your customers and view their information.
+                Manage all users and view their information.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -150,6 +199,9 @@ export default function AdminCustomersPage() {
                     </TableHead>
                     <TableHead className="hidden md:table-cell">
                       Joined Date
+                    </TableHead>
+                     <TableHead>
+                        <span className="sr-only">Actions</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -176,11 +228,27 @@ export default function AdminCustomersPage() {
                         <TableCell className="hidden md:table-cell">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </TableCell>
+                        <TableCell>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onSelect={() => handleDeleteClick(user)}>
+                                        Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
+                      <TableCell colSpan={5} className="h-24 text-center">
                         No users found.
                       </TableCell>
                     </TableRow>
@@ -197,5 +265,23 @@ export default function AdminCustomersPage() {
         </TabsContent>
       </Tabs>
     </main>
+    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the user account
+                and all associated data from our servers.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isPending}>
+                {isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

@@ -75,10 +75,13 @@ export type Review = {
 };
 
 export type ContactMessage = {
+  id: string;
   name: string;
   email: string;
   subject: string;
   message: string;
+  createdAt: any;
+  isRead: boolean;
 };
 
 export type Order = {
@@ -90,5 +93,3 @@ export type Order = {
   createdAt: any; // Should be a Firestore Timestamp, but 'any' for simplicity client-side
   grandTotal: number;
 };
-
-    
