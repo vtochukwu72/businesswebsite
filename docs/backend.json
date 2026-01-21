@@ -475,7 +475,7 @@
           "properties": {
             "businessName": {
               "type": "string",
-              "description": "The legal business name associated with the bank account."
+              "description": "The name on the bank account."
             },
             "accountNumber": {
               "type": "string",

@@ -35,11 +35,9 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
             storeName: vendorData.storeName,
             storeDescription: vendorData.storeDescription,
             nin: vendorData.nin,
-            payoutDetails: {
-                businessName: vendorData.businessName,
-                accountNumber: vendorData.accountNumber,
-                bankName: vendorData.bankName,
-            },
+            'payoutDetails.businessName': vendorData.businessName,
+            'payoutDetails.accountNumber': vendorData.accountNumber,
+            'payoutDetails.bankName': vendorData.bankName,
         });
         
         revalidatePath('/seller/settings');
@@ -53,5 +51,3 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
         };
     }
 }
-
-    

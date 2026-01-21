@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -202,7 +201,7 @@ export default function SellerSettingsPage() {
                  <h3 className="text-lg font-medium">Payout Details</h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="businessName">Legal Business Name</Label>
+                        <Label htmlFor="businessName">Account Name</Label>
                         <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleInputChange} />
                         {state.errors?.businessName && (
                             <p className="text-sm text-destructive">{state.errors.businessName.join(', ')}</p>

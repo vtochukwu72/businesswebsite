@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState, useTransition } from 'react';
 import { collection, query, onSnapshot } from 'firebase/firestore';
@@ -315,7 +314,7 @@ export default function AdminVendorsPage() {
               <Separator className="my-2" />
               <h4 className="font-medium col-span-4 -mb-2">Payout Details</h4>
               <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
-                <Label className="text-right text-muted-foreground">Business Name</Label>
+                <Label className="text-right text-muted-foreground">Account Name</Label>
                 <div className="col-span-3">
                   {selectedVendor.payoutDetails?.businessName || 'Not Provided'}
                 </div>
@@ -344,4 +343,3 @@ export default function AdminVendorsPage() {
     </>
   );
 }
-
