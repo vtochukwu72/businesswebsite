@@ -6,7 +6,9 @@ import {
   DollarSign,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +29,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import Link from 'next/link';
-import { getAllOrders } from '@/services/order-service';
-import { getUsers } from '@/services/user-service';
 import type { Order, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -36,43 +36,89 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    totalSales: 0,
-    totalUsers: 0,
-    recentActivity: 0,
-  });
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      const [fetchedOrders, allUsers] = await Promise.all([
-        getAllOrders(),
-        getUsers()
-      ]);
-      
-      const totalRevenue = fetchedOrders.reduce((sum, order) => sum + order.grandTotal, 0);
+    setLoading(true);
+    let ordersLoaded = false;
+    let usersLoaded = false;
 
-      const now = new Date();
-      const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-      
-      const recentOrdersCount = fetchedOrders.filter(order => new Date(order.createdAt) > twentyFourHoursAgo).length;
-      const recentUsersCount = allUsers.filter(user => new Date(user.createdAt) > twentyFourHoursAgo).length;
-      const recentActivity = recentOrdersCount + recentUsersCount;
+    const doneLoading = () => {
+      if (ordersLoaded && usersLoaded) {
+        setLoading(false);
+      }
+    };
 
-      setOrders(fetchedOrders);
-      setUsers(allUsers); 
-      setStats({
-        totalRevenue,
-        totalSales: fetchedOrders.length,
-        totalUsers: allUsers.length,
-        recentActivity: recentActivity,
-      });
+    const ordersUnsub = onSnapshot(
+      query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        const orderList = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+          } as Order;
+        });
+        setOrders(orderList);
+        ordersLoaded = true;
+        doneLoading();
+      },
+      (err) => {
+        console.error("Error fetching orders snapshot:", err);
+        ordersLoaded = true;
+        doneLoading();
+      }
+    );
 
-      setLoading(false);
-    }
-    fetchData();
+    const usersUnsub = onSnapshot(
+      query(collection(db, 'users'), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        const userList = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+          } as User;
+        });
+        setUsers(userList);
+        usersLoaded = true;
+        doneLoading();
+      },
+      (err) => {
+        console.error("Error fetching users snapshot:", err);
+        usersLoaded = true;
+        doneLoading();
+      }
+    );
+
+    return () => {
+      ordersUnsub();
+      usersUnsub();
+    };
   }, []);
+
+  const stats = useMemo(() => {
+    const totalRevenue = orders.reduce((sum, order) => sum + order.grandTotal, 0);
+
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+    const recentOrdersCount = orders.filter(
+      (order) => new Date(order.createdAt) > twentyFourHoursAgo
+    ).length;
+    const recentUsersCount = users.filter(
+      (user) => new Date(user.createdAt) > twentyFourHoursAgo
+    ).length;
+    const recentActivity = recentOrdersCount + recentUsersCount;
+
+    return {
+      totalRevenue,
+      totalSales: orders.length,
+      totalUsers: users.length,
+      recentActivity,
+    };
+  }, [orders, users]);
   
   const recentSignups = users.slice(0, 5);
   const recentOrders = orders.slice(0, 5);
