@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -102,6 +102,42 @@ export default function AdminVendorsPage() {
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [toast]);
+
+  useEffect(() => {
+    if (!detailsDialogOpen || !selectedVendor?.id) {
+      return;
+    }
+
+    const vendorDocRef = doc(db, 'vendors', selectedVendor.id);
+    const unsubscribe = onSnapshot(
+      vendorDocRef,
+      (doc) => {
+        if (doc.exists()) {
+          // Update the state for the dialog with the latest data
+          setSelectedVendor({ id: doc.id, ...doc.data() } as Vendor);
+        } else {
+          // Vendor was deleted, so close the dialog and show a message
+          setDetailsDialogOpen(false);
+          toast({
+            variant: 'destructive',
+            title: 'Vendor Not Found',
+            description: 'This vendor may have been deleted.',
+          });
+        }
+      },
+      (error) => {
+        console.error('Error listening to vendor details:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Real-time Error',
+          description: 'Could not get live updates for this vendor.',
+        });
+      }
+    );
+
+    // Cleanup the single-document listener when the dialog closes or component unmounts
+    return () => unsubscribe();
+  }, [detailsDialogOpen, selectedVendor?.id, toast]);
 
   const handleStatusChange = (
     vendorId: string,
