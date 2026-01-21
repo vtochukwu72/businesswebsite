@@ -1,7 +1,8 @@
 'use client';
 import { File, ListFilter, PlusCircle } from 'lucide-react';
-import Image from 'next/image';
 import { useEffect, useState, useMemo } from 'react';
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,14 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -35,7 +28,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { getUsers } from '@/services/user-service';
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -56,13 +48,30 @@ export default function AdminCustomersPage() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    async function fetchUsers() {
-      setLoading(true);
-      const fetchedUsers = await getUsers();
+    setLoading(true);
+    const usersCollection = collection(db, 'users');
+    const q = query(usersCollection, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedUsers: User[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        fetchedUsers.push({
+          id: doc.id,
+          ...data,
+          // Convert Firestore Timestamp to a format that can be serialized
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        } as User);
+      });
       setUsers(fetchedUsers);
       setLoading(false);
-    }
-    fetchUsers();
+    }, (error) => {
+      console.error("Error fetching real-time users: ", error);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const filteredUsers = useMemo(() => {
