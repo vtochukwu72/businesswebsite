@@ -1,16 +1,16 @@
-
 'use client';
 
 import Link from 'next/link';
-import {
-  Menu,
-  Search,
-  ShoppingCart,
-  User,
-} from 'lucide-react';
+import { Menu, Search, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -34,7 +34,7 @@ import {
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { products as staticProducts } from '@/lib/static-data';
-import { useAuth, type AuthContextType } from '@/context/auth-context';
+import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -51,7 +51,6 @@ export function Header() {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
 
   const handleLogout = async () => {
     try {
@@ -95,14 +94,14 @@ export function Header() {
         </div>
 
         <div className="flex items-center md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="mr-4">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            {isClient && (
+          {isClient ? (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="mr-4">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
               <SheetContent side="left" className="flex flex-col">
                 <SheetHeader>
                   <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
@@ -140,23 +139,28 @@ export function Header() {
                   </nav>
                   <div className="mt-auto">
                     {!loading && !user && (
-                        <>
-                            <Separator className="my-4" />
-                            <div className="grid gap-2">
-                                <Button asChild>
-                                    <Link href="/login">Sign In</Link>
-                                </Button>
-                                <Button asChild variant="outline">
-                                    <Link href="/register">Register</Link>
-                                </Button>
-                            </div>
-                        </>
+                      <>
+                        <Separator className="my-4" />
+                        <div className="grid gap-2">
+                          <Button asChild>
+                            <Link href="/login">Sign In</Link>
+                          </Button>
+                          <Button asChild variant="outline">
+                            <Link href="/register">Register</Link>
+                          </Button>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
               </SheetContent>
-            )}
-          </Sheet>
+            </Sheet>
+          ) : (
+            <Button variant="outline" size="icon" className="mr-4" disabled>
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          )}
 
           <Link href="/" className="flex items-center gap-2 md:hidden">
             <Icons.logo className="h-6 w-6 text-primary" />
@@ -165,37 +169,51 @@ export function Header() {
         </div>
 
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
+          {isClient ? (
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Shop</NavigationMenuTrigger>
-                   {isClient && (
-                    <NavigationMenuContent>
-                        <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
-                        <ListItem href="/products" title="All Products">
-                            Browse our full collection of amazing products.
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                      <ListItem href="/products" title="All Products">
+                        Browse our full collection of amazing products.
+                      </ListItem>
+                      <ListItem href="/products" title="Deals">
+                        Check out our latest deals and special offers.
+                      </ListItem>
+                      {categories.map((category) => (
+                        <ListItem
+                          key={category}
+                          href="/products"
+                          title={category}
+                        >
+                          Shop all items in the {category} category.
                         </ListItem>
-                        <ListItem href="/products" title="Deals">
-                            Check out our latest deals and special offers.
-                        </ListItem>
-                        {categories.map((category) => (
-                            <ListItem key={category} href="/products" title={category}>
-                            Shop all items in the {category} category.
-                            </ListItem>
-                        ))}
-                        </ul>
-                    </NavigationMenuContent>
-                   )}
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
                 </NavigationMenuItem>
                 {otherLinks.map((link) => (
                   <NavigationMenuItem key={link.href}>
-                      <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                        <Link href={link.href}>{link.label}</Link>
-                      </NavigationMenuLink>
+                    <NavigationMenuLink
+                      asChild
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      <Link href={link.href}>{link.label}</Link>
+                    </NavigationMenuLink>
                   </NavigationMenuItem>
                 ))}
               </NavigationMenuList>
             </NavigationMenu>
+          ) : (
+            <div className="flex items-center gap-1">
+              <div className={cn(navigationMenuTriggerStyle(), 'cursor-wait opacity-60')}>Shop</div>
+              {otherLinks.map(link => (
+                <div key={link.href} className={cn(navigationMenuTriggerStyle(), 'cursor-wait opacity-60')}>{link.label}</div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="ml-auto flex flex-1 items-center justify-end gap-2">
@@ -218,42 +236,47 @@ export function Header() {
               <span className="sr-only">Cart</span>
             </Button>
           </Link>
-
-          {loading || !isClient ? (
-            <div className="hidden sm:flex items-center gap-2">
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-24" />
-            </div>
-          ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.photoURL || userData?.photoURL || ''} alt={user.displayName || 'User'} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {(userData?.fname?.[0] || user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+          
+          {isClient ? (
+            loading ? (
+              <div className="hidden sm:flex">
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.photoURL || userData?.photoURL || ''} alt={user.displayName || 'User'} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {(userData?.fname?.[0] || user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href="/account">Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/account/orders">Orders</Link></DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2">
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/login">Sign In</Link>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href="/account">Profile</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link href="/account/orders">Orders</Link></DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <Button asChild size="sm">
+                  <Link href="/register">Register</Link>
+                </Button>
+              </div>
+            )
           ) : (
-            <div className="hidden sm:flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/login">Sign In</Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link href="/register">Register</Link>
-              </Button>
-            </div>
+            <div className="hidden sm:flex">
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
           )}
         </div>
       </div>
