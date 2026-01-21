@@ -48,3 +48,5 @@ firebase-debug.*.log
 *.njsproj
 *.sln
 *.sw?
+# Ignore the Firebase Service Account key
+service-account.json

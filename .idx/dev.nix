@@ -4,6 +4,10 @@
   # Which nixpkgs channel to use.
   channel = "stable-24.11"; # or "unstable"
   # Use https://search.nixos.org/packages to find packages
+  env = {
+  GOOGLE_APPLICATION_CREDENTIALS = "/home/user/studio/service-account.json";
+};
+
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
@@ -30,6 +34,7 @@
         ];
       };
     };
+    
     # Enable previews and customize configuration
     previews = {
       enable = true;
@@ -38,7 +43,10 @@
           command = ["npm" "run" "dev" "--" "--port" "$PORT" "--hostname" "0.0.0.0"];
           manager = "web";
         };
+        
       };
+      
     };
   };
 }
+

@@ -102,24 +102,11 @@ export default function SellerSettingsPage() {
   }, [vendorData]);
 
   useEffect(() => {
-    if (state.success) {
-      toast({
-        title: 'Success!',
-        description: state.message,
-      });
-    } else if (state.message) {
-       if (state.message.includes('FIREBASE_SERVICE_ACCOUNT')) {
+    if (state.message) {
+      if (state.success) {
         toast({
-          variant: 'destructive',
-          duration: 10000,
-          title: 'Server Configuration Error',
-          description: (
-            <div className="text-xs">
-              <p>The server cannot save your settings because it is missing its Firebase Admin credentials.</p>
-              <p className="mt-2">Please set the <strong>FIREBASE_SERVICE_ACCOUNT</strong> environment variable in your hosting environment.</p>
-              <p className="mt-2">Refer to the <strong>VERCEL_DEPLOYMENT.md</strong> file for instructions.</p>
-            </div>
-          ),
+          title: 'Success!',
+          description: state.message,
         });
       } else {
         toast({
