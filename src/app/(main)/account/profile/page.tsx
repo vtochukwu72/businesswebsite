@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -33,6 +32,7 @@ export default function ProfilePage() {
   const [state, formAction] = useActionState(updateUserProfile, {
     success: false,
     errors: {},
+    message: ''
   });
 
   useEffect(() => {
@@ -42,11 +42,26 @@ export default function ProfilePage() {
         description: 'Your changes have been saved successfully.',
       });
     } else if (state.message) {
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: state.message,
-      });
+      if (state.message.includes('FIREBASE_SERVICE_ACCOUNT')) {
+        toast({
+          variant: 'destructive',
+          duration: 10000,
+          title: 'Server Configuration Error',
+          description: (
+            <div className="text-xs">
+              <p>The server cannot update your profile because it is missing its Firebase Admin credentials.</p>
+              <p className="mt-2">Please set the <strong>FIREBASE_SERVICE_ACCOUNT</strong> environment variable in your hosting environment.</p>
+               <p className="mt-2">Refer to the <strong>VERCEL_DEPLOYMENT.md</strong> file for instructions.</p>
+            </div>
+          ),
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: state.message,
+        });
+      }
     }
   }, [state, toast]);
 

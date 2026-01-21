@@ -108,11 +108,26 @@ export default function SellerSettingsPage() {
         description: state.message,
       });
     } else if (state.message) {
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: state.message,
-      });
+       if (state.message.includes('FIREBASE_SERVICE_ACCOUNT')) {
+        toast({
+          variant: 'destructive',
+          duration: 10000,
+          title: 'Server Configuration Error',
+          description: (
+            <div className="text-xs">
+              <p>The server cannot save your settings because it is missing its Firebase Admin credentials.</p>
+              <p className="mt-2">Please set the <strong>FIREBASE_SERVICE_ACCOUNT</strong> environment variable in your hosting environment.</p>
+              <p className="mt-2">Refer to the <strong>VERCEL_DEPLOYMENT.md</strong> file for instructions.</p>
+            </div>
+          ),
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: state.message,
+        });
+      }
     }
   }, [state, toast]);
   
@@ -230,5 +245,3 @@ export default function SellerSettingsPage() {
     </main>
   );
 }
-
-    
