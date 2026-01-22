@@ -148,6 +148,7 @@ export default function AdminLayout({
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
@@ -162,41 +163,29 @@ export default function AdminLayout({
   }, [user, userData, loading, router]);
   
   useEffect(() => {
-    let pendingVendorsCount = 0;
-    let unreadMessagesCount = 0;
-    let unsubVendors: () => void = () => {};
-    let unsubMessages: () => void = () => {};
-
-    const updateTotal = () => {
-        setNotificationCount(pendingVendorsCount + unreadMessagesCount);
+    if (!user) {
+      setNotificationCount(0);
+      return;
     }
     
-    if (user) {
-        // Listen for pending vendors
-        const vendorsQuery = query(collection(db, 'vendors'), where('status', '==', 'pending'));
-        unsubVendors = onSnapshot(vendorsQuery, (snapshot) => {
-            pendingVendorsCount = snapshot.size;
-            updateTotal();
-        }, (error) => {
-            console.error("Notification (vendors) snapshot error:", error);
-            // Don't show a toast for background listeners, just log it.
+    // Listen for unread messages. This is the only notification source now.
+    const messagesQuery = query(collection(db, 'contacts'), where('isRead', '==', false));
+    const unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
+        setNotificationCount(snapshot.size);
+    }, (error) => {
+        console.error("Notification (messages) snapshot error:", error);
+        toast({
+          variant: "destructive",
+          title: "Could not load notifications",
+          description: "There was a problem fetching live message updates."
         });
-
-        // Listen for unread messages
-        const messagesQuery = query(collection(db, 'contacts'), where('isRead', '==', false));
-        unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
-            unreadMessagesCount = snapshot.size;
-            updateTotal();
-        }, (error) => {
-            console.error("Notification (messages) snapshot error:", error);
-        });
-    }
+        setNotificationCount(0);
+    });
 
     return () => {
-        unsubVendors();
         unsubMessages();
     }
-  }, [user]);
+  }, [user, toast]);
 
   if (loading || !user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
     return (

@@ -21,22 +21,16 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { useAuth, AuthContextType } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
-import { getOrdersBySeller } from '@/services/order-service';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 
 function SellerDashboard({ children, pendingOrderCount, authProps }: { children: React.ReactNode; pendingOrderCount: number, authProps: AuthContextType }) {
-  const { user, userData, vendorData, logout } = authProps;
+  const { user, userData, logout } = authProps;
   const router = useRouter();
   const { toast } = useToast();
 
@@ -129,24 +123,6 @@ function SellerDashboard({ children, pendingOrderCount, authProps }: { children:
             </DropdownMenu>
           </header>
           <SidebarInset>
-            {vendorData && vendorData.status !== 'approved' && (
-              <div className="p-4 sm:px-6">
-                  <Card className={vendorData.status === 'pending' ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}>
-                    <CardHeader>
-                      <CardTitle className={vendorData.status === 'pending' ? 'text-blue-800' : 'text-red-800'}>
-                        {vendorData.status === 'pending'
-                          ? 'Application Pending Review'
-                          : 'Application Rejected'}
-                      </CardTitle>
-                      <CardDescription className={vendorData.status === 'pending' ? 'text-blue-700' : 'text-red-700'}>
-                        {vendorData.status === 'pending'
-                          ? 'Your vendor application is currently under review by our compliance team. You can continue to set up your store and add products, but they will not be publicly visible until your application is approved.'
-                          : `Your application was rejected. Reason: ${vendorData.compliance?.justification || 'No reason provided.'}. Please correct the issues and contact support.`}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-              </div>
-            )}
              {children}
           </SidebarInset>
         </div>
@@ -165,6 +141,7 @@ export default function SellerLayout({
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
@@ -177,20 +154,28 @@ export default function SellerLayout({
   }, [user, userData, loading, router]);
 
   useEffect(() => {
-    async function fetchPendingOrders() {
-      if (user) {
-        const orders = await getOrdersBySeller(user.uid);
-        const pendingCount = orders.filter(
-          (order) => order.orderStatus.toLowerCase() === 'pending'
-        ).length;
-        setPendingOrderCount(pendingCount);
-      }
+    if (!user) {
+      setPendingOrderCount(0);
+      return;
     }
 
-    if (user) {
-      fetchPendingOrders();
-    }
-  }, [user]);
+    // Use onSnapshot for real-time updates on pending orders
+    const ordersQuery = query(collection(db, 'vendors', user.uid, 'orders'), where('orderStatus', '==', 'pending'));
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      setPendingOrderCount(snapshot.size);
+    }, (error) => {
+      console.error("Seller notification (orders) snapshot error:", error);
+      toast({
+        variant: "destructive",
+        title: "Could not load notifications",
+        description: "There was a problem fetching live order updates."
+      });
+      setPendingOrderCount(0);
+    });
+
+    return () => unsubscribe();
+  }, [user, toast]);
+
 
   if (loading || !user || userData?.role !== 'seller') {
     return (
@@ -209,5 +194,3 @@ export default function SellerLayout({
     <SellerDashboard pendingOrderCount={pendingOrderCount} authProps={authProps}>{children}</SellerDashboard>
   );
 }
-
-    
