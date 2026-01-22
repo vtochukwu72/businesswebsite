@@ -21,6 +21,8 @@ export type Product = {
   };
   isActive: boolean;
   tags: string[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type User = {
