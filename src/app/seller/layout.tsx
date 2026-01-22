@@ -148,10 +148,27 @@ export default function SellerLayout({
   }, []);
 
   useEffect(() => {
-    if (!loading && (!user || userData?.role !== 'seller')) {
+    if (loading) return;
+
+    if (!user) {
       router.push('/seller-login');
+      return;
     }
-  }, [user, userData, loading, router]);
+
+    if (userData && userData.role !== 'seller') {
+      const { role } = userData;
+      let destination = '/login'; // Fallback
+      if (role === 'customer') destination = '/account';
+      if (['admin', 'super_admin'].includes(role)) destination = '/admin';
+
+      toast({
+        variant: 'destructive',
+        title: 'Access Denied',
+        description: `This is a seller-only area. Redirecting you to your ${role} dashboard.`,
+      });
+      router.push(destination);
+    }
+  }, [user, userData, loading, router, toast]);
 
   useEffect(() => {
     if (!user) {
@@ -177,7 +194,7 @@ export default function SellerLayout({
   }, [user, toast]);
 
 
-  if (loading || !user || userData?.role !== 'seller') {
+  if (loading || !user || (userData && userData.role !== 'seller')) {
     return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
             <div className="h-16 w-16 animate-spin rounded-full border-4 border-dashed border-primary"></div>

@@ -11,7 +11,7 @@ export default function AccountLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, userData, loading, logout } = useAuth();
+  const { user, userData, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -26,19 +26,21 @@ export default function AccountLayout({
       return;
     }
 
-    // If logged in, but the role is not 'customer', log them out.
+    // If logged in, but the role is not 'customer', redirect to their respective dashboard.
     if (userData && userData.role !== 'customer') {
+      const { role } = userData;
+      let destination = '/login'; // Fallback
+      if (role === 'seller') destination = '/seller';
+      if (['admin', 'super_admin'].includes(role)) destination = '/admin';
+
       toast({
         variant: 'destructive',
         title: 'Access Denied',
-        description:
-          'This account area is for customers only. You have been logged out.',
+        description: `This area is for customers. Redirecting you to your ${role} dashboard.`,
       });
-      logout().then(() => {
-        router.push('/login');
-      });
+      router.push(destination);
     }
-  }, [user, userData, loading, router, logout, toast]);
+  }, [user, userData, loading, router, toast]);
 
   // Render a loading state while we verify auth and role.
   // The condition now includes checking for the correct role.

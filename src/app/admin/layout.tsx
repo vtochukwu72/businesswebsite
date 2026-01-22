@@ -156,12 +156,27 @@ export default function AdminLayout({
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
-        router.push('/admin-login');
-      }
+    if (loading) return;
+
+    if (!user) {
+      router.push('/admin-login');
+      return;
     }
-  }, [user, userData, loading, router]);
+
+    if (userData && !['admin', 'super_admin'].includes(userData.role)) {
+      const { role } = userData;
+      let destination = '/login'; // Fallback
+      if (role === 'customer') destination = '/account';
+      if (role === 'seller') destination = '/seller';
+
+      toast({
+        variant: 'destructive',
+        title: 'Access Denied',
+        description: `This is an admin-only area. Redirecting you to your ${role} dashboard.`,
+      });
+      router.push(destination);
+    }
+  }, [user, userData, loading, router, toast]);
   
   useEffect(() => {
     if (!user) {
