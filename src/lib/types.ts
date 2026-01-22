@@ -1,5 +1,10 @@
 
 
+export type CartItem = {
+    productId: string;
+    quantity: number;
+}
+
 export type Product = {
   id: string;
   sellerId: string;
@@ -34,6 +39,8 @@ export type User = {
   role: 'customer' | 'seller' | 'admin' | 'super_admin' | 'content_manager' | 'order_manager' | 'support_manager' | 'finance_manager';
   createdAt: string;
   photoURL?: string;
+  cart?: CartItem[];
+  wishlist?: string[];
 };
 
 export type Vendor = {

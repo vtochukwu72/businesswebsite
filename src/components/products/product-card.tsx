@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { toggleWishlist } from '@/app/(main)/account/actions';
 import { useRouter } from 'next/navigation';
+import { addToCart } from '@/app/(main)/cart/actions';
 
 interface ProductCardProps {
   product: Product;
@@ -32,12 +33,30 @@ export function ProductCard({ product, className }: ProductCardProps) {
   
   const isInWishlist = userData?.wishlist?.includes(product.id);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    toast({
-        title: "Added to cart",
-        description: `${product.name} has been added to your cart.`
-    })
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: "Please log in",
+            description: "You need to be logged in to add items to your cart.",
+        });
+        router.push('/login');
+        return;
+    }
+    const result = await addToCart(user.uid, product.id, 1);
+    if (result.success) {
+      toast({
+          title: "Added to cart",
+          description: `${product.name} has been added to your cart.`
+      });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: "Something went wrong",
+            description: result.message || "Could not add item to cart.",
+        });
+    }
   }
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {

@@ -39,6 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
@@ -82,6 +83,14 @@ export function Header() {
       router.push(`/search?q=${encodeURIComponent(query)}`);
     }
   };
+  
+  const cartItemCount = useMemo(() => {
+    if (!userData || !userData.cart || !Array.isArray(userData.cart)) {
+      return 0;
+    }
+    return userData.cart.reduce((total: number, item: { quantity: number }) => total + (item.quantity || 0), 0);
+  }, [userData]);
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -233,6 +242,11 @@ export function Header() {
           <Link href="/cart" aria-label="Open shopping cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
+              {isClient && cartItemCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full p-0 text-xs">
+                  {cartItemCount > 9 ? "9+" : cartItemCount}
+                </Badge>
+              )}
               <span className="sr-only">Cart</span>
             </Button>
           </Link>

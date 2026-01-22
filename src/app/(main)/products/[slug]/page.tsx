@@ -13,6 +13,7 @@ import { toggleWishlist } from '@/app/(main)/account/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { addToCart } from '@/app/(main)/cart/actions';
 
 export default function ProductDetailPage({
   params,
@@ -90,12 +91,29 @@ export default function ProductDetailPage({
     setQuantity(prev => Math.max(prev - 1, 1));
   };
   
-  const handleAddToCart = () => {
-    toast({
-      title: "Added to cart",
-      description: `${quantity} x ${product.name} have been added to your cart.`
-    });
-    // Here you would typically also call a function to update the cart state/DB
+  const handleAddToCart = async () => {
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: "Please log in",
+            description: "You need to be logged in to add items to your cart.",
+        });
+        router.push('/login');
+        return;
+    }
+    const result = await addToCart(user.uid, product.id, quantity);
+    if (result.success) {
+      toast({
+        title: "Added to cart",
+        description: `${quantity} x ${product.name} have been added to your cart.`
+      });
+    } else {
+       toast({
+            variant: 'destructive',
+            title: "Something went wrong",
+            description: result.message || "Could not add item to cart.",
+        });
+    }
   };
 
   return (
