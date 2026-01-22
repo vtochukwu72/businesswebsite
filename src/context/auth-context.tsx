@@ -63,6 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (doc) => {
         if (doc.exists()) {
           const data = doc.data();
+          // Sanitize Timestamps
+          if (data.createdAt && data.createdAt.toDate) {
+            data.createdAt = data.createdAt.toDate().toISOString();
+          }
+          if (data.updatedAt && data.updatedAt.toDate) {
+            data.updatedAt = data.updatedAt.toDate().toISOString();
+          }
+
           setUserData(data);
           // If the user is NOT a seller, we have all their data, so we can stop loading.
           if (data.role !== 'seller') {
@@ -96,7 +104,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const vendorDocRef = doc(db, 'vendors', user.uid);
       const unsubscribeVendor = onSnapshot(vendorDocRef, (vendorDoc) => {
         if (vendorDoc.exists()) {
-          setVendorData(vendorDoc.data());
+          const data = vendorDoc.data();
+          // Sanitize Timestamps before setting state
+          if (data.createdAt && data.createdAt.toDate) {
+            data.createdAt = data.createdAt.toDate().toISOString();
+          }
+          if (data.updatedAt && data.updatedAt.toDate) {
+            data.updatedAt = data.updatedAt.toDate().toISOString();
+          }
+          if (
+            data.compliance &&
+            data.compliance.reviewedAt &&
+            data.compliance.reviewedAt.toDate
+          ) {
+            data.compliance.reviewedAt = data.compliance.reviewedAt
+              .toDate()
+              .toISOString();
+          }
+          setVendorData(data);
         } else {
           setVendorData(null);
         }
