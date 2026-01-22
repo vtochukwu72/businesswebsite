@@ -3,11 +3,13 @@
 import {
     File,
     PlusCircle,
+    MoreHorizontal,
+    Trash2
   } from 'lucide-react'
   import Image from 'next/image';
   import Link from 'next/link';
-  import { useEffect, useState, useMemo } from 'react';
-  import { collection, query, where, onSnapshot } from 'firebase/firestore';
+  import { useEffect, useState, useMemo, useTransition } from 'react';
+  import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
   import { db } from '@/firebase/config';
   
   import { Badge } from '@/components/ui/badge'
@@ -28,6 +30,23 @@ import {
     TableHeader,
     TableRow,
   } from '@/components/ui/table'
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+  } from '@/components/ui/dropdown-menu'
+  import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+  } from '@/components/ui/alert-dialog'
   import {
     Tabs,
     TabsContent,
@@ -59,6 +78,9 @@ import {
         <TableCell className="hidden md:table-cell">
           <Skeleton className="h-4 w-12" />
         </TableCell>
+        <TableCell>
+            <Skeleton className="h-8 w-8 ml-auto rounded-md" />
+        </TableCell>
       </TableRow>
     );
   }
@@ -69,6 +91,10 @@ import {
     const [productsLoading, setProductsLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
+
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
     const loading = authLoading || productsLoading;
 
@@ -117,7 +143,44 @@ import {
       return products;
     }, [products, filter]);
 
+    const handleDeleteClick = (product: Product) => {
+        setProductToDelete(product);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (!productToDelete) return;
+        
+        startTransition(async () => {
+            try {
+                const productRef = doc(db, 'products', productToDelete.id);
+                await deleteDoc(productRef);
+                toast({
+                    title: 'Product Deleted',
+                    description: `"${productToDelete.name}" has been successfully deleted.`,
+                });
+            } catch (error: any) {
+                console.error("Error deleting product:", error);
+                 const permissionError = new FirestorePermissionError({
+                    path: `products/${productToDelete.id}`,
+                    operation: 'delete'
+                }, error);
+                errorEmitter.emit('permission-error', permissionError);
+
+                toast({
+                    variant: 'destructive',
+                    title: 'Error Deleting Product',
+                    description: error.message || 'Could not delete the product. Please try again.',
+                });
+            } finally {
+                setIsDeleteDialogOpen(false);
+                setProductToDelete(null);
+            }
+        });
+    };
+
     return (
+    <>
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
         <Tabs defaultValue="all" onValueChange={setFilter}>
           <div className="flex items-center">
@@ -166,6 +229,9 @@ import {
                       <TableHead className="hidden md:table-cell">
                         Stock
                       </TableHead>
+                      <TableHead>
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -202,11 +268,32 @@ import {
                           <TableCell className="hidden md:table-cell">
                             {product.stockQuantity}
                           </TableCell>
+                           <TableCell>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem disabled>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                        onSelect={() => handleDeleteClick(product)}
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={6} className="h-24 text-center">
                           No products found. Add a product to get started.
                         </TableCell>
                       </TableRow>
@@ -223,5 +310,27 @@ import {
           </TabsContent>
         </Tabs>
       </main>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the product
+                &quot;{productToDelete?.name}&quot; from the database.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                onClick={handleConfirmDelete}
+                disabled={isPending}
+                className="bg-destructive hover:bg-destructive/90"
+                >
+                {isPending ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    </>
     )
   }
