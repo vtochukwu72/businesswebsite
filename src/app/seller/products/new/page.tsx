@@ -16,19 +16,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/context/auth-context';
 import { addProduct } from '../actions';
 import { useToast } from '@/hooks/use-toast';
-
-// Hardcoded categories for simplicity. In a real app, this would come from the database.
-const categories = ['Electronics', 'Fashion', 'Groceries', 'Home Goods', 'Books'];
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -128,14 +118,12 @@ export default function AddProductPage() {
                 </div>
                  <div className="grid gap-3">
                     <Label htmlFor="category">Category</Label>
-                    <Select name="category">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="category"
+                      name="category"
+                      type="text"
+                      placeholder="e.g. Electronics, Fashion, Books"
+                    />
                      {state.errors?.category && <p className="text-sm text-destructive">{state.errors.category.join(', ')}</p>}
                 </div>
               </div>
