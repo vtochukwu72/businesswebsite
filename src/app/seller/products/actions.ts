@@ -1,12 +1,10 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { app } from '@/firebase/config';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-
-const db = getFirestore(app);
 
 const productSchema = z.object({
   sellerId: z.string().min(1, 'Seller ID is required.'),
@@ -34,18 +32,22 @@ export async function addProduct(prevState: any, formData: FormData) {
   const { images, ...productData } = parsed.data;
 
   try {
-    const docRef = await addDoc(collection(db, 'products'), {
+    const adminApp = getAdminApp();
+    const db = getFirestore(adminApp);
+
+    await db.collection('products').add({
       ...productData,
       images: images.split('\n').filter(url => url.trim() !== ''),
       isActive: true, // Product is live immediately
       ratings: { average: 0, count: 0 },
       specifications: {}, // Add empty specs object
       tags: [], // Add empty tags array
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
     
   } catch (error: any) {
+    console.error("Error in addProduct action:", error);
     return {
       message: error.message || 'An unexpected error occurred.',
       success: false,
