@@ -1,17 +1,18 @@
 'use server';
 
-import { getFirestore, collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
-import { app } from '@/firebase/config';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/firebase/admin-config';
 import type { Order } from '@/lib/types';
+import { serializeFirestoreData } from '@/lib/utils';
 
-const db = getFirestore(app);
+const db = getFirestore(getAdminApp());
 
 export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
   if (!sellerId) return [];
   try {
-    const ordersCol = collection(db, 'vendors', sellerId, 'orders');
-    const q = query(ordersCol, orderBy('createdAt', 'desc'));
-    const orderSnapshot = await getDocs(q);
+    const ordersCol = db.collection('vendors').doc(sellerId).collection('orders');
+    const q = ordersCol.orderBy('createdAt', 'desc');
+    const orderSnapshot = await q.get();
     
     if (orderSnapshot.empty) {
       console.log(`No orders found for seller ${sellerId}`);
@@ -22,9 +23,7 @@ export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
         const data = doc.data();
         return { 
             id: doc.id, 
-            ...data,
-            // Convert Firestore Timestamp to ISO string if it exists
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+            ...serializeFirestoreData(data),
         } as Order;
     });
     return orderList;
@@ -36,18 +35,17 @@ export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
 
 export async function getAllOrders(count?: number): Promise<Order[]> {
   try {
-    const ordersCol = collection(db, 'orders');
-    const q = count
-      ? query(ordersCol, orderBy('createdAt', 'desc'), limit(count))
-      : query(ordersCol, orderBy('createdAt', 'desc'));
+    let q: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = db.collection('orders').orderBy('createdAt', 'desc');
+    if (count) {
+      q = q.limit(count);
+    }
     
-    const orderSnapshot = await getDocs(q);
+    const orderSnapshot = await q.get();
     const orderList = orderSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        ...serializeFirestoreData(data),
       } as Order;
     });
     return orderList;
@@ -60,9 +58,9 @@ export async function getAllOrders(count?: number): Promise<Order[]> {
 export async function getOrdersByUser(userId: string): Promise<Order[]> {
   if (!userId) return [];
   try {
-    const ordersCol = collection(db, 'orders');
-    const q = query(ordersCol, where('userId', '==', userId), orderBy('createdAt', 'desc'));
-    const orderSnapshot = await getDocs(q);
+    const ordersCol = db.collection('orders');
+    const q = ordersCol.where('userId', '==', userId).orderBy('createdAt', 'desc');
+    const orderSnapshot = await q.get();
     
     if (orderSnapshot.empty) {
       return [];
@@ -72,8 +70,7 @@ export async function getOrdersByUser(userId: string): Promise<Order[]> {
         const data = doc.data();
         return { 
             id: doc.id, 
-            ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+            ...serializeFirestoreData(data),
         } as Order;
     });
     return orderList;

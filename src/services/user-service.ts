@@ -1,26 +1,27 @@
 'use server';
 
-import { getFirestore, collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
-import { app } from '@/firebase/config';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/firebase/admin-config';
 import type { User } from '@/lib/types';
 import { getOrdersBySeller } from './order-service';
+import { serializeFirestoreData } from '@/lib/utils';
 
-const db = getFirestore(app);
+const db = getFirestore(getAdminApp());
 
 export async function getUsers(count?: number): Promise<User[]> {
   try {
-    const usersCol = collection(db, 'users');
-    const q = count 
-      ? query(usersCol, orderBy('createdAt', 'desc'), limit(count))
-      : query(usersCol, orderBy('createdAt', 'desc'));
+    const usersCol = db.collection('users');
+    let q: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = usersCol.orderBy('createdAt', 'desc');
+    if (count) {
+      q = q.limit(count);
+    }
     
-    const userSnapshot = await getDocs(q);
+    const userSnapshot = await q.get();
     const userList = userSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        ...serializeFirestoreData(data),
       } as User;
     });
     return userList;
@@ -53,10 +54,10 @@ export async function getCustomersForSeller(sellerId: string): Promise<User[]> {
     }
 
     const customerPromises = customerChunks.map(chunk => {
-      const usersCol = collection(db, 'users');
+      const usersCol = db.collection('users');
       // The `id` field in the user document is the same as the doc id (uid)
-      const q = query(usersCol, where('id', 'in', chunk));
-      return getDocs(q);
+      const q = usersCol.where('id', 'in', chunk);
+      return q.get();
     });
 
     const customerSnapshots = await Promise.all(customerPromises);
@@ -67,8 +68,7 @@ export async function getCustomersForSeller(sellerId: string): Promise<User[]> {
         const data = doc.data();
         customers.push({
           id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+          ...serializeFirestoreData(data),
         } as User);
       });
     });
