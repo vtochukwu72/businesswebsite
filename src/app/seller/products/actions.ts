@@ -37,7 +37,7 @@ export async function addProduct(prevState: any, formData: FormData) {
     const docRef = await addDoc(collection(db, 'products'), {
       ...productData,
       images: images.split('\n').filter(url => url.trim() !== ''),
-      isActive: false, // Default to Draft status
+      isActive: true, // Product is live immediately
       ratings: { average: 0, count: 0 },
       specifications: {}, // Add empty specs object
       tags: [], // Add empty tags array

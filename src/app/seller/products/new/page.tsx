@@ -34,7 +34,7 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? 'Saving Product...' : 'Save as Draft'}
+      {pending ? 'Publishing Product...' : 'Publish Product'}
     </Button>
   );
 }
@@ -91,7 +91,7 @@ export default function AddProductPage() {
           <CardHeader>
             <CardTitle>Product Details</CardTitle>
             <CardDescription>
-              Fill out the form to add a new product to your store. It will be saved as a draft.
+              Fill out the form to add a new product to your store. The product will be live on the marketplace immediately.
             </CardDescription>
           </CardHeader>
           <CardContent>
