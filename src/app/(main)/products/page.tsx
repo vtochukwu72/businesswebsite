@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { ProductCard } from '@/components/products/product-card';
@@ -12,8 +13,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import type { Product } from '@/lib/types';
-import { getProducts } from '@/services/product-service';
 import { Skeleton } from '@/components/ui/skeleton';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 function ProductSkeleton() {
   return (
@@ -38,16 +44,41 @@ export default function ProductListingPage() {
     rating: 0,
   });
   const [sortOption, setSortOption] = useState('featured');
+  const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchProducts() {
-      setLoading(true);
-      const fetchedProducts = await getProducts();
+    setLoading(true);
+    const productsQuery = query(collection(db, 'products'));
+
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+      const fetchedProducts: Product[] = [];
+      snapshot.forEach((doc) => {
+        // The product card and filtering logic don't use timestamps,
+        // so we can just cast for now. A full solution would serialize timestamps.
+        fetchedProducts.push({ id: doc.id, ...doc.data() } as Product);
+      });
       setProducts(fetchedProducts);
       setLoading(false);
-    }
-    fetchProducts();
-  }, []);
+    }, (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'products',
+          operation: 'list'
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
+        console.error("Error fetching real-time products:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error Loading Products',
+            description: 'Could not load products in real-time. Please try again later.',
+        });
+        setProducts([]);
+        setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [toast]);
 
   const { categories, minPrice, maxPrice } = useMemo(() => {
     if (!products || products.length === 0) {
