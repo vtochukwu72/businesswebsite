@@ -21,6 +21,7 @@ export default function ProductDetailPage({
 }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
   const { user, userData } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -80,6 +81,22 @@ export default function ProductDetailPage({
       </div>
     );
   }
+
+  const handleIncrement = () => {
+    setQuantity(prev => Math.min(prev + 1, product.stockQuantity));
+  };
+
+  const handleDecrement = () => {
+    setQuantity(prev => Math.max(prev - 1, 1));
+  };
+  
+  const handleAddToCart = () => {
+    toast({
+      title: "Added to cart",
+      description: `${quantity} x ${product.name} have been added to your cart.`
+    });
+    // Here you would typically also call a function to update the cart state/DB
+  };
 
   return (
     <div className="container py-8">
@@ -142,21 +159,27 @@ export default function ProductDetailPage({
           <Separator className="my-6" />
           <div className="flex items-center gap-4">
             <div className="flex items-center border rounded-md">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" onClick={handleDecrement} disabled={quantity <= 1}>
                 <Minus className="h-4 w-4" />
               </Button>
-              <span className="px-4 font-bold">1</span>
-              <Button variant="ghost" size="icon">
+              <span className="px-4 font-bold">{quantity}</span>
+              <Button variant="ghost" size="icon" onClick={handleIncrement} disabled={quantity >= product.stockQuantity}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            <Button size="lg" className="flex-1">
+            <Button size="lg" className="flex-1" onClick={handleAddToCart}>
               <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
             </Button>
             <Button size="icon" variant="outline" onClick={handleWishlistToggle} aria-label="Toggle Wishlist">
               <Heart className={cn("h-5 w-5", isInWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
             </Button>
           </div>
+          {product.stockQuantity < 10 && product.stockQuantity > 0 && (
+            <p className="text-sm text-destructive mt-2">Only {product.stockQuantity} left in stock!</p>
+          )}
+           {product.stockQuantity === 0 && (
+            <p className="text-sm text-destructive mt-2">Out of stock</p>
+          )}
         </div>
       </div>
       <div className="mt-12">
