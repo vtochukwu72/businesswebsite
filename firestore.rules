@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -141,10 +142,8 @@ service cloud.firestore {
      * @description Checks if a vendor is allowed to create products.
      */
     function canVendorCreateProducts() {
-      let vendorData = getVendorData(request.auth.uid);
-      return userHasAnyRole(['seller']) &&
-             vendorData != null &&
-             vendorData.status != 'rejected';
+      // Now, any user with a 'seller' role can create products.
+      return userHasAnyRole(['seller']);
     }
 
 
@@ -347,5 +346,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
