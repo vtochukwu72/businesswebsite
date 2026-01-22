@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,7 @@ import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/fir
 import { FcGoogle } from 'react-icons/fc';
 import { app } from '@/firebase/config';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
 
 
 function SubmitButton() {
@@ -36,10 +37,18 @@ function SubmitButton() {
 export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, userData, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{email?: string[], password?: string[], general?: string}>({});
+
+  useEffect(() => {
+    if (!loading && user && userData && ['admin', 'super_admin'].includes(userData.role)) {
+      router.push('/admin');
+    }
+  }, [user, userData, loading, router]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,10 +62,21 @@ export default function AdminLoginPage() {
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
-        if (!userDoc.exists() || !['admin', 'super_admin'].includes(userDoc.data().role)) {
-             setErrors({ general: 'Access Denied: Not an admin account.'});
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Access Denied: Not an admin account.' });
+        if (!userDoc.exists()) {
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'No admin account found with this email.' });
              await auth.signOut();
+             return;
+        }
+        
+        const dbUserData = userDoc.data();
+        if (!['admin', 'super_admin'].includes(dbUserData.role)) {
+             const role = dbUserData.role || 'user';
+             let loginPath = '/login';
+             if (role === 'customer') loginPath = '/login';
+             if (role === 'seller') loginPath = '/seller-login';
+
+             toast({ variant: 'destructive', title: 'Incorrect Role', description: `This is a ${role} account. Please use the correct login page.` });
+             router.push(loginPath);
              return;
         }
 
@@ -114,7 +134,6 @@ export default function AdminLoginPage() {
         if (role === 'seller') loginPath = '/seller-login';
 
         toast({ variant: 'destructive', title: 'Incorrect Role', description: `This is a ${role} account. Please use the correct login page.` });
-        await auth.signOut();
         router.push(loginPath);
         return;
       }

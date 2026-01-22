@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,7 @@ import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/fir
 import { FcGoogle } from 'react-icons/fc';
 import { app } from '@/firebase/config';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -35,10 +36,18 @@ function SubmitButton() {
 export default function SellerLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, userData, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{email?: string[], password?: string[], general?: string}>({});
+
+  useEffect(() => {
+    if (!loading && user && userData?.role === 'seller') {
+      router.push('/seller');
+    }
+  }, [user, userData, loading, router]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +61,22 @@ export default function SellerLoginPage() {
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
-        if (!userDoc.exists() || userDoc.data().role !== 'seller') {
-             setErrors({ general: 'Access Denied: Not a seller account.'});
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Access Denied: Not a seller account.' });
+        if (!userDoc.exists()) {
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'No seller account found. Please register as a seller first.' });
              await auth.signOut();
+             router.push('/seller-register');
+             return;
+        }
+
+        const dbUserData = userDoc.data();
+        if (dbUserData.role !== 'seller') {
+             const role = dbUserData.role || 'user';
+             let loginPath = '/login';
+             if (role === 'customer') loginPath = '/login';
+             if (['admin', 'super_admin'].includes(role)) loginPath = '/admin-login';
+
+             toast({ variant: 'destructive', title: 'Incorrect Role', description: `This is a ${role} account. Please use the correct login page.` });
+             router.push(loginPath);
              return;
         }
 
@@ -113,7 +134,6 @@ export default function SellerLoginPage() {
           if (['admin', 'super_admin'].includes(role)) loginPath = '/admin-login';
 
           toast({ variant: 'destructive', title: 'Incorrect Role', description: `This is a ${role} account. Please use the correct login page.` });
-          await auth.signOut();
           router.push(loginPath);
           return;
       }
