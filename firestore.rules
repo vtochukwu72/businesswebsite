@@ -139,7 +139,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if a vendor is allowed to create products.
+     * @description Checks if a user with a seller role is allowed to create products.
      */
     function canVendorCreateProducts() {
       // Now, any user with a 'seller' role can create products.
@@ -330,7 +330,9 @@ service cloud.firestore {
      */
     match /contacts/{contactId} {
       allow create: if true;
-      allow read, update, delete: if canManageSupport();
+      allow read, update, delete: if isSignedIn() && 
+                                exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['support_manager', 'admin', 'super_admin'];
     }
     
     /**
