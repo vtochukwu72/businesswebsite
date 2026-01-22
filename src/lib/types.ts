@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   sellerId: string;
@@ -29,7 +30,7 @@ export type User = {
   lname?: string;
   email: string;
   role: 'customer' | 'seller' | 'admin' | 'super_admin' | 'content_manager' | 'order_manager' | 'support_manager' | 'finance_manager';
-  createdAt: any; // Firestore Timestamp
+  createdAt: string;
   photoURL?: string;
 };
 
@@ -41,6 +42,7 @@ export type Vendor = {
   email: string;
   phone: string;
   address: string;
+  status: 'pending' | 'approved' | 'rejected';
   nin: string;
   payoutDetails: {
     businessName: string;
@@ -50,8 +52,14 @@ export type Vendor = {
   businessLicenseUrl?: string;
   taxId?: string;
   sellerHistory?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  compliance?: {
+    riskScore: number;
+    justification: string;
+    reviewedBy: string;
+    reviewedAt: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Category = {
@@ -85,7 +93,7 @@ export type ContactMessage = {
   email: string;
   subject: string;
   message: string;
-  createdAt: any;
+  createdAt: string;
   isRead: boolean;
 };
 
@@ -95,6 +103,6 @@ export type Order = {
   orderNumber: string;
   customerName?: string; // Denormalized customer name
   orderStatus: string;
-  createdAt: any; // Should be a Firestore Timestamp, but 'any' for simplicity client-side
+  createdAt: string;
   grandTotal: number;
 };

@@ -23,8 +23,8 @@ export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
         return { 
             id: doc.id, 
             ...data,
-            // Convert Firestore Timestamp to Date if it exists
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            // Convert Firestore Timestamp to ISO string if it exists
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
         } as Order;
     });
     return orderList;
@@ -47,7 +47,7 @@ export async function getAllOrders(count?: number): Promise<Order[]> {
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
       } as Order;
     });
     return orderList;
@@ -73,7 +73,7 @@ export async function getOrdersByUser(userId: string): Promise<Order[]> {
         return { 
             id: doc.id, 
             ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
         } as Order;
     });
     return orderList;

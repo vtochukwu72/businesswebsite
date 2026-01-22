@@ -20,7 +20,7 @@ export async function getUsers(count?: number): Promise<User[]> {
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
       } as User;
     });
     return userList;
@@ -68,7 +68,7 @@ export async function getCustomersForSeller(sellerId: string): Promise<User[]> {
         customers.push({
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
         } as User);
       });
     });

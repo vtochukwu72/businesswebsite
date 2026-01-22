@@ -110,7 +110,7 @@ export default function AdminMessagesPage() {
           return {
               id: doc.id,
               ...data,
-              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+              createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
           } as ContactMessage;
       });
       setMessages(fetchedMessages);
@@ -128,7 +128,7 @@ export default function AdminMessagesPage() {
     });
     
     const usersUnsub = onSnapshot(query(collection(db, 'users')), (snapshot) => {
-        const userList: User[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+        const userList: User[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : new Date().toISOString() } as User));
         setUsers(userList);
         usersLoaded = true;
         checkAllLoaded();
