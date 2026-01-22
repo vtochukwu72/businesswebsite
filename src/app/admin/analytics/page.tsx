@@ -39,6 +39,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import * as XLSX from 'xlsx';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 // Analytics Page Component
 export default function AdminAnalyticsPage() {
@@ -56,7 +58,8 @@ export default function AdminAnalyticsPage() {
       if (ordersLoaded && usersLoaded) setLoading(false);
     };
 
-    const ordersUnsub = onSnapshot(query(collection(db, 'orders'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const ordersUnsub = onSnapshot(ordersQuery, (snapshot) => {
       const orderList = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -69,6 +72,12 @@ export default function AdminAnalyticsPage() {
       ordersLoaded = true;
       doneLoading();
     }, (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'orders',
+          operation: 'list',
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error("Analytics (orders) snapshot error: ", error);
         toast({
           variant: "destructive",
@@ -80,7 +89,8 @@ export default function AdminAnalyticsPage() {
         doneLoading();
     });
 
-    const usersUnsub = onSnapshot(query(collection(db, 'users'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    const usersUnsub = onSnapshot(usersQuery, (snapshot) => {
       const userList = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -93,6 +103,12 @@ export default function AdminAnalyticsPage() {
       usersLoaded = true;
       doneLoading();
     }, (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'users',
+          operation: 'list',
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+        
         console.error("Analytics (users) snapshot error: ", error);
         toast({
           variant: "destructive",

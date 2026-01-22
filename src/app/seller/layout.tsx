@@ -28,6 +28,8 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function SellerDashboard({ children, pendingOrderCount, authProps }: { children: React.ReactNode; pendingOrderCount: number, authProps: AuthContextType }) {
   const { user, userData, logout } = authProps;
@@ -181,6 +183,12 @@ export default function SellerLayout({
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
       setPendingOrderCount(snapshot.size);
     }, (error) => {
+      const permissionError = new FirestorePermissionError({
+          path: `vendors/${user.uid}/orders`,
+          operation: 'list'
+      }, error);
+      errorEmitter.emit('permission-error', permissionError);
+
       console.error("Seller notification (orders) snapshot error:", error);
       toast({
         variant: "destructive",

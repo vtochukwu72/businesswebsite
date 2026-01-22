@@ -6,6 +6,9 @@ import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { getFirestore, doc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { getApps, initializeApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 // Ensure Firebase is initialized
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
@@ -84,6 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }, 
       (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'get',
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error('Error fetching user data:', error);
         setUserData(null);
         setLoading(false);
@@ -127,6 +136,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setLoading(false); // Loading is complete for the seller
       }, (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: vendorDocRef.path,
+          operation: 'get',
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error('Error fetching vendor data:', error);
         setVendorData(null);
         setLoading(false);

@@ -55,6 +55,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 function MessageRowSkeleton() {
   return (
@@ -104,7 +107,8 @@ export default function AdminMessagesPage() {
         }
     }
 
-    const messagesUnsub = onSnapshot(query(collection(db, 'contacts'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const messagesQuery = query(collection(db, 'contacts'), orderBy('createdAt', 'desc'));
+    const messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
       const fetchedMessages: ContactMessage[] = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
@@ -117,6 +121,12 @@ export default function AdminMessagesPage() {
       messagesLoaded = true;
       checkAllLoaded();
     }, (error) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'contacts',
+            operation: 'list'
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error("Error fetching messages:", error);
         toast({
             variant: "destructive",
@@ -127,12 +137,19 @@ export default function AdminMessagesPage() {
         checkAllLoaded();
     });
     
-    const usersUnsub = onSnapshot(query(collection(db, 'users')), (snapshot) => {
+    const usersQuery = query(collection(db, 'users'));
+    const usersUnsub = onSnapshot(usersQuery, (snapshot) => {
         const userList: User[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : new Date().toISOString() } as User));
         setUsers(userList);
         usersLoaded = true;
         checkAllLoaded();
     }, (error) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'users',
+            operation: 'list'
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error("Error fetching users:", error);
         toast({
             variant: "destructive",

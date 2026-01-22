@@ -62,6 +62,8 @@ import {
 import { reviewVendor } from './actions';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function VendorRowSkeleton() {
   return (
@@ -140,6 +142,12 @@ export default function AdminVendorsPage() {
         setDataLoading(false);
       },
       (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'vendors',
+          operation: 'list',
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error('Error fetching vendors in real-time:', error);
         setDataLoading(false);
         toast({

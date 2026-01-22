@@ -50,6 +50,8 @@ import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { deleteUser } from './actions';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function UserRowSkeleton() {
   return (
@@ -90,6 +92,12 @@ export default function AdminCustomersPage() {
       setUsers(fetchedUsers);
       setLoading(false);
     }, (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: 'users',
+        operation: 'list',
+      }, error);
+      errorEmitter.emit('permission-error', permissionError);
+
       console.error("Error fetching real-time users: ", error);
       toast({
         variant: "destructive",

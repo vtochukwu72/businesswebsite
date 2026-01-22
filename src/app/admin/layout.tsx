@@ -31,6 +31,8 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function AdminDashboard({ children, notificationCount, authProps }: { children: React.ReactNode, notificationCount: number, authProps: AuthContextType }) {
   const { user, userData, logout } = authProps;
@@ -189,6 +191,12 @@ export default function AdminLayout({
     const unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
         setNotificationCount(snapshot.size);
     }, (error) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'contacts',
+            operation: 'list'
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error("Notification (messages) snapshot error:", error);
         toast({
           variant: "destructive",

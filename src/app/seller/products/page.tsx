@@ -38,6 +38,8 @@ import {
   import type { Product } from '@/lib/types';
   import { Skeleton } from '@/components/ui/skeleton';
   import { useToast } from '@/hooks/use-toast';
+  import { errorEmitter } from '@/firebase/error-emitter';
+  import { FirestorePermissionError } from '@/firebase/errors';
   
   function ProductRowSkeleton() {
     return (
@@ -88,6 +90,12 @@ import {
           setProducts(fetchedProducts);
           setProductsLoading(false);
         }, (error) => {
+            const permissionError = new FirestorePermissionError({
+                path: 'products',
+                operation: 'list'
+            }, error);
+            errorEmitter.emit('permission-error', permissionError);
+
             console.error("Error fetching real-time products: ", error);
             toast({
                 variant: 'destructive',
