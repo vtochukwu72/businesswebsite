@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Product, Review } from '@/lib/types';
 import { useState, useEffect } from 'react';
-import { getProduct } from '@/services/product-service';
 import { useAuth } from '@/context/auth-context';
 import { toggleWishlist } from '@/app/(main)/account/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +14,11 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { addToCart } from '@/app/(main)/cart/actions';
 import { Badge } from '@/components/ui/badge';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { serializeFirestoreData } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ProductDetailPage({
   params,
@@ -29,48 +33,75 @@ export default function ProductDetailPage({
   const router = useRouter();
 
   const isInWishlist = userData?.wishlist?.includes(params.slug);
-  
+
   useEffect(() => {
-    async function fetchProduct() {
-      setLoading(true);
-      const foundProduct = await getProduct(params.slug);
-      setProduct(foundProduct);
-      setLoading(false);
-    }
-    fetchProduct();
-  }, [params.slug]);
+    setLoading(true);
+    const productRef = doc(db, 'products', params.slug);
+
+    const unsubscribe = onSnapshot(
+      productRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const serializedData = serializeFirestoreData(data);
+          setProduct({ id: docSnap.id, ...serializedData } as Product);
+        } else {
+          setProduct(null);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        const permissionError = new FirestorePermissionError(
+          {
+            path: productRef.path,
+            operation: 'get',
+          },
+          error
+        );
+        errorEmitter.emit('permission-error', permissionError);
+        console.error('Error fetching real-time product:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error Loading Product',
+          description: 'Could not load product data.',
+        });
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [params.slug, toast]);
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) {
-        toast({
-            variant: 'destructive',
-            title: "Please log in",
-            description: "You need to be logged in to manage your wishlist.",
-        });
-        router.push('/login');
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Please log in',
+        description: 'You need to be logged in to manage your wishlist.',
+      });
+      router.push('/login');
+      return;
     }
     const result = await toggleWishlist(user.uid, params.slug, !!isInWishlist);
     if (result.success) {
-        toast({
-            title: result.message,
-        });
+      toast({
+        title: result.message,
+      });
     } else {
-        toast({
-            variant: 'destructive',
-            title: "Something went wrong",
-            description: result.message || "Could not update your wishlist.",
-        });
+      toast({
+        variant: 'destructive',
+        title: 'Something went wrong',
+        description: result.message || 'Could not update your wishlist.',
+      });
     }
-  }
+  };
 
-
-  // Placeholder for reviews
+  // Placeholder for reviews - this can be expanded to fetch real reviews
   const reviews: Review[] = [];
 
   if (loading) {
-    return <div className="container py-8 text-center">Loading product...</div>
+    return <div className="container py-8 text-center">Loading product...</div>;
   }
 
   if (!product) {
@@ -85,37 +116,39 @@ export default function ProductDetailPage({
   }
 
   const handleIncrement = () => {
-    setQuantity(prev => Math.min(prev + 1, product.stockQuantity));
+    setQuantity((prev) => Math.min(prev + 1, product.stockQuantity));
   };
 
   const handleDecrement = () => {
-    setQuantity(prev => Math.max(prev - 1, 1));
+    setQuantity((prev) => Math.max(prev - 1, 1));
   };
-  
+
   const handleAddToCart = async () => {
     if (!user) {
-        toast({
-            variant: 'destructive',
-            title: "Please log in",
-            description: "You need to be logged in to add items to your cart.",
-        });
-        router.push('/login');
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Please log in',
+        description: 'You need to be logged in to add items to your cart.',
+      });
+      router.push('/login');
+      return;
     }
     const result = await addToCart(user.uid, product.id, quantity);
     if (result.success) {
       toast({
-        title: "Added to cart",
-        description: `${quantity} x ${product.name} have been added to your cart.`
+        title: 'Added to cart',
+        description: `${quantity} x ${product.name} have been added to your cart.`,
       });
     } else {
-       toast({
-            variant: 'destructive',
-            title: "Something went wrong",
-            description: result.message || "Could not add item to cart.",
-        });
+      toast({
+        variant: 'destructive',
+        title: 'Something went wrong',
+        description: result.message || 'Could not add item to cart.',
+      });
     }
   };
+
+  const isOutOfStock = product.stockQuantity === 0;
 
   return (
     <div className="container py-8">
@@ -181,37 +214,70 @@ export default function ProductDetailPage({
               <h3 className="font-semibold mb-2">Available Colors:</h3>
               <div className="flex flex-wrap gap-2">
                 {product.colors.map((color) => (
-                  <Badge key={color} variant="outline" className="capitalize text-sm">
+                  <Badge
+                    key={color}
+                    variant="outline"
+                    className="capitalize text-sm"
+                  >
                     {color}
                   </Badge>
                 ))}
               </div>
             </div>
           )}
-          
+
           <Separator className="my-6" />
 
           <div className="flex items-center gap-4">
             <div className="flex items-center border rounded-md">
-              <Button variant="ghost" size="icon" onClick={handleDecrement} disabled={quantity <= 1}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDecrement}
+                disabled={isOutOfStock || quantity <= 1}
+              >
                 <Minus className="h-4 w-4" />
               </Button>
               <span className="px-4 font-bold">{quantity}</span>
-              <Button variant="ghost" size="icon" onClick={handleIncrement} disabled={quantity >= product.stockQuantity}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleIncrement}
+                disabled={isOutOfStock || quantity >= product.stockQuantity}
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            <Button size="lg" className="flex-1" onClick={handleAddToCart}>
+            <Button
+              size="lg"
+              className="flex-1"
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+            >
               <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
             </Button>
-            <Button size="icon" variant="outline" onClick={handleWishlistToggle} aria-label="Toggle Wishlist">
-              <Heart className={cn("h-5 w-5", isInWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={handleWishlistToggle}
+              aria-label="Toggle Wishlist"
+            >
+              <Heart
+                className={cn(
+                  'h-5 w-5',
+                  isInWishlist
+                    ? 'fill-red-500 text-red-500'
+                    : 'text-muted-foreground'
+                )}
+              />
             </Button>
           </div>
-          {product.stockQuantity < 10 && product.stockQuantity > 0 && (
-            <p className="text-sm text-destructive mt-2">Only {product.stockQuantity} left in stock!</p>
+          {product.stockQuantity < 10 && !isOutOfStock && (
+            <p className="text-sm text-destructive mt-2">
+              Only {product.stockQuantity} left in stock!
+            </p>
           )}
-           {product.stockQuantity === 0 && (
+          {isOutOfStock && (
             <p className="text-sm text-destructive mt-2">Out of stock</p>
           )}
         </div>
@@ -226,7 +292,9 @@ export default function ProductDetailPage({
             </TabsTrigger>
           </TabsList>
           <TabsContent value="description" className="py-4">
-            <p>{product.description}</p>
+            <div className="prose max-w-none text-muted-foreground">
+              <p>{product.description}</p>
+            </div>
           </TabsContent>
           <TabsContent value="specifications" className="py-4">
             <ul className="space-y-2">
@@ -239,48 +307,61 @@ export default function ProductDetailPage({
             </ul>
           </TabsContent>
           <TabsContent value="reviews" className="py-4">
-            {reviews.length > 0 ? (
-                <div className="space-y-6">
+            {product.ratings.count > 0 ? (
+              <div className="space-y-6">
                 {reviews.map((review) => (
-                    <div key={review.reviewId} className="flex gap-4">
+                  <div key={review.reviewId} className="flex gap-4">
                     <Avatar>
-                        <AvatarImage
+                      <AvatarImage
                         src={review.user?.avatar}
                         alt={review.user?.name}
                         data-ai-hint="person portrait"
-                        />
-                        <AvatarFallback>{review.user?.name.charAt(0)}</AvatarFallback>
+                      />
+                      <AvatarFallback>
+                        {review.user?.name.charAt(0)}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <h4 className="font-semibold">{review.user?.name}</h4>
                         <div className="flex">
-                            {[...Array(5)].map((_, i) => (
+                          {[...Array(5)].map((_, i) => (
                             <Star
-                                key={i}
-                                className={`h-4 w-4 ${
+                              key={i}
+                              className={`h-4 w-4 ${
                                 i < review.rating
-                                    ? 'text-yellow-400 fill-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
                             />
-                            ))}
+                          ))}
                         </div>
-                        </div>
-                        <h5 className="font-bold mt-1">{review.title}</h5>
-                        <p className="text-muted-foreground mt-1">{review.comment}</p>
+                      </div>
+                      <h5 className="font-bold mt-1">{review.title}</h5>
+                      <p className="text-muted-foreground mt-1">
+                        {review.comment}
+                      </p>
                     </div>
-                    </div>
+                  </div>
                 ))}
-                </div>
+                <p className="text-muted-foreground italic">
+                  Full review display is coming soon.
+                </p>
+              </div>
             ) : (
-                <p className="text-muted-foreground">No reviews yet for this product.</p>
+              <p className="text-muted-foreground">
+                No reviews yet for this product.
+              </p>
             )}
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold">Write a review</h3>
+              <p className="text-muted-foreground text-sm mt-2">
+                Coming soon: Share your thoughts with other customers.
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
     </div>
   );
 }
-
-    

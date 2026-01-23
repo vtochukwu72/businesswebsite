@@ -19,6 +19,7 @@ import { db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { serializeFirestoreData } from '@/lib/utils';
 
 
 function ProductSkeleton() {
@@ -53,9 +54,9 @@ export default function ProductListingPage() {
     const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
       const fetchedProducts: Product[] = [];
       snapshot.forEach((doc) => {
-        // The product card and filtering logic don't use timestamps,
-        // so we can just cast for now. A full solution would serialize timestamps.
-        fetchedProducts.push({ id: doc.id, ...doc.data() } as Product);
+        const data = doc.data();
+        const serializedData = serializeFirestoreData(data);
+        fetchedProducts.push({ id: doc.id, ...serializedData } as Product);
       });
       setProducts(fetchedProducts);
       setLoading(false);
