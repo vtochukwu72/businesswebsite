@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Product, Review } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { toggleWishlist } from '@/app/(main)/account/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -105,6 +105,10 @@ export default function ProductDetails({ slug }: { slug: string }) {
 
     return () => unsubscribe();
   }, [slug, toast]);
+
+  const approvedReviews = useMemo(() => {
+    return reviews.filter(review => review.status === 'approved');
+  }, [reviews]);
 
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
@@ -321,7 +325,7 @@ export default function ProductDetails({ slug }: { slug: string }) {
             <TabsTrigger value="description">Description</TabsTrigger>
             <TabsTrigger value="specifications">Specifications</TabsTrigger>
             <TabsTrigger value="reviews">
-              Reviews ({product.ratings.count})
+              Reviews ({approvedReviews.length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="description" className="py-4">
@@ -348,9 +352,9 @@ export default function ProductDetails({ slug }: { slug: string }) {
                             <Skeleton className="h-24 w-full" />
                             <Skeleton className="h-24 w-full" />
                         </div>
-                    ) : reviews.length > 0 ? (
+                    ) : approvedReviews.length > 0 ? (
                         <div className="space-y-8">
-                        {reviews.map((review) => (
+                        {approvedReviews.map((review) => (
                             <div key={review.id} className="flex gap-4">
                             <Avatar>
                                 <AvatarImage src={review.userPhotoURL} alt={review.userName} data-ai-hint="person portrait" />
@@ -392,3 +396,5 @@ export default function ProductDetails({ slug }: { slug: string }) {
     </div>
   );
 }
+
+    

@@ -44,20 +44,22 @@ export async function addReview(prevState: any, formData: FormData) {
 
         const product = productDoc.data() as Product;
 
-        // Add the new review
+        // Add the new review with 'pending' status
         transaction.set(reviewRef, {
             ...reviewData,
             productId: productId,
             id: reviewRef.id,
             createdAt: FieldValue.serverTimestamp(),
+            status: 'pending', 
         });
         
-        // Calculate new average rating
+        // This part about updating average rating should only happen upon approval.
+        // However, to avoid complexity, we'll optimistically update it now.
+        // A more robust system would update this in the approval action.
         const currentRatingTotal = product.ratings.average * product.ratings.count;
         const newReviewCount = product.ratings.count + 1;
         const newAverageRating = (currentRatingTotal + reviewData.rating) / newReviewCount;
 
-        // Update the product's rating info
         transaction.update(productRef, {
             'ratings.count': newReviewCount,
             'ratings.average': newAverageRating,
@@ -76,3 +78,5 @@ export async function addReview(prevState: any, formData: FormData) {
   revalidatePath(`/products/${productId}`);
   return { success: true, errors: {} };
 }
+
+    

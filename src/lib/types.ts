@@ -92,6 +92,7 @@ export type Review = {
   createdAt: string;
   userName: string;
   userPhotoURL?: string;
+  status: 'pending' | 'approved' | 'rejected';
 };
 
 export type ContactMessage = {
@@ -113,5 +114,7 @@ export type Order = {
   createdAt: string;
   grandTotal: number;
 };
+
+    
 
     

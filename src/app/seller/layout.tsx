@@ -8,7 +8,8 @@ import {
   Package2,
   ShoppingCart,
   Users,
-  Settings
+  Settings,
+  Star
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -79,6 +80,9 @@ function SellerDashboard({ children, pendingOrderCount, authProps }: { children:
                   </SidebarMenuItem>
                    <SidebarMenuItem>
                       <SidebarMenuButton href="/seller/products" leftIcon={<Package/>}>Products</SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton href="/seller/reviews" leftIcon={<Star/>}>Reviews</SidebarMenuButton>
                   </SidebarMenuItem>
                    <SidebarMenuItem>
                       <SidebarMenuButton href="/seller/customers" leftIcon={<Users/>}>Customers</SidebarMenuButton>
@@ -219,3 +223,5 @@ export default function SellerLayout({
     <SellerDashboard pendingOrderCount={pendingOrderCount} authProps={authProps}>{children}</SellerDashboard>
   );
 }
+
+    

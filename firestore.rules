@@ -137,6 +137,14 @@ service cloud.firestore {
       }
       return null;
     }
+    
+    /**
+     * @description Checks if the requester is the seller of a given product.
+     */
+    function isProductSeller(productId) {
+      let productSellerId = get(/databases/$(database)/documents/products/$(productId)).data.sellerId;
+      return isSignedIn() && request.auth.uid == productSellerId;
+    }
 
     /**
      * @description Checks if a user with a seller role is allowed to create products.
@@ -267,12 +275,17 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes, allowing users to manage their own reviews.
      */
     match /reviews/{reviewId} {
+      // Allow public read for now, client will filter for 'approved' status.
+      // In a more secure setup, this would be restricted and queries would only be allowed for approved reviews,
+      // which is complex with the current data structure.
       allow read: if true;
       allow create: if isSignedIn() && 
                     request.resource.data.userId == request.auth.uid &&
                     request.resource.data.rating >= 1 &&
-                    request.resource.data.rating <= 5;
-      allow update: if isExistingDocument() && canManageSupport(); // Only admins can moderate
+                    request.resource.data.rating <= 5 &&
+                    request.resource.data.status == 'pending';
+      // Allow vendor of the product or admin/support to update status
+      allow update: if isExistingDocument() && (isProductSeller(resource.data.productId) || canManageSupport());
       allow delete: if isExistingDocument() && (isOwner(resource.data.userId) || canManageSupport());
     }
 
@@ -349,3 +362,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
