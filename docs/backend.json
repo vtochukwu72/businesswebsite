@@ -59,9 +59,12 @@
           "description": "Timestamp of the last user profile update.",
           "format": "date-time"
         },
-        "address": {
+        "shippingAddress": {
           "type": "object",
           "properties": {
+            "fullName": {
+              "type": "string"
+            },
             "street": {
               "type": "string"
             },

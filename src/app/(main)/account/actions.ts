@@ -3,7 +3,6 @@
 
 import { z } from 'zod';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
 
@@ -33,7 +32,7 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
 
   try {
     const adminApp = getAdminApp();
-    const adminAuth = getAdminAuth(adminApp);
+    const adminAuth = getAuth(adminApp);
     const db = getFirestore(adminApp);
     
     // Update Firebase Auth display name
@@ -97,6 +96,7 @@ export async function saveUserAddress(prevState: any, formData: FormData) {
       shippingAddress: addressData,
       updatedAt: FieldValue.serverTimestamp(),
     });
+    revalidatePath('/account/addresses');
     return { success: true, errors: {} };
   } catch (error: any) {
     return {
@@ -133,3 +133,5 @@ export async function toggleWishlist(userId: string, productId: string, isInWish
     return { success: false, message: error.message || 'An unexpected error occurred.' };
   }
 }
+
+    
