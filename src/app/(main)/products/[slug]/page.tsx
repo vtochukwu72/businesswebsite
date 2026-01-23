@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { addToCart } from '@/app/(main)/cart/actions';
+import { Badge } from '@/components/ui/badge';
 
 export default function ProductDetailPage({
   params,
@@ -174,7 +175,22 @@ export default function ProductDetailPage({
             )}
           </div>
           <p className="mt-4 text-muted-foreground">{product.description}</p>
+
+          {product.colors && product.colors.length > 0 && (
+            <div className="my-6">
+              <h3 className="font-semibold mb-2">Available Colors:</h3>
+              <div className="flex flex-wrap gap-2">
+                {product.colors.map((color) => (
+                  <Badge key={color} variant="outline" className="capitalize text-sm">
+                    {color}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <Separator className="my-6" />
+
           <div className="flex items-center gap-4">
             <div className="flex items-center border rounded-md">
               <Button variant="ghost" size="icon" onClick={handleDecrement} disabled={quantity <= 1}>
@@ -266,3 +282,5 @@ export default function ProductDetailPage({
     </div>
   );
 }
+
+    

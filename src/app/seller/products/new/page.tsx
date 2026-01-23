@@ -110,11 +110,16 @@ export default function AddProductPage() {
                 {state.errors?.description && <p className="text-sm text-destructive">{state.errors.description.join(', ')}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="grid gap-3">
                     <Label htmlFor="price">Price (NGN)</Label>
                     <Input id="price" name="price" type="number" placeholder="e.g. 25000" />
                     {state.errors?.price && <p className="text-sm text-destructive">{state.errors.price.join(', ')}</p>}
+                </div>
+                 <div className="grid gap-3">
+                    <Label htmlFor="shippingFee">Shipping Fee (NGN)</Label>
+                    <Input id="shippingFee" name="shippingFee" type="number" placeholder="e.g. 1500" />
+                    {state.errors?.shippingFee && <p className="text-sm text-destructive">{state.errors.shippingFee.join(', ')}</p>}
                 </div>
                  <div className="grid gap-3">
                     <Label htmlFor="category">Category</Label>
@@ -122,7 +127,7 @@ export default function AddProductPage() {
                       id="category"
                       name="category"
                       type="text"
-                      placeholder="e.g. Electronics, Fashion, Books"
+                      placeholder="e.g. Electronics"
                     />
                      {state.errors?.category && <p className="text-sm text-destructive">{state.errors.category.join(', ')}</p>}
                 </div>
@@ -157,6 +162,17 @@ export default function AddProductPage() {
                 <p className="text-xs text-muted-foreground">For now, please use placeholder image URLs from a service like picsum.photos.</p>
                 {state.errors?.images && <p className="text-sm text-destructive">{state.errors.images.join(', ')}</p>}
               </div>
+
+              <div className="grid gap-3">
+                <Label htmlFor="colors">Colors</Label>
+                <Textarea
+                  id="colors"
+                  name="colors"
+                  placeholder="Enter one color per line (e.g., Red, Royal Blue, Forest Green)"
+                />
+                <p className="text-xs text-muted-foreground">List the available colors for this product.</p>
+                {state.errors?.colors && <p className="text-sm text-destructive">{state.errors.colors.join(', ')}</p>}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -170,3 +186,5 @@ export default function AddProductPage() {
     </main>
   );
 }
+
+    

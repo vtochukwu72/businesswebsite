@@ -12,11 +12,13 @@ export type Product = {
   description: string;
   price: number;
   discountedPrice?: number;
+  shippingFee?: number;
   currency: string;
   category: string;
   subcategory?: string;
   brand: string;
   images: string[];
+  colors?: string[];
   specifications: Record<string, string | number>;
   stockQuantity: number;
   sku: string;
@@ -115,3 +117,5 @@ export type Order = {
   createdAt: string;
   grandTotal: number;
 };
+
+    

@@ -96,11 +96,15 @@ export default function CartPage() {
         });
     }
     
-    const subtotal = useMemo(() => {
-        return cartItems.reduce((acc, item) => {
+    const { subtotal, shippingTotal } = useMemo(() => {
+        const subtotal = cartItems.reduce((acc, item) => {
             const price = item.product.discountedPrice ?? item.product.price;
             return acc + (price * item.quantity);
         }, 0);
+        const shippingTotal = cartItems.reduce((acc, item) => {
+            return acc + (item.product.shippingFee || 0) * item.quantity;
+        }, 0);
+        return { subtotal, shippingTotal };
     }, [cartItems]);
     
     if (isLoading || authLoading) {
@@ -193,7 +197,7 @@ export default function CartPage() {
                             </div>
                             <div className="flex justify-between">
                                 <span>Shipping</span>
-                                <span className="text-muted-foreground">Calculated at checkout</span>
+                                <span>₦{shippingTotal.toFixed(2)}</span>
                             </div>
                              <div className="flex justify-between">
                                 <span>Taxes</span>
@@ -202,7 +206,7 @@ export default function CartPage() {
                             <Separator />
                              <div className="flex justify-between font-bold text-lg">
                                 <span>Estimated Total</span>
-                                <span>₦{subtotal.toFixed(2)}</span>
+                                <span>₦{(subtotal + shippingTotal).toFixed(2)}</span>
                             </div>
                             <Button className="w-full" size="lg" disabled={isUpdating}>Proceed to Checkout</Button>
                         </CardContent>
@@ -212,3 +216,5 @@ export default function CartPage() {
         </div>
     )
 }
+
+    

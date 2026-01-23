@@ -11,11 +11,13 @@ const productSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
+  shippingFee: z.coerce.number().min(0, 'Shipping fee must be a positive number.').optional(),
   category: z.string().min(1, 'Category is required.'),
   brand: z.string().min(1, 'Brand is required.'),
   stockQuantity: z.coerce.number().int().min(0, 'Stock must be a positive integer.'),
   sku: z.string().min(1, 'SKU is required.'),
   images: z.string().min(1, 'At least one image URL is required.'),
+  colors: z.string().optional(),
 });
 
 export async function addProduct(prevState: any, formData: FormData) {
@@ -29,7 +31,7 @@ export async function addProduct(prevState: any, formData: FormData) {
     };
   }
   
-  const { images, ...productData } = parsed.data;
+  const { images, colors, ...productData } = parsed.data;
 
   try {
     const adminApp = getAdminApp();
@@ -37,7 +39,9 @@ export async function addProduct(prevState: any, formData: FormData) {
 
     await db.collection('products').add({
       ...productData,
+      shippingFee: productData.shippingFee || 0,
       images: images.split('\n').filter(url => url.trim() !== ''),
+      colors: colors?.split('\n').filter(c => c.trim() !== '') || [],
       isActive: true, // Product is live immediately
       ratings: { average: 0, count: 0 },
       specifications: {}, // Add empty specs object
@@ -58,3 +62,5 @@ export async function addProduct(prevState: any, formData: FormData) {
   revalidatePath('/seller/products');
   redirect('/seller/products');
 }
+
+    
