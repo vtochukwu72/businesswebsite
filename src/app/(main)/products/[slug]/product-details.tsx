@@ -134,12 +134,12 @@ export default function ProductDetails({ slug }: { slug: string }) {
 
 
   if (loading) {
-    return <div className="container py-8 text-center">Loading product...</div>;
+    return <div className="container py-8 px-8 text-center">Loading product...</div>;
   }
 
   if (!product) {
     return (
-      <div className="container py-8 text-center">
+      <div className="container py-8 px-8 text-center">
         <h1 className="text-2xl font-bold">Product not found</h1>
         <p className="text-muted-foreground">
           Sorry, we couldn't find the product you were looking for.
@@ -184,7 +184,7 @@ export default function ProductDetails({ slug }: { slug: string }) {
   const isOutOfStock = product.stockQuantity === 0;
 
   return (
-    <div className="container py-8">
+    <div className="container py-8 px-8">
       <div className="grid md:grid-cols-2 gap-8">
         <div>
           <Image
