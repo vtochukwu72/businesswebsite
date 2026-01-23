@@ -21,7 +21,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ProductDetailPage({
-  params,
+  params: { slug },
 }: {
   params: { slug: string };
 }) {
@@ -32,11 +32,11 @@ export default function ProductDetailPage({
   const { toast } = useToast();
   const router = useRouter();
 
-  const isInWishlist = userData?.wishlist?.includes(params.slug);
+  const isInWishlist = userData?.wishlist?.includes(slug);
 
   useEffect(() => {
     setLoading(true);
-    const productRef = doc(db, 'products', params.slug);
+    const productRef = doc(db, 'products', slug);
 
     const unsubscribe = onSnapshot(
       productRef,
@@ -70,7 +70,7 @@ export default function ProductDetailPage({
     );
 
     return () => unsubscribe();
-  }, [params.slug, toast]);
+  }, [slug, toast]);
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -83,7 +83,7 @@ export default function ProductDetailPage({
       router.push('/login');
       return;
     }
-    const result = await toggleWishlist(user.uid, params.slug, !!isInWishlist);
+    const result = await toggleWishlist(user.uid, slug, !!isInWishlist);
     if (result.success) {
       toast({
         title: result.message,
