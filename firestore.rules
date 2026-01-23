@@ -262,14 +262,17 @@ service cloud.firestore {
     /**
      * @description Secures product review documents. Reviews are public to read.
      * @path /reviews/{reviewId}
-     * @allow An authenticated user (create) posts a review for a product.
+     * @allow An authenticated user (create) posts a review for a product they purchased.
      * @deny A user (update) tries to modify another user's review.
      * @principle Enforces document ownership for writes, allowing users to manage their own reviews.
      */
     match /reviews/{reviewId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingDocument() && (isOwner(resource.data.userId) || canManageSupport());
+      allow create: if isSignedIn() && 
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.rating >= 1 &&
+                    request.resource.data.rating <= 5;
+      allow update: if isExistingDocument() && canManageSupport(); // Only admins can moderate
       allow delete: if isExistingDocument() && (isOwner(resource.data.userId) || canManageSupport());
     }
 
@@ -330,9 +333,7 @@ service cloud.firestore {
      */
     match /contacts/{contactId} {
       allow create: if true;
-      allow read, update, delete: if isSignedIn() && 
-                                exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['support_manager', 'admin', 'super_admin'];
+      allow read, update, delete: if canManageSupport();
     }
     
     /**

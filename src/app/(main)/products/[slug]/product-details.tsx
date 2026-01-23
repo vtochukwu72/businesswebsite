@@ -14,15 +14,19 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { addToCart } from '@/app/(main)/cart/actions';
 import { Badge } from '@/components/ui/badge';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { serializeFirestoreData } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { ReviewForm } from '@/components/reviews/review-form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductDetails({ slug }: { slug: string }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const { user, userData } = useAuth();
   const { toast } = useToast();
@@ -67,6 +71,42 @@ export default function ProductDetails({ slug }: { slug: string }) {
 
     return () => unsubscribe();
   }, [slug, toast]);
+  
+  useEffect(() => {
+    setReviewsLoading(true);
+    const reviewsQuery = query(
+        collection(db, 'reviews'), 
+        where('productId', '==', slug), 
+        orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(reviewsQuery, (snapshot) => {
+        const fetchedReviews = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...serializeFirestoreData(data)
+            } as Review;
+        });
+        setReviews(fetchedReviews);
+        setReviewsLoading(false);
+    }, (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: `reviews`, // query on root collection
+          operation: 'list',
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+        console.error('Error fetching reviews:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error Loading Reviews',
+        });
+        setReviewsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [slug, toast]);
+
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -93,8 +133,6 @@ export default function ProductDetails({ slug }: { slug: string }) {
     }
   };
 
-  // Placeholder for reviews - this can be expanded to fetch real reviews
-  const reviews: Review[] = [];
 
   if (loading) {
     return <div className="container py-8 text-center">Loading product...</div>;
@@ -302,58 +340,52 @@ export default function ProductDetails({ slug }: { slug: string }) {
               ))}
             </ul>
           </TabsContent>
-          <TabsContent value="reviews" className="py-4">
-            {product.ratings.count > 0 ? (
-              <div className="space-y-6">
-                {reviews.map((review) => (
-                  <div key={review.reviewId} className="flex gap-4">
-                    <Avatar>
-                      <AvatarImage
-                        src={review.user?.avatar}
-                        alt={review.user?.name}
-                        data-ai-hint="person portrait"
-                      />
-                      <AvatarFallback>
-                        {review.user?.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">{review.user?.name}</h4>
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-4 w-4 ${
-                                i < review.rating
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
+          <TabsContent value="reviews" className="py-6">
+            <div className="grid md:grid-cols-2 gap-12">
+                <div className="space-y-8">
+                    <h3 className="text-2xl font-bold">Customer Reviews</h3>
+                    {reviewsLoading ? (
+                        <div className="space-y-6">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
                         </div>
-                      </div>
-                      <h5 className="font-bold mt-1">{review.title}</h5>
-                      <p className="text-muted-foreground mt-1">
-                        {review.comment}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                <p className="text-muted-foreground italic">
-                  Full review display is coming soon.
-                </p>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                No reviews yet for this product.
-              </p>
-            )}
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold">Write a review</h3>
-              <p className="text-muted-foreground text-sm mt-2">
-                Coming soon: Share your thoughts with other customers.
-              </p>
+                    ) : reviews.length > 0 ? (
+                        <div className="space-y-8">
+                        {reviews.map((review) => (
+                            <div key={review.id} className="flex gap-4">
+                            <Avatar>
+                                <AvatarImage src={review.userPhotoURL} alt={review.userName} data-ai-hint="person portrait" />
+                                <AvatarFallback>{review.userName.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                <h4 className="font-semibold">{review.userName}</h4>
+                                <div className="flex">
+                                    {[...Array(5)].map((_, i) => (
+                                    <Star
+                                        key={i}
+                                        className={`h-4 w-4 ${
+                                        i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                                        }`}
+                                    />
+                                    ))}
+                                </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">{new Date(review.createdAt).toLocaleDateString()}</p>
+                                <h5 className="font-bold mt-2">{review.title}</h5>
+                                <p className="text-muted-foreground mt-1 text-sm">{review.comment}</p>
+                            </div>
+                            </div>
+                        ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground pt-4">No reviews yet for this product. Be the first to write one!</p>
+                    )}
+                </div>
+                <div className="space-y-6">
+                    <h3 className="text-2xl font-bold">Write a Review</h3>
+                    <ReviewForm productId={slug} />
+                </div>
             </div>
           </TabsContent>
         </Tabs>

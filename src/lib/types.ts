@@ -83,19 +83,15 @@ export type Category = {
 };
 
 export type Review = {
-  reviewId: string;
+  id: string;
   productId: string;
   userId: string;
   rating: number;
   title: string;
   comment: string;
-  images?: string[];
-  helpfulCount: number;
-  reported: boolean;
-  user?: {
-    name: string;
-    avatar: string;
-  };
+  createdAt: string;
+  userName: string;
+  userPhotoURL?: string;
 };
 
 export type ContactMessage = {
