@@ -1,7 +1,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore'],
   typescript: {
     ignoreBuildErrors: true,
   },
