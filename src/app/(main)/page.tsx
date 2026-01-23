@@ -57,44 +57,22 @@ export default function HomePage() {
       const fetchedProducts = await getProducts();
       setProducts(fetchedProducts);
 
-      const categoryImageMap: Record<string, string | undefined> = {
-        Electronics: PlaceHolderImages.find(
-          (img) => img.id === 'category-electronics'
-        )?.imageUrl,
-        Fashion: PlaceHolderImages.find(
-          (img) => img.id === 'category-fashion'
-        )?.imageUrl,
-        'Home Goods': PlaceHolderImages.find(
-          (img) => img.id === 'category-homegoods'
-        )?.imageUrl,
-        Books: PlaceHolderImages.find((img) => img.id === 'category-books')
-          ?.imageUrl,
-      };
-      const categoryHintMap: Record<string, string | undefined> = {
-        Electronics: PlaceHolderImages.find(
-          (img) => img.id === 'category-electronics'
-        )?.imageHint,
-        Fashion: PlaceHolderImages.find(
-          (img) => img.id === 'category-fashion'
-        )?.imageHint,
-        'Home Goods': PlaceHolderImages.find(
-          (img) => img.id === 'category-homegoods'
-        )?.imageHint,
-        Books: PlaceHolderImages.find((img) => img.id === 'category-books')
-          ?.imageHint,
-      };
-
       if (fetchedProducts.length > 0) {
-        const uniqueCategories = [
-          ...new Set(fetchedProducts.map((p) => p.category)),
-        ];
-        const categoryData = uniqueCategories.map((cat) => ({
-          name: cat,
-          imageURL:
-            categoryImageMap[cat] ||
-            `https://picsum.photos/seed/${cat.replace(/\s+/g, '-')}/400/300`,
-          imageHint: categoryHintMap[cat] || cat.toLowerCase(),
+        // Create a map of categories to the first product found in that category.
+        const categoryProductMap = new Map<string, Product>();
+        for (const product of fetchedProducts) {
+          if (!categoryProductMap.has(product.category)) {
+            categoryProductMap.set(product.category, product);
+          }
+        }
+        
+        // Create the category data from the map.
+        const categoryData = Array.from(categoryProductMap.entries()).map(([name, product]) => ({
+          name,
+          imageURL: product.images[0] || `https://picsum.photos/seed/${name.replace(/\s+/g, '-')}/400/300`,
+          imageHint: product.name.toLowerCase(), // Use product name as hint
         }));
+        
         setDynamicCategories(categoryData);
       }
 

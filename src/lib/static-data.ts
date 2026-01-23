@@ -8,6 +8,7 @@ export const products: Product[] = [
     description: 'Immerse yourself in sound with these premium noise-cancelling headphones. Long battery life and comfortable design for all-day listening.',
     price: 349.99,
     discountedPrice: 299.99,
+    shippingFee: 0,
     currency: 'NGN',
     category: 'Electronics',
     brand: 'SoundWave',
@@ -16,6 +17,7 @@ export const products: Product[] = [
       'https://picsum.photos/seed/102/800/800',
       'https://picsum.photos/seed/103/800/800',
     ],
+    colors: ['Black', 'White', 'Blue'],
     specifications: {
       'Connectivity': 'Bluetooth 5.0',
       'Battery Life': '30 hours',
@@ -37,6 +39,7 @@ export const products: Product[] = [
     name: 'Classic Leather Watch',
     description: 'A timeless timepiece that combines classic design with modern functionality. Features a genuine leather strap and stainless steel case.',
     price: 199.99,
+    shippingFee: 0,
     currency: 'NGN',
     category: 'Fashion',
     brand: 'Timeless Co.',
@@ -44,6 +47,7 @@ export const products: Product[] = [
       'https://picsum.photos/seed/104/800/800',
       'https://picsum.photos/seed/105/800/800',
     ],
+    colors: ['Brown Leather', 'Black Leather'],
     specifications: {
       'Case Material': 'Stainless Steel',
       'Strap Material': 'Genuine Leather',
@@ -65,12 +69,14 @@ export const products: Product[] = [
     name: 'Smart Home Hub',
     description: 'Control your smart devices with ease using this central hub. Compatible with all major brands and voice assistants.',
     price: 129.99,
+    shippingFee: 10.00,
     currency: 'NGN',
     category: 'Electronics',
     brand: 'Connectify',
     images: [
       'https://picsum.photos/seed/106/800/800',
     ],
+    colors: ['White'],
     specifications: {
       'Compatibility': 'Wi-Fi, Zigbee, Z-Wave',
       'Voice Assistants': 'Google Assistant, Amazon Alexa',
@@ -91,12 +97,14 @@ export const products: Product[] = [
     name: 'Organic Green Tea',
     description: 'A refreshing and healthy blend of organic green tea leaves. Sourced from the finest tea gardens.',
     price: 15.99,
+    shippingFee: 3.00,
     currency: 'NGN',
     category: 'Groceries',
     brand: 'PureLeaf',
     images: [
       'https://picsum.photos/seed/107/800/800',
     ],
+    colors: [],
     specifications: {
       'Ingredients': 'Organic Green Tea Leaves',
       'Weight': '100g',
@@ -117,6 +125,7 @@ export const products: Product[] = [
     name: 'Modern Running Shoes',
     description: 'Lightweight and breathable running shoes designed for maximum comfort and performance.',
     price: 120.00,
+    shippingFee: 5.00,
     currency: 'NGN',
     category: 'Fashion',
     brand: 'QuickStep',
@@ -124,6 +133,7 @@ export const products: Product[] = [
         'https://picsum.photos/seed/108/800/800',
         'https://picsum.photos/seed/109/800/800',
     ],
+    colors: ['Red/Black', 'Blue/White'],
     specifications: {
         'Upper Material': 'Mesh',
         'Sole': 'Rubber',
@@ -144,12 +154,14 @@ export const products: Product[] = [
     name: 'The Alchemist',
     description: 'A classic novel by Paulo Coelho. A story about following your dreams.',
     price: 9.99,
+    shippingFee: 2.00,
     currency: 'NGN',
     category: 'Books',
     brand: 'HarperCollins',
     images: [
         'https://picsum.photos/seed/110/800/800',
     ],
+    colors: [],
     specifications: {
         'Author': 'Paulo Coelho',
         'Format': 'Paperback',
@@ -163,5 +175,33 @@ export const products: Product[] = [
     },
     isActive: true,
     tags: ['book', 'fiction', 'classic']
+  },
+  {
+    id: 'prod-7',
+    sellerId: 'seller-2',
+    name: 'Elegant Perfume',
+    description: 'A sophisticated fragrance for the modern individual, with notes of jasmine and sandalwood.',
+    price: 85.00,
+    shippingFee: 4.00,
+    currency: 'NGN',
+    category: 'Fragrance',
+    brand: 'Aroma & Co.',
+    images: [
+        'https://www.aromaespejo.com/wp-content/uploads/2021/04/Fakhar-Lattafa-Perfumes-Gold-100ml-EDP-1.jpg',
+    ],
+    colors: [],
+    specifications: {
+        'Volume': '100ml',
+        'Type': 'Eau de Parfum',
+        'Notes': 'Jasmine, Sandalwood, Bergamot'
+    },
+    stockQuantity: 120,
+    sku: 'AC-PERF-55',
+    ratings: {
+        average: 4.9,
+        count: 980
+    },
+    isActive: true,
+    tags: ['perfume', 'fragrance', 'scent']
   }
 ];

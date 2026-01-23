@@ -43,7 +43,8 @@ function SearchResults() {
         p.name.toLowerCase().includes(lowerCaseQuery) ||
         p.description.toLowerCase().includes(lowerCaseQuery) ||
         p.category.toLowerCase().includes(lowerCaseQuery) ||
-        p.brand.toLowerCase().includes(lowerCaseQuery)
+        p.brand.toLowerCase().includes(lowerCaseQuery) ||
+        (p.tags && p.tags.some(tag => tag.toLowerCase().includes(lowerCaseQuery)))
     );
   }, [q, allProducts]);
 
