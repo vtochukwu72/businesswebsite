@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { addToCart } from '@/app/(main)/cart/actions';
 import { Badge } from '@/components/ui/badge';
-import { doc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { serializeFirestoreData } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -76,8 +76,7 @@ export default function ProductDetails({ slug }: { slug: string }) {
     setReviewsLoading(true);
     const reviewsQuery = query(
         collection(db, 'reviews'), 
-        where('productId', '==', slug), 
-        orderBy('createdAt', 'desc')
+        where('productId', '==', slug)
     );
 
     const unsubscribe = onSnapshot(reviewsQuery, (snapshot) => {
