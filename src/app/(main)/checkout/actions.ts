@@ -1,6 +1,6 @@
 'use server';
 
-import { getFirestore, writeBatch, serverTimestamp } from 'firebase-admin/firestore';
+import { getFirestore, writeBatch, FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/firebase/admin-config';
 import { redirect } from 'next/navigation';
 import type { EnrichedCartItem } from '@/app/(main)/cart/actions';
@@ -79,7 +79,7 @@ export async function placeOrder(formData: FormData) {
             taxAmount: 0, // Placeholder
             grandTotal,
             orderStatus: 'pending',
-            createdAt: serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
             paymentDetails: { method: 'Paystack', status: 'pending' }, // Placeholder
         };
 
