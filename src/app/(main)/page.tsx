@@ -20,6 +20,7 @@ import { getProducts } from '@/services/product-service';
 import { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Autoplay from 'embla-carousel-autoplay';
+import { RecentlyViewedProducts } from '@/components/products/recently-viewed';
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image');
 
@@ -204,6 +205,8 @@ export default function HomePage() {
           </Carousel>
         </div>
       </section>
+
+      <RecentlyViewedProducts />
 
       {/* Why Choose Us */}
       <section className="py-12 md:py-20 px-4 md:px-8 lg:px-12">

@@ -21,6 +21,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { ReviewForm } from '@/components/reviews/review-form';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 
 export default function ProductDetails({ slug }: { slug: string }) {
   const [product, setProduct] = useState<Product | null>(null);
@@ -31,8 +32,13 @@ export default function ProductDetails({ slug }: { slug: string }) {
   const { user, userData } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const { addRecentlyViewed } = useRecentlyViewed();
 
   const isInWishlist = userData?.wishlist?.includes(slug);
+
+  useEffect(() => {
+    addRecentlyViewed(slug);
+  }, [slug, addRecentlyViewed]);
 
   useEffect(() => {
     setLoading(true);
@@ -396,5 +402,3 @@ export default function ProductDetails({ slug }: { slug: string }) {
     </div>
   );
 }
-
-    
