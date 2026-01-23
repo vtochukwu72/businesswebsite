@@ -17,53 +17,11 @@ import { ProductCard } from '@/components/products/product-card';
 import type { Product } from '@/lib/types';
 import { NewsletterForm } from '@/components/newsletter-form';
 import { getProducts } from '@/services/product-service';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-
+import Autoplay from 'embla-carousel-autoplay';
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image');
-const categories = [
-  {
-    categoryId: '1',
-    name: 'Electronics',
-    imageURL:
-      PlaceHolderImages.find((img) => img.id === 'category-electronics')
-        ?.imageUrl || '',
-    imageHint:
-      PlaceHolderImages.find((img) => img.id === 'category-electronics')
-        ?.imageHint || 'category image',
-  },
-  {
-    categoryId: '2',
-    name: 'Fashion',
-    imageURL:
-      PlaceHolderImages.find((img) => img.id === 'category-fashion')
-        ?.imageUrl || '',
-    imageHint:
-      PlaceHolderImages.find((img) => img.id === 'category-fashion')
-        ?.imageHint || 'category image',
-  },
-  {
-    categoryId: '3',
-    name: 'Home Goods',
-    imageURL:
-      PlaceHolderImages.find((img) => img.id === 'category-homegoods')
-        ?.imageUrl || '',
-    imageHint:
-      PlaceHolderImages.find((img) => img.id === 'category-homegoods')
-        ?.imageHint || 'category image',
-  },
-  {
-    categoryId: '4',
-    name: 'Books',
-    imageURL:
-      PlaceHolderImages.find((img) => img.id === 'category-books')?.imageUrl ||
-      '',
-    imageHint:
-      PlaceHolderImages.find((img) => img.id === 'category-books')
-        ?.imageHint || 'category image',
-  },
-];
 
 function ProductSkeleton() {
   return (
@@ -74,21 +32,75 @@ function ProductSkeleton() {
         <Skeleton className="h-4 w-[150px]" />
       </div>
     </div>
-  )
+  );
+}
+
+function CategorySkeleton() {
+    return (
+        <div className="flex flex-col space-y-3">
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+            <Skeleton className="h-4 w-3/4 mx-auto" />
+        </div>
+    )
 }
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dynamicCategories, setDynamicCategories] = useState<any[]>([]);
+
+  const plugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: true }));
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchProductsAndCategories() {
       setLoading(true);
       const fetchedProducts = await getProducts();
       setProducts(fetchedProducts);
+
+      const categoryImageMap: Record<string, string | undefined> = {
+        Electronics: PlaceHolderImages.find(
+          (img) => img.id === 'category-electronics'
+        )?.imageUrl,
+        Fashion: PlaceHolderImages.find(
+          (img) => img.id === 'category-fashion'
+        )?.imageUrl,
+        'Home Goods': PlaceHolderImages.find(
+          (img) => img.id === 'category-homegoods'
+        )?.imageUrl,
+        Books: PlaceHolderImages.find((img) => img.id === 'category-books')
+          ?.imageUrl,
+      };
+      const categoryHintMap: Record<string, string | undefined> = {
+        Electronics: PlaceHolderImages.find(
+          (img) => img.id === 'category-electronics'
+        )?.imageHint,
+        Fashion: PlaceHolderImages.find(
+          (img) => img.id === 'category-fashion'
+        )?.imageHint,
+        'Home Goods': PlaceHolderImages.find(
+          (img) => img.id === 'category-homegoods'
+        )?.imageHint,
+        Books: PlaceHolderImages.find((img) => img.id === 'category-books')
+          ?.imageHint,
+      };
+
+      if (fetchedProducts.length > 0) {
+        const uniqueCategories = [
+          ...new Set(fetchedProducts.map((p) => p.category)),
+        ];
+        const categoryData = uniqueCategories.map((cat) => ({
+          name: cat,
+          imageURL:
+            categoryImageMap[cat] ||
+            `https://picsum.photos/seed/${cat.replace(/\s+/g, '-')}/400/300`,
+          imageHint: categoryHintMap[cat] || cat.toLowerCase(),
+        }));
+        setDynamicCategories(categoryData);
+      }
+
       setLoading(false);
     }
-    fetchProducts();
+    fetchProductsAndCategories();
   }, []);
 
   return (
@@ -128,29 +140,55 @@ export default function HomePage() {
           <h2 className="mb-8 text-center text-3xl font-bold">
             Shop by Category
           </h2>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {categories.map((category) => (
-              <Link href="/products" key={category.categoryId} className="group">
-                <Card className="overflow-hidden transition-all hover:shadow-xl">
-                  <CardHeader className="p-0">
-                    <Image
-                      src={category.imageURL}
-                      alt={category.name}
-                      width={400}
-                      height={300}
-                      className="aspect-video w-full object-cover transition-transform group-hover:scale-105"
-                      data-ai-hint={category.imageHint}
-                    />
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <h3 className="text-center font-semibold">
-                      {category.name}
-                    </h3>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          <Carousel
+            plugins={[plugin.current]}
+            onMouseEnter={plugin.current.stop}
+            onMouseLeave={plugin.current.reset}
+            opts={{
+              align: 'start',
+              loop: true,
+            }}
+            className="mx-auto w-full"
+          >
+            <CarouselContent>
+              {(loading ? [...Array(4)] : dynamicCategories).map(
+                (category, index) => (
+                  <CarouselItem
+                    key={category?.name || index}
+                    className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                  >
+                    <div className="p-1">
+                      {loading ? (
+                        <CategorySkeleton />
+                      ) : (
+                        <Link href="/products" className="group">
+                          <Card className="overflow-hidden transition-all hover:shadow-xl">
+                            <CardHeader className="p-0">
+                              <Image
+                                src={category.imageURL}
+                                alt={category.name}
+                                width={400}
+                                height={300}
+                                className="aspect-[4/3] w-full object-cover transition-transform group-hover:scale-105"
+                                data-ai-hint={category.imageHint}
+                              />
+                            </CardHeader>
+                            <CardContent className="p-4">
+                              <h3 className="text-center font-semibold">
+                                {category.name}
+                              </h3>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      )}
+                    </div>
+                  </CarouselItem>
+                )
+              )}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       </section>
 
@@ -168,22 +206,20 @@ export default function HomePage() {
             className="mx-auto w-full max-w-sm md:max-w-3xl lg:max-w-5xl"
           >
             <CarouselContent>
-               {loading ? (
-                [...Array(3)].map((_, i) => (
-                  <CarouselItem key={i} className="md:basis-1/2 lg:basis-1/3">
-                    <ProductSkeleton />
-                  </CarouselItem>
-                ))
-              ) : (
-                products?.slice(0,8).map((product) => (
-                  <CarouselItem
-                    key={product.id}
-                    className="md:basis-1/2 lg:basis-1/3"
-                  >
-                    <ProductCard product={product} />
-                  </CarouselItem>
-                ))
-              )}
+              {loading
+                ? [...Array(3)].map((_, i) => (
+                    <CarouselItem key={i} className="md:basis-1/2 lg:basis-1/3">
+                      <ProductSkeleton />
+                    </CarouselItem>
+                  ))
+                : products?.slice(0, 8).map((product) => (
+                    <CarouselItem
+                      key={product.id}
+                      className="md:basis-1/2 lg:basis-1/3"
+                    >
+                      <ProductCard product={product} />
+                    </CarouselItem>
+                  ))}
             </CarouselContent>
             <CarouselPrevious />
             <CarouselNext />
