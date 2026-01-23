@@ -33,13 +33,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import React from 'react';
-import { products as staticProducts } from '@/lib/static-data';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import type { Product } from '@/lib/types';
+import { serializeFirestoreData } from '@/lib/utils';
 
 const otherLinks = [{ href: '/contact', label: 'Contact' }];
 
@@ -48,9 +51,22 @@ export function Header() {
   const { user, userData, loading, logout } = useAuth();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     setIsClient(true);
+    
+    const productsQuery = query(collection(db, 'products'));
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+        const fetchedProducts: Product[] = snapshot.docs.map(doc => {
+            return { id: doc.id, ...serializeFirestoreData(doc.data()) } as Product;
+        });
+        setProducts(fetchedProducts);
+    }, (error) => {
+        console.error("Header could not fetch live categories:", error);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => {
@@ -71,9 +87,9 @@ export function Header() {
   };
 
   const categories = useMemo(() => {
-    if (!staticProducts) return [];
-    return [...new Set(staticProducts.map((p) => p.category))];
-  }, []);
+    if (!products) return [];
+    return [...new Set(products.map((p) => p.category))];
+  }, [products]);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
