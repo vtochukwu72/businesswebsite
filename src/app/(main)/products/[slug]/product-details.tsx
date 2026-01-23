@@ -73,6 +73,12 @@ export default function ProductDetails({ slug }: { slug: string }) {
   }, [slug, toast]);
   
   useEffect(() => {
+    if (!user) {
+      setReviewsLoading(false);
+      setReviews([]);
+      return;
+    }
+
     setReviewsLoading(true);
     const reviewsQuery = query(
         collection(db, 'reviews'), 
@@ -105,7 +111,7 @@ export default function ProductDetails({ slug }: { slug: string }) {
     });
 
     return () => unsubscribe();
-  }, [slug, toast]);
+  }, [slug, toast, user]);
 
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
