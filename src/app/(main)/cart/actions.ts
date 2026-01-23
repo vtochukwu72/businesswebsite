@@ -3,7 +3,8 @@
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
-import type { CartItem } from '@/lib/types';
+import type { CartItem, Product } from '@/lib/types';
+import { getProductsByIds } from '@/services/product-service';
 
 
 export async function addToCart(userId: string, productId: string, quantity: number) {
@@ -52,4 +53,92 @@ export async function addToCart(userId: string, productId: string, quantity: num
     // In production, you might want to avoid sending back raw error messages.
     return { success: false, message: error.message || 'An unexpected error occurred.' };
   }
+}
+
+
+export async function updateCartItemQuantity(userId: string, productId: string, quantity: number) {
+  if (!userId || !productId) {
+    return { success: false, message: 'User ID and Product ID are required.' };
+  }
+  if (quantity <= 0) {
+    // If quantity is 0 or less, remove the item.
+    return removeCartItem(userId, productId);
+  }
+
+  try {
+    const adminApp = getAdminApp();
+    const db = getFirestore(adminApp);
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return { success: false, message: 'User not found.' };
+    }
+
+    const cart: CartItem[] = userDoc.data()?.cart || [];
+    const itemIndex = cart.findIndex(item => item.productId === productId);
+
+    if (itemIndex > -1) {
+      cart[itemIndex].quantity = quantity;
+      await userRef.update({ cart });
+      revalidatePath('/cart');
+      return { success: true, message: 'Cart updated.' };
+    } else {
+      return { success: false, message: 'Item not in cart.' };
+    }
+  } catch (error: any) {
+    return { success: false, message: error.message || 'An error occurred.' };
+  }
+}
+
+
+export async function removeCartItem(userId: string, productId: string) {
+  if (!userId || !productId) {
+    return { success: false, message: 'User ID and Product ID are required.' };
+  }
+  try {
+    const adminApp = getAdminApp();
+    const db = getFirestore(adminApp);
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return { success: false, message: 'User not found.' };
+    }
+
+    const cart: CartItem[] = userDoc.data()?.cart || [];
+    const updatedCart = cart.filter(item => item.productId !== productId);
+    
+    await userRef.update({ cart: updatedCart });
+    revalidatePath('/cart');
+    return { success: true, message: 'Item removed from cart.' };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'An error occurred.' };
+  }
+}
+
+
+export type EnrichedCartItem = {
+    product: Product;
+    quantity: number;
+};
+
+export async function getEnrichedCartItems(cart: CartItem[]): Promise<EnrichedCartItem[]> {
+    if (!cart || cart.length === 0) {
+        return [];
+    }
+
+    const productIds = cart.map(item => item.productId);
+    const products = await getProductsByIds(productIds);
+    const productsMap = new Map(products.map(p => [p.id, p]));
+
+    const enrichedCart = cart.map(item => {
+        const product = productsMap.get(item.productId);
+        if (product) {
+            return { product, quantity: item.quantity };
+        }
+        return null;
+    }).filter((item): item is EnrichedCartItem => item !== null);
+
+    return enrichedCart;
 }
