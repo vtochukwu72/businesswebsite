@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/context/auth-context';
@@ -6,30 +7,22 @@ import { placeOrder } from './actions';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo, useFormState, useTransition } from 'react';
+import { useEffect, useState, useMemo, useTransition } from 'react';
 import type { EnrichedCartItem } from '@/app/(main)/cart/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, CreditCard, Home, Mail, User } from 'lucide-react';
-import { useFormStatus } from 'react-dom';
-
-
-function SubmitButton() {
-    const { pending } = useFormStatus();
-    return (
-        <Button className="w-full" size="lg" type="submit" disabled={pending}>
-            {pending ? "Placing Order..." : "Place Order"}
-        </Button>
-    )
-}
+import { useToast } from '@/hooks/use-toast';
 
 export default function CheckoutPage() {
     const { user, userData, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { toast } = useToast();
     const [cartItems, setCartItems] = useState<EnrichedCartItem[]>([]);
     const [cartLoading, setCartLoading] = useState(true);
+    const [isPlacingOrder, startTransition] = useTransition();
 
     const loading = authLoading || cartLoading;
 
@@ -44,7 +37,11 @@ export default function CheckoutPage() {
         if (cart && cart.length > 0) {
             setCartLoading(true);
             getEnrichedCartItems(cart).then(items => {
-                setCartItems(items);
+                if (items.length > 0) {
+                    setCartItems(items);
+                } else {
+                    router.push('/cart'); // Cart is empty, maybe items went out of stock
+                }
                 setCartLoading(false);
             });
         } else {
@@ -58,6 +55,18 @@ export default function CheckoutPage() {
         const shippingTotal = cartItems.reduce((acc, item) => acc + (item.product.shippingFee || 0), 0);
         return { subtotal, shippingTotal, total: subtotal + shippingTotal };
     }, [cartItems]);
+    
+    const handlePlaceOrder = () => {
+        startTransition(async () => {
+            const formData = new FormData();
+            formData.append('userId', user!.uid);
+            formData.append('cartItems', JSON.stringify(cartItems));
+            formData.append('shippingAddress', JSON.stringify(userData.shippingAddress));
+            formData.append('customerName', userData.displayName || '');
+            formData.append('customerEmail', user!.email || '');
+            await placeOrder(formData);
+        });
+    };
 
     const hasAddress = userData?.shippingAddress?.street && userData?.shippingAddress?.city;
 
@@ -104,14 +113,6 @@ export default function CheckoutPage() {
     return (
         <div className="container py-12">
              <h1 className="text-3xl font-bold mb-8 text-center">Checkout</h1>
-            <form action={placeOrder}>
-                 {/* Hidden inputs for the server action */}
-                <input type="hidden" name="userId" value={user.uid} />
-                <input type="hidden" name="cartItems" value={JSON.stringify(cartItems)} />
-                <input type="hidden" name="shippingAddress" value={JSON.stringify(userData.shippingAddress)} />
-                <input type="hidden" name="customerName" value={userData.displayName || ''} />
-                <input type="hidden" name="customerEmail" value={user.email || ''} />
-
                 <div className="grid md:grid-cols-[1fr_400px] gap-12 items-start">
                     <div className="space-y-8">
                         {/* Shipping Information */}
@@ -141,7 +142,7 @@ export default function CheckoutPage() {
                                         <CreditCard className="h-6 w-6" />
                                         <div>
                                             <p className="font-medium">Pay with Paystack</p>
-                                            <p className="text-sm text-muted-foreground">After clicking “Place Order”, you will be redirected to Paystack to complete your purchase securely.</p>
+                                            <p className="text-sm text-muted-foreground">Payment processing is temporarily disabled. Click "Place Order" to complete.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -183,10 +184,16 @@ export default function CheckoutPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <SubmitButton />
+                         <Button 
+                            className="w-full" 
+                            size="lg" 
+                            onClick={handlePlaceOrder}
+                            disabled={isPlacingOrder || loading || cartItems.length === 0}
+                        >
+                            {isPlacingOrder ? 'Processing...' : 'Place Order'}
+                        </Button>
                     </div>
                 </div>
-            </form>
         </div>
     )
 }
