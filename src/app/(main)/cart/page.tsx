@@ -264,7 +264,9 @@ export default function CartPage() {
                                     <span>Estimated Total</span>
                                     <span>₦{(subtotal + shippingTotal).toFixed(2)}</span>
                                 </div>
-                                <Button className="w-full" size="lg" disabled={isUpdating}>Proceed to Checkout</Button>
+                                <Button asChild className="w-full" size="lg" disabled={isUpdating || cartItems.length === 0}>
+                                    <Link href="/checkout">Proceed to Checkout</Link>
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>

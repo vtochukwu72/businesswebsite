@@ -1,5 +1,6 @@
 
 
+
 export type CartItem = {
     productId: string;
     quantity: number;
@@ -105,14 +106,33 @@ export type ContactMessage = {
   isRead: boolean;
 };
 
+export type OrderItem = {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+};
+
 export type Order = {
   id: string;
   userId: string; // The customer's ID
+  vendorId: string; // The vendor's ID for this sub-order
   orderNumber: string;
   customerName?: string; // Denormalized customer name
+  customerEmail?: string; // Denormalized customer email
+  items: OrderItem[];
+  shippingAddress: any;
   orderStatus: string;
   createdAt: string;
+  totalAmount: number;
+  shippingFee: number;
+  taxAmount: number;
   grandTotal: number;
+  paymentDetails: {
+    method: string;
+    status: string;
+  };
 };
 
     
