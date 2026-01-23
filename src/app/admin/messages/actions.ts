@@ -1,18 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getFirestore, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { app } from '@/firebase/config';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/firebase/admin-config';
 
-const db = getFirestore(app);
 
 export async function toggleMessageReadStatus(messageId: string, currentStatus: boolean) {
   if (!messageId) {
     return { success: false, message: 'Message ID is required.' };
   }
   try {
-    const messageRef = doc(db, 'contacts', messageId);
-    await updateDoc(messageRef, { isRead: !currentStatus });
+    const db = getFirestore(getAdminApp());
+    const messageRef = db.collection('contacts').doc(messageId);
+    await messageRef.update({ isRead: !currentStatus });
     revalidatePath('/admin/messages');
     return { success: true, message: `Message marked as ${!currentStatus ? 'unread' : 'read'}.` };
   } catch (error: any) {
@@ -26,7 +26,8 @@ export async function deleteMessage(messageId: string) {
     return { success: false, message: 'Message ID is required.' };
   }
   try {
-    await deleteDoc(doc(db, 'contacts', messageId));
+    const db = getFirestore(getAdminApp());
+    await db.collection('contacts').doc(messageId).delete();
     revalidatePath('/admin/messages');
     return { success: true, message: 'Message deleted successfully.' };
   } catch (error: any) {

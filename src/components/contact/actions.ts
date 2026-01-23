@@ -1,10 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { app } from '@/firebase/config';
-
-const db = getFirestore(app);
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAdminApp } from '@/firebase/admin-config';
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -25,9 +23,10 @@ export async function addContactMessage(prevState: any, formData: FormData) {
   }
 
   try {
-    await addDoc(collection(db, 'contacts'), {
+    const db = getFirestore(getAdminApp());
+    await db.collection('contacts').add({
       ...parsed.data,
-      createdAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       isRead: false, // Default to unread
     });
     return { success: true, errors: {} };
