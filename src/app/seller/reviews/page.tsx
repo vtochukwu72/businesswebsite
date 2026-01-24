@@ -35,6 +35,7 @@ import { MoreHorizontal, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { updateReviewStatus } from './actions';
+import { serializeFirestoreData } from '@/lib/utils';
 
 function ReviewRowSkeleton() {
   return (
@@ -87,7 +88,13 @@ export default function SellerReviewsPage() {
         const unsubscribes = productChunks.map(chunk => {
             const q = query(collection(db, 'reviews'), where('productId', 'in', chunk));
             return onSnapshot(q, (snapshot) => {
-                const fetchedReviews: Review[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+                const fetchedReviews: Review[] = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...serializeFirestoreData(data),
+                    } as Review;
+                });
                 
                 // Update state by combining new reviews with existing ones from other chunks
                 setReviews(currentReviews => {
@@ -212,5 +219,3 @@ export default function SellerReviewsPage() {
     </main>
   );
 }
-
-    
