@@ -8,7 +8,6 @@ import {
   ShoppingBag,
   Heart,
   MapPin,
-  CreditCard,
   LogOut,
   LayoutDashboard
 } from 'lucide-react';
@@ -24,7 +23,6 @@ const navItems = [
   { href: '/account/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/account/wishlist', label: 'Wishlist', icon: Heart },
   { href: '/account/addresses', label: 'Addresses', icon: MapPin },
-  { href: '/account/payment-methods', label: 'Payment Methods', icon: CreditCard },
 ];
 
 export function AccountNav() {
