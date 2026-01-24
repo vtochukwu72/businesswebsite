@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -26,7 +25,6 @@ export default function AccountPage() {
         <CardContent>
           <div className="space-y-2">
             <p><strong>Email:</strong> {user?.email}</p>
-            <p><strong>Role:</strong> <span className="capitalize">{userData?.role}</span></p>
             <p><strong>Member since:</strong> {user?.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'N/A'}</p>
           </div>
         </CardContent>
