@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/context/auth-context';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import Script from 'next/script';
+import { CookieConsent } from '@/components/cookie-consent';
 
 export const metadata: Metadata = {
   title: 'DealZa',
@@ -38,6 +39,7 @@ export default function RootLayout({
         <AuthProvider>
           <FirebaseErrorListener />
           {children}
+          <CookieConsent />
         </AuthProvider>
         <Toaster />
       </body>
