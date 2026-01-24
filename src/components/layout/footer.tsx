@@ -62,7 +62,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <Link href="https://x.com/TradeFlow265522?t=ULI7fpVl64l-DWn3ioEczQ&s=09" aria-label="Twitter"><Twitter className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
-            <Link href="https://www.facebook.com/profile.php?id=61586132977087" aria-label="Facebook"><Facebook className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
+            <Link href="https://www.facebook.com/profile.php?id=61585391041801" aria-label="Facebook"><Facebook className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
           </div>
         </div>
       </div>
