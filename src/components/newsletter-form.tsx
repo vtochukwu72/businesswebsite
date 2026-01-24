@@ -20,15 +20,16 @@ export function NewsletterForm() {
   const [state, formAction] = useActionState(addNewsletterSubscriber, {
     error: null,
     success: false,
+    message: null,
   });
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state.success) {
+    if (state.success && state.message) {
       toast({
-        title: 'Subscribed!',
-        description: 'Thanks for joining our newsletter.',
+        title: 'Subscription',
+        description: state.message,
       });
       formRef.current?.reset();
     } else if (state.error) {
@@ -53,5 +54,3 @@ export function NewsletterForm() {
     </form>
   );
 }
-
-    
