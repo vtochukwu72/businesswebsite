@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore, FieldValue, runTransaction } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
 import type { Product } from '@/lib/types';
@@ -33,37 +33,34 @@ export async function addReview(prevState: any, formData: FormData) {
     const adminApp = getAdminApp();
     const db = getFirestore(adminApp);
     
-    await runTransaction(db, async (transaction) => {
-        const productRef = db.collection('products').doc(productId);
-        const reviewRef = db.collection('reviews').doc();
+    const productRef = db.collection('products').doc(productId);
+    const reviewRef = db.collection('reviews').doc();
 
-        const productDoc = await transaction.get(productRef);
-        if (!productDoc.exists) {
-            throw new Error("Product not found.");
-        }
+    const productDoc = await productRef.get();
+    if (!productDoc.exists) {
+        throw new Error("Product not found.");
+    }
+    const product = productDoc.data() as Product;
 
-        const product = productDoc.data() as Product;
+    // Create the new review
+    await reviewRef.set({
+        ...reviewData,
+        productId: productId,
+        id: reviewRef.id,
+        createdAt: FieldValue.serverTimestamp(),
+        status: 'pending', 
+    });
+    
+    // This part about updating average rating should only happen upon approval.
+    // However, to avoid complexity, we'll optimistically update it now.
+    // A more robust system would update this in the approval action.
+    const currentRatingTotal = product.ratings.average * product.ratings.count;
+    const newReviewCount = product.ratings.count + 1;
+    const newAverageRating = (currentRatingTotal + reviewData.rating) / newReviewCount;
 
-        // Add the new review with 'pending' status
-        transaction.set(reviewRef, {
-            ...reviewData,
-            productId: productId,
-            id: reviewRef.id,
-            createdAt: FieldValue.serverTimestamp(),
-            status: 'pending', 
-        });
-        
-        // This part about updating average rating should only happen upon approval.
-        // However, to avoid complexity, we'll optimistically update it now.
-        // A more robust system would update this in the approval action.
-        const currentRatingTotal = product.ratings.average * product.ratings.count;
-        const newReviewCount = product.ratings.count + 1;
-        const newAverageRating = (currentRatingTotal + reviewData.rating) / newReviewCount;
-
-        transaction.update(productRef, {
-            'ratings.count': newReviewCount,
-            'ratings.average': newAverageRating,
-        });
+    await productRef.update({
+        'ratings.count': newReviewCount,
+        'ratings.average': newAverageRating,
     });
 
   } catch (error: any) {
@@ -78,5 +75,3 @@ export async function addReview(prevState: any, formData: FormData) {
   revalidatePath(`/products/${productId}`);
   return { success: true, errors: {} };
 }
-
-    
