@@ -61,7 +61,7 @@ export function Footer() {
             &copy; {new Date().getFullYear()} E-Commerce Platform. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <Link href="https://x.com/TradeFlow265522?t=ULI7fpVl64l-DWn3ioEczQ&s=09" aria-label="Twitter"><Twitter className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
+            <Link href="https://x.com/TradeFlow265522?t=bF95pdi3ojQkX198Q60rRw&s=09" aria-label="Twitter"><Twitter className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
             <Link href="https://www.facebook.com/profile.php?id=61585391041801" aria-label="Facebook"><Facebook className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
           </div>
         </div>
