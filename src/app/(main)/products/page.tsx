@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { ProductCard } from '@/components/products/product-card';
@@ -86,7 +85,7 @@ export default function ProductListingPage() {
       return { categories: [], minPrice: 0, maxPrice: 10000 };
     }
     const uniqueCategories = [...new Set(products.map((p) => p.category))];
-    const prices = products.map((p) => p.price);
+    const prices = products.map((p) => p.discountedPrice ?? p.price);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     return { categories: uniqueCategories, minPrice: min, maxPrice: max };
@@ -128,20 +127,21 @@ export default function ProductListingPage() {
     if (!products) return [];
 
     let filtered = products.filter((product) => {
+      const effectivePrice = product.discountedPrice ?? product.price;
       const categoryMatch =
         filters.categories.length === 0 ||
         filters.categories.includes(product.category);
-      const priceMatch = filters.price === null || product.price <= filters.price;
+      const priceMatch = filters.price === null || effectivePrice <= filters.price;
       const ratingMatch = product.ratings.average >= filters.rating;
       return categoryMatch && priceMatch && ratingMatch;
     });
 
     switch (sortOption) {
       case 'price-asc':
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => (a.discountedPrice ?? a.price) - (b.discountedPrice ?? b.price));
         break;
       case 'price-desc':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => (b.discountedPrice ?? b.price) - (a.discountedPrice ?? a.price));
         break;
       case 'newest':
         // no-op for static data
