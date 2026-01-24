@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -223,5 +224,3 @@ export default function SellerLayout({
     <SellerDashboard pendingOrderCount={pendingOrderCount} authProps={authProps}>{children}</SellerDashboard>
   );
 }
-
-    
