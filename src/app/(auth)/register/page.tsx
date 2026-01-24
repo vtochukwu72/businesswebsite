@@ -56,22 +56,22 @@ export default function RegisterPage() {
     const db = getFirestore(app);
 
     const { email, password, fname, lname } = formData;
-    const displayName = `${fname} ${lname}`;
+    const fullName = `${fname} ${lname}`.trim();
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        await updateProfile(user, { displayName });
+        await updateProfile(user, { displayName: fullName });
 
         await setDoc(doc(db, 'users', user.uid), {
             id: user.uid,
             email: user.email,
             fname,
             lname,
-            displayName,
+            fullName: fullName,
             phone: "",
-            address: {},
+            shippingAddress: {},
             photoURL: user.photoURL,
             role: 'customer',
             emailVerified: user.emailVerified,
@@ -79,8 +79,6 @@ export default function RegisterPage() {
             updatedAt: serverTimestamp(),
             cart: [],
             wishlist: [],
-            orders: [],
-            shippingAddresses: [],
             preferences: {
                 newsletter: false,
                 marketingEmails: false
@@ -138,11 +136,16 @@ export default function RegisterPage() {
         }
       } else {
         // User does not exist, create a new customer account
+        const fullName = user.displayName || '';
+        const nameParts = fullName.split(' ');
+        const fname = nameParts[0] || '';
+        const lname = nameParts.slice(1).join(' ') || '';
+
         await setDoc(userRef, {
           id: user.uid,
-          displayName: user.displayName,
-          fname: user.displayName?.split(' ')[0] || '',
-          lname: user.displayName?.split(' ')[1] || '',
+          fullName: fullName,
+          fname: fname,
+          lname: lname,
           email: user.email,
           photoURL: user.photoURL,
           role: 'customer',
@@ -151,8 +154,7 @@ export default function RegisterPage() {
           updatedAt: serverTimestamp(),
           cart: [],
           wishlist: [],
-          orders: [],
-          shippingAddresses: [],
+          shippingAddress: {},
           preferences: {
             newsletter: false,
             marketingEmails: false

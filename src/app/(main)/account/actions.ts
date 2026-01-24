@@ -3,6 +3,7 @@
 
 import { z } from 'zod';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
 
