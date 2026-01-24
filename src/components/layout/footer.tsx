@@ -15,7 +15,7 @@ export function Footer() {
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
               <Icons.logo className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold">E-Commerce</span>
+              <span className="text-lg font-bold">DealZa</span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
               Your one-stop shop for everything you need.
@@ -58,7 +58,7 @@ export function Footer() {
         </div>
         <div className="flex flex-col items-center justify-between gap-4 border-t py-6 sm:flex-row">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} E-Commerce Platform. All rights reserved.
+            &copy; {new Date().getFullYear()} DealZa. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="https://x.com/TradeFlow265522?t=bF95pdi3ojQkX198Q60rRw&s=09" aria-label="Twitter"><Twitter className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>

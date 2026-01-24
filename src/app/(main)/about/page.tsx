@@ -7,7 +7,7 @@ export default function AboutPage() {
             About Our Platform
           </h1>
           <p className="mt-4 text-xl text-muted-foreground">
-            This overview details the architecture and functional ecosystem of the e-commerce platform developed by{' '}
+            This overview details the architecture and functional ecosystem of the DealZa platform developed by{' '}
             <strong className="font-semibold text-foreground">Emeche Somtochukwu Victor</strong>, under the leadership of{' '}
             <strong className="font-semibold text-foreground">Enyinnaya Wisdom Chukwuemeka</strong>.
           </p>

@@ -114,7 +114,7 @@ export function Header() {
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="flex items-center gap-2">
             <Icons.logo className="h-6 w-6 text-primary" />
-            <span className="font-bold">E-Commerce</span>
+            <span className="font-bold">DealZa</span>
           </Link>
         </div>
 
@@ -138,7 +138,7 @@ export function Header() {
                       className="flex items-center gap-2 text-lg font-semibold"
                     >
                       <Icons.logo className="h-6 w-6 text-primary" />
-                      <span>E-Commerce</span>
+                      <span>DealZa</span>
                     </Link>
                     <Link href="/products" className="hover:text-foreground">
                       Shop
@@ -189,7 +189,7 @@ export function Header() {
 
           <Link href="/" className="flex items-center gap-2 md:hidden">
             <Icons.logo className="h-6 w-6 text-primary" />
-            <span className="font-bold sr-only sm:not-sr-only">E-Commerce</span>
+            <span className="font-bold sr-only sm:not-sr-only">DealZa</span>
           </Link>
         </div>
 

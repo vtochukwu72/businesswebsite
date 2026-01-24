@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import '../styles/auth.css';
@@ -8,8 +7,8 @@ import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'E-Commerce Platform',
-  description: 'A full-featured e-commerce platform',
+  title: 'DealZa',
+  description: 'DealZa - A full-featured e-commerce platform',
   icons: {
     icon: '/icon.svg',
   },
