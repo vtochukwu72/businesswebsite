@@ -5,6 +5,7 @@ import '../styles/auth.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/context/auth-context';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'E-Commerce Platform',
@@ -32,6 +33,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
+        <Script src="https://js.paystack.co/v1/inline.js" />
       </head>
       <body className="font-body antialiased">
         <AuthProvider>

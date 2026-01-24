@@ -4,6 +4,7 @@
 - Git repository (GitHub, GitLab, or Bitbucket)
 - Vercel account (free at vercel.com)
 - Firebase project with Admin SDK credentials
+- Paystack account (for payment processing)
 
 ## Steps to Deploy
 
@@ -26,7 +27,7 @@ git push -u origin main
 
 Add these environment variables in Vercel Dashboard (Settings → Environment Variables):
 
-#### Required Variables:
+#### Required Firebase Variables:
 ```
 NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAx76XZFjtjDP7j-xLizSs9sTV_kmF3Imk
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=e-commerce-936b5.firebaseapp.com
@@ -49,6 +50,14 @@ FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"...","private_k
 4. Download the JSON file
 5. Convert to single-line JSON (remove newlines)
 6. Paste as environment variable value
+
+#### Paystack Payment Gateway:
+```
+# Your public key, found on your Paystack dashboard
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Your secret key, found on your Paystack dashboard
+PAYSTACK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
 
 ### 4. Deploy
 Click "Deploy" - Vercel will:
@@ -80,6 +89,9 @@ The app uses these settings (already configured):
 - Ensure FIREBASE_SERVICE_ACCOUNT is properly formatted (single-line JSON)
 - Add Vercel domain to Firebase authorized domains
 
+### Payments Not Working
+- Verify both `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY` are set correctly.
+
 ### Images Not Loading
 - External image domains are configured in next.config.ts
 - Supported: placehold.co, images.unsplash.com, picsum.photos
@@ -91,6 +103,7 @@ The app uses these settings (already configured):
 - [ ] Verify account pages require authentication
 - [ ] Test admin/seller login flows
 - [ ] Check Firebase Firestore security rules
+- [ ] Test the checkout and payment flow
 
 ## Updating After Deployment
 Simply push changes to your Git repository:
@@ -105,3 +118,4 @@ Vercel will automatically rebuild and deploy.
 - Vercel Docs: https://vercel.com/docs
 - Next.js Docs: https://nextjs.org/docs
 - Firebase Docs: https://firebase.google.com/docs
+- Paystack Docs: https://paystack.com/docs

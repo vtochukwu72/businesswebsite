@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getFirestore, writeBatch, FieldValue } from 'firebase-admin/firestore';
@@ -8,29 +7,53 @@ import type { EnrichedCartItem } from '@/app/(main)/cart/actions';
 import type { Product } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 
-export async function placeOrder(formData: FormData) {
-    const userId = formData.get('userId') as string;
-    const cartItemsJSON = formData.get('cartItems') as string;
-    const shippingAddressJSON = formData.get('shippingAddress') as string;
-    const customerName = formData.get('customerName') as string;
-    const customerEmail = formData.get('customerEmail') as string;
-    
-    const masterOrderNumber = `ORD-${Date.now()}`;
+export interface OrderPayload {
+  userId: string;
+  cartItems: EnrichedCartItem[];
+  shippingAddress: any;
+  customerName: string;
+  customerEmail: string;
+  totalAmount: number;
+}
 
-    if (!userId || !cartItemsJSON || !shippingAddressJSON) {
-        console.error("Missing required form data for placing order.");
-        return redirect(`/checkout/error?message=An unknown error occurred.`);
+export async function verifyPaymentAndCreateOrder(payload: OrderPayload, reference: string) {
+    const { userId, cartItems, shippingAddress, customerName, customerEmail, totalAmount } = payload;
+
+    if (!reference) {
+        return { success: false, message: 'Payment reference is missing.' };
+    }
+    
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+    if (!PAYSTACK_SECRET_KEY) {
+        console.error('Paystack secret key is not configured.');
+        return { success: false, message: 'Server payment configuration error. The administrator needs to set the PAYSTACK_SECRET_KEY environment variable.' };
     }
 
     try {
-        const cartItems: EnrichedCartItem[] = JSON.parse(cartItemsJSON);
-        if (cartItems.length === 0) {
-            console.log("Attempted to place an order with an empty cart.");
-            return redirect(`/cart`);
-        }
+        const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+            },
+        });
 
+        const verifyData = await verifyRes.json();
+
+        if (!verifyData.status || verifyData.data.status !== 'success') {
+            console.error("Paystack verification failed:", verifyData.message);
+            return { success: false, message: verifyData.message || 'Payment verification failed with Paystack.' };
+        }
+        
+        const paidAmount = verifyData.data.amount;
+        if (paidAmount < totalAmount) {
+             return { success: false, message: `Payment amount mismatch. Expected ${totalAmount}, but got ${paidAmount}.` };
+        }
+        
+        // TODO: Store transaction reference to prevent replay attacks.
+        
         const db = getFirestore(getAdminApp());
         const batch = db.batch();
+        const masterOrderNumber = `ORD-${Date.now()}`;
 
         const ordersByVendor = new Map<string, { items: any[], subtotal: number, shipping: number }>();
 
@@ -68,7 +91,7 @@ export async function placeOrder(formData: FormData) {
                 vendorId,
                 orderNumber: orderId,
                 items: orderData.items,
-                shippingAddress: JSON.parse(shippingAddressJSON),
+                shippingAddress: shippingAddress,
                 customerName,
                 customerEmail,
                 totalAmount: orderData.subtotal,
@@ -79,7 +102,8 @@ export async function placeOrder(formData: FormData) {
                 createdAt: FieldValue.serverTimestamp(),
                 paymentDetails: { 
                     method: 'Paystack', 
-                    status: 'pending',
+                    status: 'paid',
+                    reference: reference
                 },
             };
 
@@ -98,10 +122,10 @@ export async function placeOrder(formData: FormData) {
         revalidatePath('/cart');
         revalidatePath('/account/orders');
 
+        return { success: true, orderId: masterOrderNumber };
+
     } catch (error: any) {
         console.error('Error during order placement:', error.message);
-        return redirect(`/checkout/error?message=${encodeURIComponent(error.message)}`);
+        return { success: false, message: error.message || 'An unknown server error occurred.' };
     }
-    
-    redirect(`/checkout/success/${masterOrderNumber}`);
 }

@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useAuth } from '@/context/auth-context';
 import { getEnrichedCartItems } from '@/app/(main)/cart/actions';
-import { placeOrder } from './actions';
+import { verifyPaymentAndCreateOrder, OrderPayload } from './actions';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -15,6 +14,12 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, CreditCard, Home, Mail, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+declare global {
+  interface Window {
+    PaystackPop: any;
+  }
+}
 
 export default function CheckoutPage() {
     const { user, userData, loading: authLoading } = useAuth();
@@ -40,12 +45,11 @@ export default function CheckoutPage() {
                 if (items.length > 0) {
                     setCartItems(items);
                 } else {
-                    router.push('/cart'); // Cart is empty, maybe items went out of stock
+                    router.push('/cart'); 
                 }
                 setCartLoading(false);
             });
         } else {
-            // If cart is empty, redirect back to the cart page, which shows an "empty" message
             router.push('/cart');
         }
     }, [user, userData, authLoading, router]);
@@ -56,16 +60,49 @@ export default function CheckoutPage() {
         return { subtotal, shippingTotal, total: subtotal + shippingTotal };
     }, [cartItems]);
     
-    const handlePlaceOrder = () => {
-        startTransition(async () => {
-            const formData = new FormData();
-            formData.append('userId', user!.uid);
-            formData.append('cartItems', JSON.stringify(cartItems));
-            formData.append('shippingAddress', JSON.stringify(userData.shippingAddress));
-            formData.append('customerName', userData.displayName || '');
-            formData.append('customerEmail', user!.email || '');
-            await placeOrder(formData);
+    const handlePaystackPayment = () => {
+        if (!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY) {
+            toast({
+                variant: 'destructive',
+                title: "Configuration Error",
+                description: "Paystack public key is not configured. Please contact support.",
+            });
+            return;
+        }
+
+        const handler = window.PaystackPop.setup({
+            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+            email: user!.email!,
+            amount: total * 100, // Amount in kobo
+            ref: 'ORD-' + Math.floor((Math.random() * 1000000000) + 1), // Unique ref
+            onClose: function(){
+                toast({
+                    variant: 'destructive',
+                    title: 'Payment window closed.',
+                    description: "Your order was not placed."
+                });
+            },
+            callback: function(response: { reference: string }) {
+                startTransition(async () => {
+                    const payload: OrderPayload = {
+                        userId: user!.uid,
+                        cartItems: cartItems,
+                        shippingAddress: userData.shippingAddress,
+                        customerName: userData.displayName || '',
+                        customerEmail: user!.email || '',
+                        totalAmount: total * 100,
+                    };
+                    const result = await verifyPaymentAndCreateOrder(payload, response.reference);
+
+                    if (result.success && result.orderId) {
+                        router.push(`/checkout/success/${result.orderId}`);
+                    } else {
+                        router.push(`/checkout/error?message=${encodeURIComponent(result.message || 'Payment verification failed.')}`);
+                    }
+                });
+            }
         });
+        handler.openIframe();
     };
 
     const hasAddress = userData?.shippingAddress?.street && userData?.shippingAddress?.city;
@@ -87,7 +124,7 @@ export default function CheckoutPage() {
         )
     }
 
-    if (!user) return null; // Should be redirected by useEffect
+    if (!user) return null;
 
     if (!hasAddress) {
         return (
@@ -115,7 +152,6 @@ export default function CheckoutPage() {
              <h1 className="text-3xl font-bold mb-8 text-center">Checkout</h1>
                 <div className="grid md:grid-cols-[1fr_400px] gap-12 items-start">
                     <div className="space-y-8">
-                        {/* Shipping Information */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>Shipping Information</CardTitle>
@@ -129,28 +165,8 @@ export default function CheckoutPage() {
                                 <p className="flex items-center gap-2"><Mail className="h-4 w-4" /> {user.email}</p>
                             </CardContent>
                         </Card>
-
-                        {/* Payment Method */}
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>Payment Method</CardTitle>
-                                <CardDescription>All transactions are secure and encrypted.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="border rounded-lg p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <CreditCard className="h-6 w-6" />
-                                        <div>
-                                            <p className="font-medium">Pay with Paystack</p>
-                                            <p className="text-sm text-muted-foreground">Payment processing is temporarily disabled. Click "Place Order" to complete.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
 
-                    {/* Order Summary */}
                     <div className="sticky top-24 space-y-4">
                         <Card>
                             <CardHeader>
@@ -187,10 +203,10 @@ export default function CheckoutPage() {
                          <Button 
                             className="w-full" 
                             size="lg" 
-                            onClick={handlePlaceOrder}
+                            onClick={handlePaystackPayment}
                             disabled={isPlacingOrder || loading || cartItems.length === 0}
                         >
-                            {isPlacingOrder ? 'Processing...' : 'Place Order'}
+                            {isPlacingOrder ? 'Processing...' : `Pay ₦${total.toFixed(2)}`}
                         </Button>
                     </div>
                 </div>
