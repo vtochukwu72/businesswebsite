@@ -1,6 +1,7 @@
 'use client';
 import { File } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchOrders() {
@@ -149,7 +151,11 @@ export default function AdminOrdersPage() {
                     </>
                   ) : filteredOrders.length > 0 ? (
                     filteredOrders.map(order => (
-                       <TableRow key={order.id}>
+                       <TableRow 
+                         key={order.id} 
+                         className="cursor-pointer"
+                         onClick={() => router.push(`/admin/orders/${order.id}`)}
+                       >
                         <TableCell className="font-medium">#{order.orderNumber}</TableCell>
                         <TableCell>{order.customerName || 'N/A'}</TableCell>
                         <TableCell>

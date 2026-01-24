@@ -7,6 +7,26 @@ import { serializeFirestoreData } from '@/lib/utils';
 
 const db = getFirestore(getAdminApp());
 
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  if (!orderId) return null;
+  try {
+    const orderRef = db.collection('orders').doc(orderId);
+    const orderSnap = await orderRef.get();
+    
+    if (orderSnap.exists) {
+      const data = orderSnap.data();
+      return { 
+          id: orderSnap.id, 
+          ...serializeFirestoreData(data),
+      } as Order;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error fetching order ${orderId}: `, error);
+    return null;
+  }
+}
+
 export async function getOrdersBySeller(sellerId: string): Promise<Order[]> {
   if (!sellerId) return [];
   try {
