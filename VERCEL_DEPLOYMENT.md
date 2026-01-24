@@ -53,10 +53,10 @@ FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"...","private_k
 
 #### Paystack Payment Gateway:
 ```
-# Your public key, found on your Paystack dashboard
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Your secret key, found on your Paystack dashboard
-PAYSTACK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Your LIVE public key, found on your Paystack dashboard
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Your LIVE secret key, found on your Paystack dashboard
+PAYSTACK_SECRET_KEY=sk_live_4b3012bce08e31c9d730a9c36a20fdd48edc2ca0
 ```
 
 ### 4. Deploy
