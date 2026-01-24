@@ -209,6 +209,10 @@
           "type": "boolean",
           "description": "Indicates if the product is active."
         },
+        "isFeatured": {
+          "type": "boolean",
+          "description": "Indicates if the product should be featured on the homepage carousel."
+        },
         "tags": {
           "type": "array",
           "description": "Array of tags associated with the product.",

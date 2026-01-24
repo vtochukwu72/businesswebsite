@@ -49,14 +49,25 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [dynamicCategories, setDynamicCategories] = useState<any[]>([]);
+  const [heroItems, setHeroItems] = useState<any[]>([]);
 
   const plugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: true }));
+  const heroPlugin = useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
 
   useEffect(() => {
     async function fetchProductsAndCategories() {
       setLoading(true);
       const fetchedProducts = await getProducts();
       setProducts(fetchedProducts);
+
+      const featured = fetchedProducts.filter(p => p.isFeatured);
+      if (featured.length > 0) {
+        setHeroItems(featured);
+      } else if (heroImage) {
+        setHeroItems([heroImage]);
+      } else {
+        setHeroItems([]);
+      }
 
       if (fetchedProducts.length > 0) {
         // Create a map of categories to the first product found in that category.
@@ -86,31 +97,76 @@ export default function HomePage() {
     <>
       {/* Hero Section */}
       <section className="relative h-[60vh] w-full">
-        {heroImage && (
-          <Image
-            src={heroImage.imageUrl}
-            alt={heroImage.description}
-            fill
-            objectFit="cover"
-            className="z-0"
-            data-ai-hint={heroImage.imageHint}
-            priority
-          />
-        )}
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative z-10 flex h-full flex-col items-start justify-center text-white px-4 md:px-8 lg:px-12">
-          <h1 className="text-4xl font-extrabold md:text-6xl">
-            Elevate Your Lifestyle
-          </h1>
-          <p className="mt-4 max-w-lg text-lg">
-            Discover curated collections and exclusive deals.
-          </p>
-          <Button asChild size="lg" className="mt-8">
-            <Link href="/products">
-              Shop Now <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-        </div>
+        <Carousel
+            plugins={[heroPlugin.current]}
+            className="w-full h-full"
+            onMouseEnter={heroPlugin.current.stop}
+            onMouseLeave={heroPlugin.current.reset}
+            opts={{ loop: true }}
+        >
+            <CarouselContent className="h-full">
+                {loading ? (
+                    <CarouselItem>
+                        <Skeleton className="h-[60vh] w-full" />
+                    </CarouselItem>
+                ) : heroItems.length > 0 ? (
+                    heroItems.map((item, index) => (
+                        <CarouselItem key={item.id}>
+                            <div className="relative h-[60vh] w-full">
+                                <Image
+                                    src={item.images ? item.images[0] : item.imageUrl}
+                                    alt={item.name || item.description}
+                                    fill
+                                    objectFit="cover"
+                                    className="z-0"
+                                    priority={index === 0}
+                                    data-ai-hint={item.imageHint || "product image"}
+                                />
+                                <div className="absolute inset-0 bg-black/50" />
+                                <div className="relative z-10 flex h-full flex-col items-start justify-center text-white px-4 md:px-8 lg:px-12">
+                                    <h1 className="text-4xl font-extrabold md:text-6xl">
+                                        {item.images ? item.name : "Elevate Your Lifestyle"}
+                                    </h1>
+                                    <p className="mt-4 max-w-lg text-lg">
+                                        {item.images ? item.description : "Discover curated collections and exclusive deals."}
+                                    </p>
+                                    <Button asChild size="lg" className="mt-8">
+                                        <Link href={item.images ? `/products/${item.id}`: "/products"}>
+                                            {item.images ? "View Product" : "Shop Now"} <ArrowRight className="ml-2 h-5 w-5" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </CarouselItem>
+                    ))
+                ) : (
+                    // Fallback if heroItems is empty and not loading
+                    <CarouselItem>
+                        <div className="relative h-[60vh] w-full bg-secondary">
+                            <div className="relative z-10 flex h-full flex-col items-start justify-center text-foreground px-4 md:px-8 lg:px-12">
+                                <h1 className="text-4xl font-extrabold md:text-6xl">
+                                    Elevate Your Lifestyle
+                                </h1>
+                                <p className="mt-4 max-w-lg text-lg">
+                                    Discover curated collections and exclusive deals.
+                                </p>
+                                <Button asChild size="lg" className="mt-8">
+                                    <Link href="/products">
+                                        Shop Now <ArrowRight className="ml-2 h-5 w-5" />
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </CarouselItem>
+                )}
+            </CarouselContent>
+             {heroItems.length > 1 && (
+                <>
+                    <CarouselPrevious className="left-4 hidden md:flex" />
+                    <CarouselNext className="right-4 hidden md:flex" />
+                </>
+            )}
+        </Carousel>
       </section>
 
       {/* Categories Section */}

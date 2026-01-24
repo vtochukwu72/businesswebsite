@@ -1,7 +1,7 @@
 'use client';
 import { File, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useTransition } from 'react';
 import * as XLSX from 'xlsx';
 
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,9 @@ import { getProducts } from '@/services/product-service';
 import { getVendors } from '@/services/vendor-service';
 import type { Product, Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import { toggleFeaturedProduct } from './actions';
 
 function ProductRowSkeleton() {
   return (
@@ -40,6 +43,7 @@ function ProductRowSkeleton() {
         <Skeleton className="aspect-square rounded-md object-cover h-16 w-16" />
       </TableCell>
       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
@@ -53,6 +57,8 @@ export default function AdminProductsPage() {
   const [vendors, setVendors] = useState<Map<string, Vendor>>(new Map());
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [isUpdating, startUpdateTransition] = useTransition();
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchData() {
@@ -88,12 +94,33 @@ export default function AdminProductsPage() {
       'Price (₦)': product.price.toFixed(2),
       'Seller': getSellerName(product.sellerId),
       'Stock': product.stockQuantity,
+      'Featured': product.isFeatured ? 'Yes' : 'No',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
     XLSX.writeFile(workbook, `products-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleFeaturedToggle = (product: Product) => {
+    startUpdateTransition(async () => {
+        const result = await toggleFeaturedProduct(product.id, !product.isFeatured);
+        if (result.success) {
+            toast({
+                title: 'Success',
+                description: result.message,
+            });
+            // Optimistically update UI or refetch
+            setProducts(prev => prev.map(p => p.id === product.id ? {...p, isFeatured: !p.isFeatured} : p));
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: result.message,
+            });
+        }
+    });
   };
 
   return (
@@ -146,6 +173,7 @@ export default function AdminProductsPage() {
                     </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Featured</TableHead>
                     <TableHead className="hidden md:table-cell">
                       Price
                     </TableHead>
@@ -182,6 +210,14 @@ export default function AdminProductsPage() {
                         <TableCell>
                           <Badge variant={product.isActive ? 'default' : 'outline'}>{product.isActive ? 'Active' : 'Draft'}</Badge>
                         </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={product.isFeatured || false}
+                            onCheckedChange={() => handleFeaturedToggle(product)}
+                            disabled={isUpdating}
+                            aria-label={`Feature ${product.name}`}
+                          />
+                        </TableCell>
                         <TableCell className="hidden md:table-cell">
                           ₦{product.price.toFixed(2)}
                         </TableCell>
@@ -195,7 +231,7 @@ export default function AdminProductsPage() {
                     ))
                   ) : (
                      <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell colSpan={7} className="h-24 text-center">
                         No products found.
                       </TableCell>
                     </TableRow>
