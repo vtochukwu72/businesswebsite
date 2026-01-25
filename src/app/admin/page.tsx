@@ -29,13 +29,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import Link from 'next/link';
-import type { Order, User } from '@/lib/types';
+import type { Order, User, Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { serializeFirestoreData } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [vendors, setVendors] = useState<Map<string, Vendor>>(new Map());
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -43,9 +47,10 @@ export default function AdminDashboardPage() {
     setLoading(true);
     let ordersLoaded = false;
     let usersLoaded = false;
+    let vendorsLoaded = false;
 
     const doneLoading = () => {
-      if (ordersLoaded && usersLoaded) {
+      if (ordersLoaded && usersLoaded && vendorsLoaded) {
         setLoading(false);
       }
     };
@@ -54,11 +59,9 @@ export default function AdminDashboardPage() {
       query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
       (snapshot) => {
         const orderList = snapshot.docs.map((doc) => {
-          const data = doc.data();
           return {
             id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+            ...serializeFirestoreData(doc.data()),
           } as Order;
         });
         setOrders(orderList);
@@ -66,6 +69,12 @@ export default function AdminDashboardPage() {
         doneLoading();
       },
       (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'orders',
+          operation: 'list'
+        }, err);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error("Error fetching orders snapshot:", err);
         toast({
           variant: "destructive",
@@ -82,11 +91,9 @@ export default function AdminDashboardPage() {
       query(collection(db, 'users'), orderBy('createdAt', 'desc')),
       (snapshot) => {
         const userList = snapshot.docs.map((doc) => {
-          const data = doc.data();
           return {
             id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+            ...serializeFirestoreData(doc.data()),
           } as User;
         });
         setUsers(userList);
@@ -94,6 +101,12 @@ export default function AdminDashboardPage() {
         doneLoading();
       },
       (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'users',
+          operation: 'list'
+        }, err);
+        errorEmitter.emit('permission-error', permissionError);
+
         console.error("Error fetching users snapshot:", err);
         toast({
           variant: "destructive",
@@ -106,9 +119,40 @@ export default function AdminDashboardPage() {
       }
     );
 
+    const vendorsUnsub = onSnapshot(
+      query(collection(db, 'vendors')),
+      (snapshot) => {
+        const vendorMap = new Map<string, Vendor>();
+        snapshot.docs.forEach((doc) => {
+          vendorMap.set(doc.id, {id: doc.id, ...serializeFirestoreData(doc.data())} as Vendor);
+        });
+        setVendors(vendorMap);
+        vendorsLoaded = true;
+        doneLoading();
+      },
+      (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'vendors',
+          operation: 'list'
+        }, err);
+        errorEmitter.emit('permission-error', permissionError);
+        
+        console.error("Error fetching vendors snapshot:", err);
+        toast({
+          variant: "destructive",
+          title: "Permission Denied",
+          description: "Could not load live vendor data."
+        });
+        vendorsLoaded = true;
+        setVendors(new Map());
+        doneLoading();
+      }
+    );
+
     return () => {
       ordersUnsub();
       usersUnsub();
+      vendorsUnsub();
     };
   }, [toast]);
 
@@ -236,6 +280,7 @@ export default function AdminDashboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer</TableHead>
+                  <TableHead className="hidden sm:table-cell">Vendor</TableHead>
                   <TableHead className="hidden xl:table-cell">
                     Status
                   </TableHead>
@@ -245,7 +290,7 @@ export default function AdminDashboardPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center h-24">Loading transactions...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center h-24">Loading transactions...</TableCell></TableRow>
                 ) : recentOrders.length > 0 ? (
                   recentOrders.map(order => (
                     <TableRow key={order.id}>
@@ -254,6 +299,9 @@ export default function AdminDashboardPage() {
                         <div className="hidden text-sm text-muted-foreground md:inline">
                           {users.find(u => u.id === order.userId)?.email}
                         </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {vendors.get(order.vendorId)?.storeName || 'N/A'}
                       </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         <Badge className="text-xs capitalize" variant={getBadgeVariant(order.orderStatus)}>
@@ -267,7 +315,7 @@ export default function AdminDashboardPage() {
                     </TableRow>
                   ))
                 ) : (
-                  <TableRow><TableCell colSpan={4} className="text-center h-24">No recent transactions.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center h-24">No recent transactions.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

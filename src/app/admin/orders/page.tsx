@@ -3,6 +3,8 @@ import { File } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,9 +30,13 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { getAllOrders } from '@/services/order-service';
 import type { Order } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { serializeFirestoreData } from '@/lib/utils';
+
 
 function OrderRowSkeleton() {
   return (
@@ -49,16 +55,41 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchOrders() {
-      setLoading(true);
-      const fetchedOrders = await getAllOrders();
+    setLoading(true);
+    const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map(doc => {
+        return {
+          id: doc.id,
+          ...serializeFirestoreData(doc.data()),
+        } as Order;
+      });
       setOrders(fetchedOrders);
       setLoading(false);
-    }
-    fetchOrders();
-  }, []);
+    }, (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'orders',
+          operation: 'list'
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
+        console.error("Error fetching real-time orders:", error);
+        toast({
+            variant: "destructive",
+            title: "Permission Denied",
+            description: "You do not have permission to view the list of orders."
+        });
+        setOrders([]);
+        setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [toast]);
   
   const filteredOrders = useMemo(() => {
     if (filter === 'all') return orders;
