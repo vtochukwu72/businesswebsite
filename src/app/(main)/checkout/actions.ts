@@ -83,7 +83,7 @@ export async function prepareSplitTransaction(userId: string) {
 
     } catch (error: any) {
         console.error('Error preparing split transaction:', error);
-        return { success: false, message: 'Server error while preparing transaction.' };
+        return { success: false, message: error.message || 'Server error while preparing transaction.' };
     }
 }
 
@@ -211,7 +211,7 @@ export async function verifyPaymentAndCreateOrder(payload: OrderPayload, referen
         revalidatePath('/cart');
         revalidatePath('/account/orders');
 
-        return { success: true, orderId: masterOrderNumber };
+        return { success: true };
 
     } catch (error: any) {
         console.error('Error during order placement:', error.message);

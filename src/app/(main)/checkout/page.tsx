@@ -77,6 +77,14 @@ export default function CheckoutPage() {
     }, [cartItems, unpayableItems]);
 
     const handlePaystackPayment = () => {
+        if (typeof window.PaystackPop === 'undefined') {
+            toast({
+                variant: 'destructive',
+                title: "Payment Gateway Error",
+                description: "Could not connect to Paystack. Please check your internet connection and try again.",
+            });
+            return;
+        }
         if (!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || !user) {
             toast({
                 variant: 'destructive',
@@ -113,15 +121,18 @@ export default function CheckoutPage() {
                 callback: async function(response: { reference: string }) {
                     const payload: OrderPayload = {
                         userId: user!.uid,
-                        // cartItems are not needed here as server re-fetches
                         shippingAddress: userData.shippingAddress,
                         customerName: userData.displayName || '',
                         customerEmail: user!.email || '',
                     };
                     const result = await verifyPaymentAndCreateOrder(payload, response.reference);
 
-                    if (result.success && result.orderId) {
-                        router.push(`/checkout/success/${result.orderId}`);
+                    if (result.success) {
+                        toast({
+                            title: 'Payment Successful!',
+                            description: 'Your order has been placed. Redirecting to your orders page.'
+                        });
+                        router.push(`/account/orders`);
                     } else {
                         router.push(`/checkout/error?message=${encodeURIComponent(result.message || 'Payment verification failed.')}`);
                     }
