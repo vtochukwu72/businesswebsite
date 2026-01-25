@@ -181,7 +181,7 @@ export default function SellerReviewsPage() {
                     <TableCell>
                         <Badge variant={getStatusBadgeVariant(review.status)} className="capitalize">{review.status}</Badge>
                     </TableCell>
-                    <TableCell>{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</TableCell>
+                    <TableCell>{review.createdAt ? formatDistanceToNow(new Date(review.createdAt), { addSuffix: true }) : 'N/A'}</TableCell>
                     <TableCell>
                       {review.status === 'pending' && (
                         <DropdownMenu>

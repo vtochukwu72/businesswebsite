@@ -92,7 +92,7 @@ export default function SellerOrdersPage() {
       'Order ID': order.orderNumber,
       'Customer Name': order.customerName || 'N/A',
       'Status': order.orderStatus,
-      'Date': new Date(order.createdAt).toLocaleDateString(),
+      'Date': order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
       'Total (₦)': order.grandTotal.toFixed(2),
     }));
 
@@ -168,7 +168,7 @@ export default function SellerOrdersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {new Date(order.createdAt).toLocaleDateString()}
+                          {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">₦{order.grandTotal.toFixed(2)}</TableCell>
                       </TableRow>

@@ -100,7 +100,7 @@ export default function OrdersPage() {
                 orders.map(order => (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">#{order.orderNumber}</TableCell>
-                    <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={getBadgeVariant(order.orderStatus)} className="capitalize">
                         {order.orderStatus}

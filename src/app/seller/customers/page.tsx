@@ -112,7 +112,7 @@ export default function SellerCustomersPage() {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {new Date(customer.createdAt).toLocaleDateString()}
+                      {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))

@@ -159,7 +159,7 @@ export default function AdminCustomersPage() {
       'Name': user.displayName || `${user.fname} ${user.lname}` || 'N/A',
       'Email': user.email,
       'Role': user.role.replace('_', ' '),
-      'Joined Date': new Date(user.createdAt).toLocaleDateString(),
+      'Joined Date': user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -240,7 +240,7 @@ export default function AdminCustomersPage() {
                           {user.email}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                         </TableCell>
                         <TableCell>
                             <DropdownMenu>

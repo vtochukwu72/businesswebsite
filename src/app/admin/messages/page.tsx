@@ -280,7 +280,7 @@ export default function AdminMessagesPage() {
                         <p className="text-sm text-muted-foreground truncate max-w-xs">{message.message}</p>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                        {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+                          {message.createdAt ? formatDistanceToNow(new Date(message.createdAt), { addSuffix: true }) : 'N/A'}
                         </TableCell>
                         <TableCell>
                             <DropdownMenu>
@@ -343,7 +343,7 @@ export default function AdminMessagesPage() {
               Close
             </Button>
             <Button asChild>
-                <a href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject)}&body=${encodeURIComponent(`\n\n---\nOn ${new Date(selectedMessage.createdAt).toLocaleString()}, ${selectedMessage.name} wrote:\n\n> ${selectedMessage.message.replace(/\n/g, '\n> ')}`)}`}>
+                <a href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject)}&body=${encodeURIComponent(`\n\n---\nOn ${selectedMessage.createdAt ? new Date(selectedMessage.createdAt).toLocaleString() : 'a recent date'}, ${selectedMessage.name} wrote:\n\n> ${selectedMessage.message.replace(/\n/g, '\n> ')}`)}`}>
                     <Mail className="mr-2 h-4 w-4" /> Reply via Email
                 </a>
             </Button>

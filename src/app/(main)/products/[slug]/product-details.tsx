@@ -380,7 +380,7 @@ export default function ProductDetails({ slug }: { slug: string }) {
                                     ))}
                                 </div>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">{new Date(review.createdAt).toLocaleDateString()}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ''}</p>
                                 <h5 className="font-bold mt-2">{review.title}</h5>
                                 <p className="text-muted-foreground mt-1 text-sm">{review.comment}</p>
                             </div>
