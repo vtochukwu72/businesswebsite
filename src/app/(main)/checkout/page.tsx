@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, CreditCard, Home, Mail, User } from 'lucide-react';
+import { AlertCircle, CreditCard, Home, Mail, User, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 declare global {
@@ -28,6 +28,7 @@ export default function CheckoutPage() {
     const [cartItems, setCartItems] = useState<EnrichedCartItem[]>([]);
     const [cartLoading, setCartLoading] = useState(true);
     const [isPlacingOrder, startTransition] = useTransition();
+    const [unpayableItems, setUnpayableItems] = useState<EnrichedCartItem[]>([]);
 
     const loading = authLoading || cartLoading;
 
@@ -44,6 +45,8 @@ export default function CheckoutPage() {
             getEnrichedCartItems(cart).then(items => {
                 if (items.length > 0) {
                     setCartItems(items);
+                    const unpayable = items.filter(item => !item.vendorHasPaymentDetails);
+                    setUnpayableItems(unpayable);
                 } else {
                     router.push('/cart'); 
                 }
@@ -60,6 +63,11 @@ export default function CheckoutPage() {
         return { subtotal, shippingTotal, total: subtotal + shippingTotal };
     }, [cartItems]);
     
+     const canPay = useMemo(() => {
+        if (cartItems.length === 0) return false;
+        return unpayableItems.length === 0;
+    }, [cartItems, unpayableItems]);
+
     const handlePaystackPayment = () => {
         if (!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || !user) {
             toast({
@@ -178,6 +186,24 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="sticky top-24 space-y-4">
+                        {!canPay && (
+                            <Card className="border-destructive bg-destructive/10 text-destructive">
+                                <CardHeader className="flex-row items-center gap-3 space-y-0 p-4">
+                                    <AlertTriangle className="h-6 w-6 flex-shrink-0" />
+                                    <div>
+                                        <CardTitle className="text-base">Payment Blocked</CardTitle>
+                                        <CardDescription className="text-sm text-destructive/90">
+                                            Your cart contains items from vendors who cannot receive payments.
+                                        </CardDescription>
+                                    </div>
+                                </CardHeader>
+                                 <CardContent className="p-4 pt-0">
+                                     <Button asChild variant="outline" className="w-full border-destructive text-destructive hover:bg-destructive/20">
+                                        <Link href="/cart">Return to Cart</Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
                         <Card>
                             <CardHeader>
                                 <CardTitle>Order Summary</CardTitle>
@@ -214,7 +240,7 @@ export default function CheckoutPage() {
                             className="w-full" 
                             size="lg" 
                             onClick={handlePaystackPayment}
-                            disabled={isPlacingOrder || loading || cartItems.length === 0}
+                            disabled={isPlacingOrder || loading || cartItems.length === 0 || !canPay}
                         >
                             {isPlacingOrder ? 'Processing...' : `Pay ₦${total.toFixed(2)}`}
                         </Button>
