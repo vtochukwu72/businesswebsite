@@ -6,7 +6,22 @@
 - Firebase project with Admin SDK credentials
 - Paystack account (for payment processing)
 
-## Steps to Deploy
+## Local Development Setup
+
+For local development (including this cloud workspace), you need to set your **TEST** keys in the `.env` file at the root of the project.
+
+Create a `.env` file if it doesn't exist and add your Paystack test keys:
+
+```
+# .env
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+PAYSTACK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+**Important:** Do not use your live keys for local development.
+
+---
+
+## Steps to Deploy to Production
 
 ### 1. Push Code to Git Repository
 ```bash
@@ -23,9 +38,9 @@ git push -u origin main
 3. Import your Git repository
 4. Vercel will auto-detect Next.js configuration
 
-### 3. Configure Environment Variables
+### 3. Configure Production Environment Variables
 
-Add these environment variables in Vercel Dashboard (Settings → Environment Variables):
+Add these environment variables in your Vercel Project Settings (Settings → Environment Variables). Use your **LIVE** keys for production.
 
 #### Required Firebase Variables:
 ```
@@ -42,12 +57,21 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-LLSFPMWG37
 ```
 FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"...","private_key_id":"...","private_key":"...","client_email":"..."}
 ```
-### Paystack Payment Gateway:
+*How to get Firebase Service Account:*
+1. Go to Firebase Console → Project Settings
+2. Click "Service Accounts" tab
+3. Click "Generate New Private Key"
+4. Download the JSON file
+5. Convert to single-line JSON (remove newlines)
+6. Paste as the value for the `FIREBASE_SERVICE_ACCOUNT` environment variable.
+
+
+### Paystack Payment Gateway (LIVE Keys):
 ```
 # Your LIVE public key, found on your Paystack dashboard
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_6bbc0748e29c8a0c417755ac0fa27df8878044b0
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=
 # Your LIVE secret key, found on your Paystack dashboard
-PAYSTACK_SECRET_KEY=sk_live_4b3012bce08e31c9d730a9c36a20fdd48edc2ca0
+PAYSTACK_SECRET_KEY=
 ```
 
 ### 4. Deploy
@@ -55,17 +79,6 @@ Click "Deploy" - Vercel will:
 - Install dependencies automatically
 - Build your Next.js app
 - Deploy to production
-
-
-
-**How to get Firebase Service Account:**
-1. Go to Firebase Console → Project Settings
-2. Click "Service Accounts" tab
-3. Click "Generate New Private Key"
-4. Download the JSON file
-5. Convert to single-line JSON (remove newlines)
-6. Paste as environment variable value
-
 
 ### 5. Configure Firebase (If needed)
 Add your Vercel domain to Firebase:
@@ -92,7 +105,9 @@ The app uses these settings (already configured):
 - Add Vercel domain to Firebase authorized domains
 
 ### Payments Not Working
-- Verify both `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY` are set correctly.
+- Verify both `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY` are set correctly in Vercel for production.
+- For local development, ensure they are set in the `.env` file.
+- Live keys may not work on non-HTTPS or non-whitelisted domains. Use test keys for development.
 
 ### Images Not Loading
 - External image domains are configured in next.config.ts
