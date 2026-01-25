@@ -1,10 +1,12 @@
+
 'use server';
 
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/firebase/admin-config';
 import { revalidatePath } from 'next/cache';
-import type { CartItem, Product } from '@/lib/types';
+import type { CartItem, Product, Vendor } from '@/lib/types';
 import { getProductsByIds } from '@/services/product-service';
+import { getVendorsByIds } from '@/services/vendor-service';
 
 
 export async function addToCart(userId: string, productId: string, quantity: number) {
@@ -121,6 +123,8 @@ export async function removeCartItem(userId: string, productId: string) {
 export type EnrichedCartItem = {
     product: Product;
     quantity: number;
+    vendorHasPaymentDetails: boolean;
+    vendorStoreName: string;
 };
 
 export async function getEnrichedCartItems(cart: CartItem[]): Promise<EnrichedCartItem[]> {
@@ -132,10 +136,23 @@ export async function getEnrichedCartItems(cart: CartItem[]): Promise<EnrichedCa
     const products = await getProductsByIds(productIds);
     const productsMap = new Map(products.map(p => [p.id, p]));
 
+    // Get unique vendor IDs from the products in the cart
+    const vendorIds = [...new Set(products.map(p => p.sellerId).filter(id => id))];
+    const vendors = await getVendorsByIds(vendorIds);
+    const vendorsMap = new Map(vendors.map(v => [v.id, v]));
+
     const enrichedCart = cart.map(item => {
         const product = productsMap.get(item.productId);
         if (product) {
-            return { product, quantity: item.quantity };
+            const vendor = vendorsMap.get(product.sellerId);
+            // A vendor can receive payments if they exist and have a subaccount code.
+            const vendorHasPaymentDetails = !!vendor?.payoutDetails?.subaccountCode;
+            return {
+                product,
+                quantity: item.quantity,
+                vendorHasPaymentDetails,
+                vendorStoreName: vendor?.storeName || 'Unknown Store'
+            };
         }
         return null;
     }).filter((item): item is EnrichedCartItem => item !== null);

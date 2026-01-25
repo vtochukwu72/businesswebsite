@@ -1,17 +1,18 @@
+
 'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { useEffect, useState, useMemo, useTransition, useRef } from 'react';
 import type { Product, CartItem as CartItemType } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { getEnrichedCartItems, updateCartItemQuantity, removeCartItem } from './actions';
+import { getEnrichedCartItems, updateCartItemQuantity, removeCartItem, type EnrichedCartItem } from './actions';
 import { useRouter } from 'next/navigation';
 import {
   Carousel,
@@ -27,11 +28,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import Autoplay from 'embla-carousel-autoplay';
 import { serializeFirestoreData } from '@/lib/utils';
-
-type EnrichedCartItem = {
-    product: Product;
-    quantity: number;
-};
 
 function CartItemSkeleton() {
     return (
@@ -169,6 +165,12 @@ export default function CartPage() {
         return { subtotal, shippingTotal };
     }, [cartItems]);
     
+    const canCheckout = useMemo(() => {
+        if (cartItems.length === 0) return false;
+        return cartItems.every(item => item.vendorHasPaymentDetails);
+    }, [cartItems]);
+
+
     if (isLoading || authLoading) {
         return (
             <div className="container py-8">
@@ -216,32 +218,53 @@ export default function CartPage() {
                             <CardContent className="p-0">
                                 <div className="divide-y">
                                     {cartItems.map(item => (
-                                        <div key={item.product.id} className="flex items-center gap-4 p-4">
-                                            <Image src={item.product.images[0]} alt={item.product.name} width={96} height={96} className="rounded-md" />
-                                            <div className="flex-1">
-                                                <Link href={`/products/${item.product.id}`} className="font-semibold hover:underline">{item.product.name}</Link>
-                                                <p className="text-sm text-muted-foreground">₦{(item.product.discountedPrice ?? item.product.price).toFixed(2)}</p>
+                                        <div key={item.product.id} className="flex flex-col gap-2 p-4">
+                                            <div className="flex items-center gap-4">
+                                                <Image src={item.product.images[0]} alt={item.product.name} width={96} height={96} className="rounded-md" />
+                                                <div className="flex-1">
+                                                    <Link href={`/products/${item.product.id}`} className="font-semibold hover:underline">{item.product.name}</Link>
+                                                    <p className="text-sm text-muted-foreground">₦{(item.product.discountedPrice ?? item.product.price).toFixed(2)}</p>
+                                                </div>
+                                                <div className="flex items-center border rounded-md">
+                                                <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)} disabled={isUpdating || item.quantity <= 1}>
+                                                    <Minus className="h-4 w-4" />
+                                                </Button>
+                                                <span className="px-3 text-sm font-bold">{item.quantity}</span>
+                                                <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)} disabled={isUpdating || item.quantity >= item.product.stockQuantity}>
+                                                    <Plus className="h-4 w-4" />
+                                                </Button>
+                                                </div>
+                                                <p className="font-semibold w-24 text-right">₦{((item.product.discountedPrice ?? item.product.price) * item.quantity).toFixed(2)}</p>
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.product.id)} disabled={isUpdating}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
                                             </div>
-                                            <div className="flex items-center border rounded-md">
-                                              <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)} disabled={isUpdating || item.quantity <= 1}>
-                                                <Minus className="h-4 w-4" />
-                                              </Button>
-                                              <span className="px-3 text-sm font-bold">{item.quantity}</span>
-                                              <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)} disabled={isUpdating || item.quantity >= item.product.stockQuantity}>
-                                                <Plus className="h-4 w-4" />
-                                              </Button>
-                                            </div>
-                                            <p className="font-semibold w-24 text-right">₦{((item.product.discountedPrice ?? item.product.price) * item.quantity).toFixed(2)}</p>
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.product.id)} disabled={isUpdating}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
+                                            {!item.vendorHasPaymentDetails && (
+                                                <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded-md ml-[112px]">
+                                                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                                                    <span>Vendor '{item.vendorStoreName}' cannot receive payments. Please remove this item to check out.</span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
-                    <div className="md:col-span-1 sticky top-24">
+                    <div className="md:col-span-1 sticky top-24 space-y-4">
+                        {!canCheckout && !isLoading && (
+                             <Card className="border-destructive bg-destructive/10 text-destructive">
+                                <CardHeader className="flex-row items-center gap-3 space-y-0 p-4">
+                                    <AlertTriangle className="h-6 w-6 flex-shrink-0" />
+                                    <div>
+                                        <CardTitle className="text-base">Checkout Disabled</CardTitle>
+                                        <CardDescription className="text-sm text-destructive/90">
+                                            Remove items from vendors who can't receive payments to proceed.
+                                        </CardDescription>
+                                    </div>
+                                </CardHeader>
+                            </Card>
+                        )}
                         <Card>
                             <CardHeader>
                                 <CardTitle>Order Summary</CardTitle>
@@ -264,7 +287,7 @@ export default function CartPage() {
                                     <span>Estimated Total</span>
                                     <span>₦{(subtotal + shippingTotal).toFixed(2)}</span>
                                 </div>
-                                <Button asChild className="w-full" size="lg" disabled={isUpdating || cartItems.length === 0}>
+                                <Button asChild className="w-full" size="lg" disabled={isUpdating || !canCheckout}>
                                     <Link href="/checkout">Proceed to Checkout</Link>
                                 </Button>
                             </CardContent>
