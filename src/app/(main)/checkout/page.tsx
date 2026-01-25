@@ -50,16 +50,24 @@ export default function CheckoutPage() {
                 } else {
                     router.push('/cart'); 
                 }
+            }).catch(error => {
+                console.error("Error fetching enriched cart items:", error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Error Loading Cart',
+                    description: 'There was a problem loading your cart details.'
+                });
+            }).finally(() => {
                 setCartLoading(false);
             });
-        } else {
+        } else if (!authLoading) { // Only redirect if we are sure the cart is empty
             router.push('/cart');
         }
-    }, [user, userData, authLoading, router]);
+    }, [user, userData, authLoading, router, toast]);
 
     const { subtotal, shippingTotal, total } = useMemo(() => {
         const subtotal = cartItems.reduce((acc, item) => acc + (item.product.discountedPrice ?? item.product.price) * item.quantity, 0);
-        const shippingTotal = cartItems.reduce((acc, item) => acc + (item.product.shippingFee || 0), 0);
+        const shippingTotal = cartItems.reduce((acc, item) => acc + (item.product.shippingFee || 0) * item.quantity, 0);
         return { subtotal, shippingTotal, total: subtotal + shippingTotal };
     }, [cartItems]);
     
