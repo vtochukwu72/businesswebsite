@@ -51,6 +51,13 @@ FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"...","private_k
 5. Convert to single-line JSON (remove newlines)
 6. Paste as environment variable value
 
+#### Paystack Payment Gateway:
+```
+# Your LIVE public key, found on your Paystack dashboard
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_6bbc0748e29c8a0c417755ac0fa27df8878044b0
+# Your LIVE secret key, found on your Paystack dashboard
+PAYSTACK_SECRET_KEY=sk_live_4b3012bce08e31c9d730a9c36a20fdd48edc2ca0
+```
 
 ### 4. Deploy
 Click "Deploy" - Vercel will:
