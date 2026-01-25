@@ -52,6 +52,8 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
         });
         
         revalidatePath('/seller/settings');
+        revalidatePath('/cart');
+        revalidatePath('/checkout');
         return { success: true, errors: {}, message: 'Settings updated successfully!' };
 
     } catch (error: any) {
