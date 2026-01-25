@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/auth-context';
 import { getEnrichedCartItems } from '@/app/(main)/cart/actions';
-import { verifyPaymentAndCreateOrder, OrderPayload } from './actions';
+import { verifyPaymentAndCreateOrder, OrderPayload, prepareSplitTransaction } from './actions';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -61,36 +61,46 @@ export default function CheckoutPage() {
     }, [cartItems]);
     
     const handlePaystackPayment = () => {
-        if (!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY) {
+        if (!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || !user) {
             toast({
                 variant: 'destructive',
                 title: "Configuration Error",
-                description: "Paystack public key is not configured. Please contact support.",
+                description: "Paystack public key is not configured or user is not logged in.",
             });
             return;
         }
 
-        const handler = window.PaystackPop.setup({
-            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-            email: user!.email!,
-            amount: total * 100, // Amount in kobo
-            ref: 'ORD-' + Math.floor((Math.random() * 1000000000) + 1), // Unique ref
-            onClose: function(){
-                toast({
-                    variant: 'destructive',
-                    title: 'Payment window closed.',
-                    description: "Your order was not placed."
-                });
-            },
-            callback: function(response: { reference: string }) {
-                startTransition(async () => {
+        startTransition(async () => {
+             const prepResult = await prepareSplitTransaction(user.uid);
+
+             if (!prepResult.success || !prepResult.transactionDetails) {
+                 toast({ variant: 'destructive', title: 'Checkout Error', description: prepResult.message || 'Could not prepare transaction.' });
+                 return;
+             }
+             
+             const { amount, email, ref, subaccounts } = prepResult.transactionDetails;
+
+            const handler = window.PaystackPop.setup({
+                key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+                email: email,
+                amount: amount, // Amount in kobo from server
+                ref: ref, // Unique ref from server
+                subaccounts: subaccounts,
+                bearer: 'subaccount', // The subaccounts bear the transaction charges
+                onClose: function(){
+                    toast({
+                        variant: 'destructive',
+                        title: 'Payment window closed.',
+                        description: "Your order was not placed."
+                    });
+                },
+                callback: async function(response: { reference: string }) {
                     const payload: OrderPayload = {
                         userId: user!.uid,
-                        cartItems: cartItems,
+                        // cartItems are not needed here as server re-fetches
                         shippingAddress: userData.shippingAddress,
                         customerName: userData.displayName || '',
                         customerEmail: user!.email || '',
-                        totalAmount: total * 100,
                     };
                     const result = await verifyPaymentAndCreateOrder(payload, response.reference);
 
@@ -99,10 +109,10 @@ export default function CheckoutPage() {
                     } else {
                         router.push(`/checkout/error?message=${encodeURIComponent(result.message || 'Payment verification failed.')}`);
                     }
-                });
-            }
+                }
+            });
+            handler.openIframe();
         });
-        handler.openIframe();
     };
 
     const hasAddress = userData?.shippingAddress?.street && userData?.shippingAddress?.city;

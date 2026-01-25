@@ -72,6 +72,7 @@ const vendorDetails: Record<string, Partial<Vendor>> = {
       businessName: 'SoundWave Nigeria Ltd.',
       accountNumber: '1234567890',
       bankName: 'First Bank',
+      subaccountCode: 'ACCT_dummysubaccount1'
     },
     storeLogo: 'https://picsum.photos/seed/logo1/200/200',
   },
@@ -88,6 +89,7 @@ const vendorDetails: Record<string, Partial<Vendor>> = {
       businessName: 'Timeless Fashion Co.',
       accountNumber: '0987654321',
       bankName: 'GTBank',
+      subaccountCode: 'ACCT_dummysubaccount2'
     },
     storeLogo: 'https://picsum.photos/seed/logo2/200/200',
   },
@@ -104,6 +106,7 @@ const vendorDetails: Record<string, Partial<Vendor>> = {
       businessName: 'PureLeaf Foods',
       accountNumber: '1122334455',
       bankName: 'Zenith Bank',
+      subaccountCode: 'ACCT_dummysubaccount3'
     },
     storeLogo: 'https://picsum.photos/seed/logo3/200/200',
   },
@@ -120,6 +123,7 @@ const vendorDetails: Record<string, Partial<Vendor>> = {
       businessName: 'The Book Nook Ltd.',
       accountNumber: '5544332211',
       bankName: 'UBA',
+      subaccountCode: 'ACCT_dummysubaccount4'
     },
     storeLogo: 'https://picsum.photos/seed/logo4/200/200',
   }

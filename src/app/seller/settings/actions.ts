@@ -14,9 +14,11 @@ const vendorSettingsSchema = z.object({
   businessLicenseUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   taxId: z.string().optional(),
   sellerHistory: z.string().optional(),
+  // Payout details
   businessName: z.string().min(1, 'Account name is required'),
   accountNumber: z.string().min(10, 'Account number must be 10 digits').max(10, 'Account number must be 10 digits'),
   bankName: z.string().min(1, 'Bank name is required'),
+  subaccountCode: z.string().min(1, 'Paystack Subaccount Code is required.'),
 });
 
 export async function updateVendorSettings(prevState: any, formData: FormData) {
@@ -31,7 +33,7 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
     }
 
     const { vendorId, ...vendorData } = parsed.data;
-    const { businessName, accountNumber, bankName, ...restOfData } = vendorData;
+    const { businessName, accountNumber, bankName, subaccountCode, ...restOfData } = vendorData;
 
     try {
         const adminApp = getAdminApp();
@@ -44,6 +46,7 @@ export async function updateVendorSettings(prevState: any, formData: FormData) {
                 businessName,
                 accountNumber,
                 bankName,
+                subaccountCode,
             },
             updatedAt: FieldValue.serverTimestamp(),
         });

@@ -1,6 +1,5 @@
 
 
-
 export type CartItem = {
     productId: string;
     quantity: number;
@@ -47,6 +46,13 @@ export type User = {
   wishlist?: string[];
 };
 
+export type PayoutDetails = {
+    businessName: string;
+    accountNumber: string;
+    bankName: string;
+    subaccountCode: string;
+}
+
 export type Vendor = {
   id: string;
   storeName: string;
@@ -57,11 +63,7 @@ export type Vendor = {
   address: string;
   status: 'pending' | 'approved' | 'rejected';
   nin: string;
-  payoutDetails: {
-    businessName: string;
-    accountNumber: string;
-    bankName: string;
-  };
+  payoutDetails: PayoutDetails;
   businessLicenseUrl?: string;
   taxId?: string;
   sellerHistory?: string;

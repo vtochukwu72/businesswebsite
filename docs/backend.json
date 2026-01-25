@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -585,12 +586,17 @@
             "bankName": {
               "type": "string",
               "description": "Name of the bank."
+            },
+            "subaccountCode": {
+              "type": "string",
+              "description": "Paystack subaccount code for this vendor."
             }
           },
           "required": [
             "businessName",
             "accountNumber",
-            "bankName"
+            "bankName",
+            "subaccountCode"
           ]
         },
         "status": {

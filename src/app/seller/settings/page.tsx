@@ -75,6 +75,7 @@ export default function SellerSettingsPage() {
     businessName: '',
     accountNumber: '',
     bankName: '',
+    subaccountCode: '',
   });
 
   const [state, formAction] = useActionState(updateVendorSettings, {
@@ -97,6 +98,7 @@ export default function SellerSettingsPage() {
           businessName: vendorData.payoutDetails?.businessName || '',
           accountNumber: vendorData.payoutDetails?.accountNumber || '',
           bankName: vendorData.payoutDetails?.bankName || '',
+          subaccountCode: vendorData.payoutDetails?.subaccountCode || '',
       });
     }
   }, [vendorData]);
@@ -199,29 +201,39 @@ export default function SellerSettingsPage() {
                <div className="space-y-4">
                  <h3 className="text-lg font-medium">Payout Details</h3>
                  <Separator/>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="businessName">Account Name</Label>
-                        <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleInputChange} />
-                        {state.errors?.businessName && (
-                            <p className="text-sm text-destructive">{state.errors.businessName.join(', ')}</p>
+                 <div className="pt-2">
+                    <div className="space-y-2 mb-4">
+                        <Label htmlFor="subaccountCode">Paystack Subaccount Code</Label>
+                        <Input id="subaccountCode" name="subaccountCode" value={formData.subaccountCode} onChange={handleInputChange} placeholder="ACCT_..."/>
+                        <p className="text-xs text-muted-foreground">Find this in your Paystack Dashboard under &quot;Subaccounts&quot;.</p>
+                        {state.errors?.subaccountCode && (
+                            <p className="text-sm text-destructive">{state.errors.subaccountCode.join(', ')}</p>
                         )}
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="bankName">Bank Name</Label>
-                        <Input id="bankName" name="bankName" value={formData.bankName} onChange={handleInputChange} />
-                         {state.errors?.bankName && (
-                            <p className="text-sm text-destructive">{state.errors.bankName.join(', ')}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="businessName">Account Name</Label>
+                            <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleInputChange} />
+                            {state.errors?.businessName && (
+                                <p className="text-sm text-destructive">{state.errors.businessName.join(', ')}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="bankName">Bank Name</Label>
+                            <Input id="bankName" name="bankName" value={formData.bankName} onChange={handleInputChange} />
+                            {state.errors?.bankName && (
+                                <p className="text-sm text-destructive">{state.errors.bankName.join(', ')}</p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="space-y-2 mt-4">
+                        <Label htmlFor="accountNumber">Account Number</Label>
+                        <Input id="accountNumber" name="accountNumber" value={formData.accountNumber} onChange={handleInputChange} />
+                        {state.errors?.accountNumber && (
+                            <p className="text-sm text-destructive">{state.errors.accountNumber.join(', ')}</p>
                         )}
                     </div>
                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="accountNumber">Account Number</Label>
-                    <Input id="accountNumber" name="accountNumber" value={formData.accountNumber} onChange={handleInputChange} />
-                     {state.errors?.accountNumber && (
-                        <p className="text-sm text-destructive">{state.errors.accountNumber.join(', ')}</p>
-                    )}
-                  </div>
               </div>
               
               <SubmitButton />

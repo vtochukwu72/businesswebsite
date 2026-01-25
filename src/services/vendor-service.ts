@@ -1,6 +1,6 @@
 'use server';
 
-import { getFirestore, type DocumentSnapshot } from 'firebase-admin/firestore';
+import { getFirestore, type DocumentSnapshot, FieldPath } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/firebase/admin-config';
 import type { Vendor } from '@/lib/types';
 import { serializeFirestoreData } from '@/lib/utils';
@@ -44,4 +44,35 @@ export async function getVendors(): Promise<Vendor[]> {
     console.error("Error fetching vendors: ", error);
     return [];
   }
+}
+
+export async function getVendorsByIds(vendorIds: string[]): Promise<Vendor[]> {
+    if (!vendorIds || vendorIds.length === 0) {
+        return [];
+    }
+
+    try {
+        const vendorChunks: string[][] = [];
+        for (let i = 0; i < vendorIds.length; i += 30) {
+            vendorChunks.push(vendorIds.slice(i, i + 30));
+        }
+
+        const vendorPromises = vendorChunks.map(chunk => {
+            return db.collection('vendors').where(FieldPath.documentId(), 'in', chunk).get();
+        });
+        
+        const vendorSnapshots = await Promise.all(vendorPromises);
+        
+        const vendors: Vendor[] = [];
+        vendorSnapshots.forEach(snapshot => {
+            snapshot.docs.forEach(doc => {
+                vendors.push(serializeVendor(doc));
+            });
+        });
+        
+        return vendors;
+    } catch (error) {
+        console.error('Error fetching vendors by IDs:', error);
+        return [];
+    }
 }
