@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { getOrdersByUser } from '@/services/order-service';
 import type { Order } from '@/lib/types';
 import {
   Card,
@@ -22,6 +21,12 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { useToast } from '@/hooks/use-toast';
+import { serializeFirestoreData } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function OrderRowSkeleton() {
   return (
@@ -35,27 +40,55 @@ function OrderRowSkeleton() {
 }
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchOrders() {
-      if (user) {
-        setLoading(true);
-        const userOrders = await getOrdersByUser(user.uid);
-        setOrders(userOrders);
-        setLoading(false);
-      }
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+    
+    if (!user) {
+      setLoading(false);
+      setOrders([]);
+      return;
     }
 
-    if (user) {
-        fetchOrders();
-    } else {
-        setLoading(false);
-    }
-  }, [user]);
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...serializeFirestoreData(doc.data()),
+      }) as Order);
+      setOrders(fetchedOrders);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching user orders:", error);
+      const permissionError = new FirestorePermissionError({
+        path: 'orders',
+        operation: 'list'
+      }, error);
+      errorEmitter.emit('permission-error', permissionError);
+
+      toast({
+        variant: "destructive",
+        title: "Permission Error",
+        description: "Could not load your orders."
+      });
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, authLoading, toast]);
 
   const getBadgeVariant = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -78,7 +111,7 @@ export default function OrdersPage() {
         <CardHeader>
           <CardTitle>Order History</CardTitle>
           <CardDescription>
-            View and track your recent orders.
+            View and track your recent orders. Updates will appear in real-time.
           </CardDescription>
         </CardHeader>
         <CardContent>
