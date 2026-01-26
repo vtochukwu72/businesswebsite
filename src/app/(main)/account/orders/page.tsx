@@ -58,6 +58,10 @@ export default function OrdersPage() {
       return;
     }
 
+    // NOTE: This query requires a composite index in Firestore. 
+    // If you see an error in the console about a missing index, please click the link
+    // in the error message to create it in your Firebase console.
+    // The query filters by `userId` and orders by `createdAt`.
     const ordersQuery = query(
       collection(db, 'orders'),
       where('userId', '==', user.uid),
