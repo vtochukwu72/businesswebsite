@@ -28,9 +28,10 @@ import { useAuth, AuthContextType } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -157,6 +158,9 @@ export default function AdminLayout({
   const [isClient, setIsClient] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const { toast } = useToast();
+  const [isInitialOrderLoad, setIsInitialOrderLoad] = useState(true);
+  const [isInitialMessageLoad, setIsInitialMessageLoad] = useState(true);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -191,10 +195,31 @@ export default function AdminLayout({
       return;
     }
     
-    // Listen for unread messages. This is the only notification source now.
     const messagesQuery = query(collection(db, 'contacts'), where('isRead', '==', false));
     const unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
         setNotificationCount(snapshot.size);
+
+        if (isInitialMessageLoad) {
+            setIsInitialMessageLoad(false);
+            return;
+        }
+
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                const newMessage = change.doc.data();
+                toast({
+                    title: "New Message Received",
+                    description: `From: ${newMessage.name} - Subject: ${newMessage.subject}`,
+                    action: (
+                        <ToastAction altText="View Message" onClick={() => router.push(`/admin/messages`)}>
+                            View
+                        </ToastAction>
+                    ),
+                    duration: 10000,
+                });
+            }
+        });
+
     }, (error) => {
         const permissionError = new FirestorePermissionError({
             path: 'contacts',
@@ -214,7 +239,51 @@ export default function AdminLayout({
     return () => {
         unsubMessages();
     }
-  }, [user, toast]);
+  }, [user, toast, isInitialMessageLoad, router]);
+  
+  useEffect(() => {
+    if (!user) return;
+
+    const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      
+      if (isInitialOrderLoad) {
+        setIsInitialOrderLoad(false);
+        return;
+      }
+      
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+            const newOrder = change.doc.data();
+            toast({
+                title: "New Order Received!",
+                description: `Order #${newOrder.orderNumber} from ${newOrder.customerName || 'a customer'} for ₦${newOrder.grandTotal.toFixed(2)}.`,
+                action: (
+                  <ToastAction altText="View Order" onClick={() => router.push(`/admin/orders/${change.doc.id}`)}>
+                    View
+                  </ToastAction>
+                ),
+                duration: 10000,
+            });
+        }
+      });
+    }, (error) => {
+      const permissionError = new FirestorePermissionError({
+          path: `orders`,
+          operation: 'list'
+      }, error);
+      errorEmitter.emit('permission-error', permissionError);
+
+      console.error("Admin notification (orders) snapshot error:", error);
+      toast({
+        variant: "destructive",
+        title: "Could not load order notifications",
+        description: "There was a problem fetching live order updates."
+      });
+    });
+
+    return () => unsubscribe();
+  }, [user, toast, isInitialOrderLoad, router]);
 
   if (loading || !user || !userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
     return (
