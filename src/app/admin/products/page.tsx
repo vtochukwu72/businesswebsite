@@ -1,7 +1,7 @@
 'use client';
 import { File, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useState, useMemo, useTransition } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -33,9 +33,7 @@ import {
 import { getVendors } from '@/services/vendor-service';
 import type { Product, Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { toggleFeaturedProduct } from './actions';
 import { serializeFirestoreData } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -49,7 +47,6 @@ function ProductRowSkeleton() {
       </TableCell>
       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
@@ -62,7 +59,6 @@ export default function AdminProductsPage() {
   const [vendors, setVendors] = useState<Map<string, Vendor>>(new Map());
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [isUpdating, startUpdateTransition] = useTransition();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -130,24 +126,6 @@ export default function AdminProductsPage() {
     XLSX.writeFile(workbook, `products-export-${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  const handleFeaturedToggle = (product: Product) => {
-    startUpdateTransition(async () => {
-        const result = await toggleFeaturedProduct(product.id, !product.isFeatured);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: result.message,
-            });
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message,
-            });
-        }
-    });
-  };
-
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <Tabs defaultValue="all" onValueChange={setFilter}>
@@ -198,7 +176,6 @@ export default function AdminProductsPage() {
                     </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Featured</TableHead>
                     <TableHead className="hidden md:table-cell">
                       Price
                     </TableHead>
@@ -235,14 +212,6 @@ export default function AdminProductsPage() {
                         <TableCell>
                           <Badge variant={product.isActive ? 'default' : 'outline'}>{product.isActive ? 'Active' : 'Draft'}</Badge>
                         </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={product.isFeatured || false}
-                            onCheckedChange={() => handleFeaturedToggle(product)}
-                            disabled={isUpdating}
-                            aria-label={`Feature ${product.name}`}
-                          />
-                        </TableCell>
                         <TableCell className="hidden md:table-cell">
                           ₦{product.price.toFixed(2)}
                         </TableCell>
@@ -256,7 +225,7 @@ export default function AdminProductsPage() {
                     ))
                   ) : (
                      <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={6} className="h-24 text-center">
                         No products found.
                       </TableCell>
                     </TableRow>

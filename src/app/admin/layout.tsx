@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -12,6 +11,7 @@ import {
   LineChart,
   Store,
   MessageSquare,
+  Settings,
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -97,6 +97,9 @@ function AdminDashboard({ children, notificationCount, authProps }: { children: 
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                     <SidebarMenuButton href="/admin/analytics" leftIcon={<LineChart/>}>Analytics</SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton href="/admin/site-management" leftIcon={<Settings/>}>Site Management</SidebarMenuButton>
                 </SidebarMenuItem>
              </SidebarMenu>
            </SidebarGroup>
