@@ -146,8 +146,10 @@ export async function verifyPaymentAndCreateOrder(payload: OrderPayload, referen
         const verifyData = await verifyRes.json();
 
         if (!verifyData.status || verifyData.data.status !== 'success') {
-            console.error("Paystack verification failed:", verifyData.message);
-            return { success: false, message: verifyData.message || 'Payment verification failed with Paystack.' };
+            const gatewayResponse = verifyData.data?.gateway_response || 'No gateway response provided by Paystack.';
+            const errorMessage = verifyData.message || 'Payment verification failed.';
+            console.error("Paystack verification failed:", errorMessage, `Gateway Response: ${gatewayResponse}`);
+            return { success: false, message: `Payment failed: ${gatewayResponse}` };
         }
         
         const paidAmountKobo = verifyData.data.amount;
