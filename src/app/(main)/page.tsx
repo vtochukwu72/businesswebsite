@@ -1,4 +1,3 @@
-
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,11 +15,17 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProductCard } from '@/components/products/product-card';
 import type { Product } from '@/lib/types';
 import { NewsletterForm } from '@/components/newsletter-form';
-import { getProducts } from '@/services/product-service';
 import { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Autoplay from 'embla-carousel-autoplay';
 import { RecentlyViewedProducts } from '@/components/products/recently-viewed';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { useToast } from '@/hooks/use-toast';
+import { serializeFirestoreData } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image');
 
@@ -50,48 +55,68 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [dynamicCategories, setDynamicCategories] = useState<any[]>([]);
   const [heroItems, setHeroItems] = useState<any[]>([]);
+  const { toast } = useToast();
 
   const plugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: true }));
   const heroPlugin = useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
 
   useEffect(() => {
-    async function fetchProductsAndCategories() {
-      setLoading(true);
-      const fetchedProducts = await getProducts();
-      setProducts(fetchedProducts);
+    setLoading(true);
+    const productsQuery = query(collection(db, 'products'));
 
-      const featured = fetchedProducts.filter(p => p.isFeatured);
-      if (featured.length > 0) {
-        setHeroItems(featured);
-      } else if (heroImage) {
-        setHeroItems([heroImage]);
-      } else {
-        setHeroItems([]);
-      }
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+        const fetchedProducts: Product[] = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...serializeFirestoreData(data),
+            } as Product;
+        });
 
-      if (fetchedProducts.length > 0) {
-        // Create a map of categories to the first product found in that category.
-        const categoryProductMap = new Map<string, Product>();
-        for (const product of fetchedProducts) {
-          if (!categoryProductMap.has(product.category)) {
-            categoryProductMap.set(product.category, product);
-          }
+        setProducts(fetchedProducts);
+
+        const featured = fetchedProducts.filter(p => p.isFeatured);
+        if (featured.length > 0) {
+            setHeroItems(featured);
+        } else if (heroImage) {
+            setHeroItems([heroImage]);
+        } else {
+            setHeroItems([]);
         }
-        
-        // Create the category data from the map.
-        const categoryData = Array.from(categoryProductMap.entries()).map(([name, product]) => ({
-          name,
-          imageURL: product.images[0] || `https://picsum.photos/seed/${name.replace(/\s+/g, '-')}/400/300`,
-          imageHint: product.name.toLowerCase(), // Use product name as hint
-        }));
-        
-        setDynamicCategories(categoryData);
-      }
 
-      setLoading(false);
-    }
-    fetchProductsAndCategories();
-  }, []);
+        if (fetchedProducts.length > 0) {
+            const categoryProductMap = new Map<string, Product>();
+            for (const product of fetchedProducts) {
+                if (!categoryProductMap.has(product.category)) {
+                    categoryProductMap.set(product.category, product);
+                }
+            }
+            const categoryData = Array.from(categoryProductMap.entries()).map(([name, product]) => ({
+                name,
+                imageURL: product.images[0] || `https://picsum.photos/seed/${name.replace(/\s+/g, '-')}/400/300`,
+                imageHint: product.name.toLowerCase(),
+            }));
+            setDynamicCategories(categoryData);
+        }
+        setLoading(false);
+    }, (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'products',
+          operation: 'list'
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+
+        console.error("Error fetching products for homepage:", error);
+        toast({
+            variant: "destructive",
+            title: "Could not load products",
+            description: "There was a problem fetching live product data."
+        });
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
   return (
     <>
