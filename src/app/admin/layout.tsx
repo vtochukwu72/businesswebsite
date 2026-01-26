@@ -87,7 +87,12 @@ function AdminDashboard({ children, notificationCount, authProps }: { children: 
                     <SidebarMenuButton href="/admin/vendors" leftIcon={<Store/>}>Vendors</SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton href="/admin/messages" leftIcon={<MessageSquare />}>Messages</SidebarMenuButton>
+                    <SidebarMenuButton href="/admin/messages" leftIcon={<MessageSquare />}>
+                        Messages
+                        {notificationCount > 0 && (
+                            <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">{notificationCount}</Badge>
+                        )}
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                     <SidebarMenuButton href="/admin/analytics" leftIcon={<LineChart/>}>Analytics</SidebarMenuButton>

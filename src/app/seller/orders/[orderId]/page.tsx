@@ -152,7 +152,7 @@ export default function SellerOrderDetailPage() {
                 <CardHeader>
                     <CardTitle>Order #{order.orderNumber}</CardTitle>
                     <CardDescription>
-                        Date: {new Date(order.createdAt).toLocaleDateString()}
+                        Date: {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

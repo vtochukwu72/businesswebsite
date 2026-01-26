@@ -3,6 +3,8 @@ import { File } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,9 +31,12 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { useAuth } from '@/context/auth-context';
-import { getOrdersBySeller } from '@/services/order-service';
 import type { Order } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { serializeFirestoreData } from '@/lib/utils';
 
 function OrderRowSkeleton() {
   return (
@@ -46,23 +51,51 @@ function OrderRowSkeleton() {
 }
 
 export default function SellerOrdersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchOrders() {
-      if (user) {
-        setLoading(true);
-        const sellerOrders = await getOrdersBySeller(user.uid);
-        setOrders(sellerOrders);
-        setLoading(false);
-      }
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
     }
-    fetchOrders();
-  }, [user]);
+
+    setLoading(true);
+    const ordersQuery = query(collection(db, 'vendors', user.uid, 'orders'), orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map(doc => {
+        return { 
+          id: doc.id,
+          ...serializeFirestoreData(doc.data())
+        } as Order;
+      });
+      setOrders(fetchedOrders);
+      setLoading(false);
+    }, (error) => {
+      const permissionError = new FirestorePermissionError({
+          path: `vendors/${user.uid}/orders`,
+          operation: 'list'
+      }, error);
+      errorEmitter.emit('permission-error', permissionError);
+
+      console.error("Error fetching seller orders:", error);
+      toast({
+          variant: "destructive",
+          title: "Permission Denied",
+          description: "Could not load your orders."
+      });
+      setOrders([]);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, authLoading, toast]);
 
   const filteredOrders = useMemo(() => {
     if (statusFilter === 'all') {

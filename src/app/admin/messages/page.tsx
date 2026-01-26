@@ -1,5 +1,5 @@
 'use client';
-import { Mail, Trash2, MoreVertical, Archive, User as UserIcon, Eye } from 'lucide-react';
+import { Mail, Trash2, MoreVertical, Archive, User as UserIcon, Eye, ArchiveRestore } from 'lucide-react';
 import { useEffect, useState, useTransition, useMemo } from 'react';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -297,7 +297,7 @@ export default function AdminMessagesPage() {
                                         View & Reply
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleToggleRead(message); }}>
-                                        {message.isRead ? <Mail className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
+                                        {message.isRead ? <Archive className="mr-2 h-4 w-4" /> : <ArchiveRestore className="mr-2 h-4 w-4" />}
                                         Mark as {message.isRead ? 'Unread' : 'Read'}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
