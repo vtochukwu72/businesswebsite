@@ -29,6 +29,8 @@ export type Product = {
   isActive: boolean;
   isFeatured?: boolean;
   tags: string[];
+  carouselHeadline?: string;
+  carouselDescription?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -137,6 +139,8 @@ export type Order = {
     status: string;
   };
 };
+
+    
 
     
 

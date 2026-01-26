@@ -150,10 +150,10 @@ export default function HomePage() {
                                 <div className="absolute inset-0 bg-black/50" />
                                 <div className="relative z-10 flex h-full flex-col items-start justify-center text-white px-4 md:px-8 lg:px-12">
                                     <h1 className="text-4xl font-extrabold md:text-6xl">
-                                        {item.images ? item.name : "Elevate Your Lifestyle"}
+                                        {item.carouselHeadline || (item.images ? item.name : "Elevate Your Lifestyle")}
                                     </h1>
                                     <p className="mt-4 max-w-lg text-lg">
-                                        {item.images ? item.description : "Discover curated collections and exclusive deals."}
+                                        {item.carouselDescription || (item.images ? item.description : "Discover curated collections and exclusive deals.")}
                                     </p>
                                     <Button asChild size="lg" className="mt-8">
                                         <Link href={item.images ? `/products/${item.id}`: "/products"}>
@@ -342,3 +342,5 @@ export default function HomePage() {
     </>
   );
 }
+
+    

@@ -1,6 +1,6 @@
 'use client';
 import Image from 'next/image';
-import { useEffect, useState, useMemo, useTransition } from 'react';
+import { useEffect, useState, useMemo, useTransition, useActionState, useRef } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
@@ -19,14 +19,29 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { toggleFeaturedProduct } from '../products/actions';
+import { updateCarouselText } from './actions';
 import { serializeFirestoreData } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useFormStatus } from 'react-dom';
+
 
 function ProductRowSkeleton() {
   return (
@@ -36,8 +51,18 @@ function ProductRowSkeleton() {
       </TableCell>
       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
       <TableCell><Skeleton className="h-10 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-10 w-24" /></TableCell>
     </TableRow>
   );
+}
+
+function SubmitButton() {
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" disabled={pending}>
+        {pending ? 'Saving...' : 'Save Changes'}
+        </Button>
+    );
 }
 
 export default function SiteManagementPage() {
@@ -45,6 +70,26 @@ export default function SiteManagementPage() {
   const [loading, setLoading] = useState(true);
   const [isUpdating, startUpdateTransition] = useTransition();
   const { toast } = useToast();
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  const [state, formAction] = useActionState(updateCarouselText, {
+    success: false,
+    errors: {},
+    message: '',
+  });
+
+  useEffect(() => {
+    if(state.message) {
+        if (state.success) {
+            toast({ title: 'Success!', description: state.message });
+            setIsDialogOpen(false);
+        } else {
+            toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
+        }
+    }
+  }, [state, toast]);
 
   useEffect(() => {
     setLoading(true);
@@ -93,13 +138,19 @@ export default function SiteManagementPage() {
     });
   };
 
+  const handleEditText = (product: Product) => {
+    setEditingProduct(product);
+    setIsDialogOpen(true);
+  }
+
   return (
+    <>
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <Card>
         <CardHeader>
           <CardTitle>Homepage Carousel Management</CardTitle>
           <CardDescription>
-            Use the toggles to select which products appear in the homepage carousel. Changes are saved and applied in real-time.
+            Use the toggles to select which products appear in the homepage carousel. You can also add custom text for each slide.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -111,6 +162,7 @@ export default function SiteManagementPage() {
                 </TableHead>
                 <TableHead>Product Name</TableHead>
                 <TableHead>Featured</TableHead>
+                <TableHead>Carousel Content</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,11 +195,21 @@ export default function SiteManagementPage() {
                         aria-label={`Feature ${product.name}`}
                       />
                     </TableCell>
+                    <TableCell>
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditText(product)}
+                            disabled={!product.isFeatured}
+                        >
+                            Edit Text
+                        </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                   <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No products found.
                   </TableCell>
                 </TableRow>
@@ -157,5 +219,44 @@ export default function SiteManagementPage() {
         </CardContent>
       </Card>
     </main>
+
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit Carousel Text</DialogTitle>
+                <DialogDescription>
+                    Set a custom headline and description for &quot;{editingProduct?.name}&quot; when it appears in the carousel.
+                </DialogDescription>
+            </DialogHeader>
+            <form action={formAction} className="space-y-4">
+                <input type="hidden" name="productId" value={editingProduct?.id || ''} />
+                <div className="space-y-2">
+                    <Label htmlFor="carouselHeadline">Carousel Headline</Label>
+                    <Input 
+                        id="carouselHeadline"
+                        name="carouselHeadline"
+                        defaultValue={editingProduct?.carouselHeadline || ''}
+                        placeholder="Leave blank to use product name"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="carouselDescription">Carousel Description</Label>
+                    <Textarea
+                        id="carouselDescription"
+                        name="carouselDescription"
+                        defaultValue={editingProduct?.carouselDescription || ''}
+                        placeholder="Leave blank to use product description"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                    <SubmitButton />
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
+
+    
