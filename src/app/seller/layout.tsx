@@ -30,6 +30,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -149,6 +150,7 @@ export default function SellerLayout({
   const [isClient, setIsClient] = useState(false);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
   const { toast } = useToast();
+  const [isInitialOrderLoad, setIsInitialOrderLoad] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
@@ -183,10 +185,36 @@ export default function SellerLayout({
       return;
     }
 
-    // Use onSnapshot for real-time updates on pending orders
-    const ordersQuery = query(collection(db, 'vendors', user.uid, 'orders'), where('orderStatus', '==', 'pending'));
+    // Listen to ALL orders for this vendor to correctly detect brand new ones.
+    const ordersQuery = query(collection(db, 'vendors', user.uid, 'orders'));
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
-      setPendingOrderCount(snapshot.size);
+      
+      // Update the pending order count for the badge
+      const pendingCount = snapshot.docs.filter(doc => doc.data().orderStatus === 'pending').length;
+      setPendingOrderCount(pendingCount);
+
+      // Skip the initial data dump to avoid toasting existing orders on load
+      if (isInitialOrderLoad) {
+        setIsInitialOrderLoad(false);
+        return;
+      }
+      
+      // Process documents that were added since the last snapshot
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+            const newOrder = change.doc.data();
+            toast({
+                title: "New Order Received!",
+                description: `Order #${newOrder.orderNumber} from ${newOrder.customerName || 'a customer'} for ₦${newOrder.grandTotal.toFixed(2)}.`,
+                action: (
+                  <ToastAction altText="View Order" onClick={() => router.push(`/seller/orders/${change.doc.id}`)}>
+                    View
+                  </ToastAction>
+                ),
+                duration: 10000,
+            });
+        }
+      });
     }, (error) => {
       const permissionError = new FirestorePermissionError({
           path: `vendors/${user.uid}/orders`,
@@ -204,7 +232,7 @@ export default function SellerLayout({
     });
 
     return () => unsubscribe();
-  }, [user, toast]);
+  }, [user, toast, isInitialOrderLoad, router]);
 
 
   if (loading || !user || (userData && userData.role !== 'seller')) {
