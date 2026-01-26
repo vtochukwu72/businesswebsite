@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { serializeFirestoreData } from '@/lib/utils';
@@ -58,14 +58,11 @@ export default function OrdersPage() {
       return;
     }
 
-    // NOTE: This query requires a composite index in Firestore. 
-    // If you see an error in the console about a missing index, please click the link
-    // in the error message to create it in your Firebase console.
-    // The query filters by `userId` and orders by `createdAt`.
+    // The query has been modified to remove the 'orderBy' clause.
+    // Sorting will now be handled on the client-side to avoid the need for a composite index.
     const ordersQuery = query(
       collection(db, 'orders'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
@@ -73,7 +70,15 @@ export default function OrdersPage() {
         id: doc.id,
         ...serializeFirestoreData(doc.data()),
       }) as Order);
-      setOrders(fetchedOrders);
+
+      // Sort the orders by creation date on the client side.
+      const sortedOrders = fetchedOrders.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      setOrders(sortedOrders);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching user orders:", error);
