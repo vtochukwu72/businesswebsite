@@ -53,7 +53,11 @@ function VerifyPaymentContent() {
                     title: 'Payment Successful!',
                     description: 'Your order has been placed successfully.',
                 });
-                router.replace('/account/orders'); 
+                if (result.orderIds && result.orderIds.length > 0) {
+                    router.replace(`/account/orders/${result.orderIds[0]}`);
+                } else {
+                    router.replace('/account/orders'); 
+                }
             } else {
                 router.replace(`/checkout/error?message=${encodeURIComponent(result.message || 'Payment verification failed.')}`);
             }

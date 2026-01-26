@@ -199,13 +199,16 @@ export async function verifyPaymentAndCreateOrder(payload: OrderPayload, referen
         
         const batch = db.batch();
         let orderCount = 0;
+        const createdOrderIds: string[] = [];
 
         for (const [vendorId, orderData] of ordersByVendor.entries()) {
             orderCount++;
             const orderId = `${masterOrderNumber}-${orderCount}`;
+            createdOrderIds.push(orderId);
             const grandTotal = orderData.subtotal + orderData.shipping;
 
             const newOrder = {
+                id: orderId,
                 userId,
                 vendorId,
                 orderNumber: orderId,
@@ -240,7 +243,7 @@ export async function verifyPaymentAndCreateOrder(payload: OrderPayload, referen
         revalidatePath('/cart');
         revalidatePath('/account/orders');
 
-        return { success: true };
+        return { success: true, orderIds: createdOrderIds };
 
     } catch (error: any) {
         console.error('Error during order placement:', error.message);

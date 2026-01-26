@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { getOrdersByUser } from '@/services/order-service';
 import type { Order } from '@/lib/types';
@@ -37,6 +38,7 @@ export default function OrdersPage() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchOrders() {
@@ -56,7 +58,7 @@ export default function OrdersPage() {
   }, [user]);
 
   const getBadgeVariant = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'fulfilled':
       case 'shipped':
         return 'default';
@@ -98,7 +100,7 @@ export default function OrdersPage() {
                 </>
               ) : orders.length > 0 ? (
                 orders.map(order => (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.id} className="cursor-pointer" onClick={() => router.push(`/account/orders/${order.id}`)}>
                     <TableCell className="font-medium">#{order.orderNumber}</TableCell>
                     <TableCell>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>
