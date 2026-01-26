@@ -30,7 +30,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { getVendors } from '@/services/vendor-service';
 import type { Product, Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -57,13 +56,15 @@ function ProductRowSkeleton() {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [vendors, setVendors] = useState<Map<string, Vendor>>(new Map());
-  const [loading, setLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const { toast } = useToast();
 
-  useEffect(() => {
-    setLoading(true);
+  const loading = productsLoading || vendorsLoading;
 
+  useEffect(() => {
+    setProductsLoading(true);
     const q = query(collection(db, 'products'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const fetchedProducts = snapshot.docs.map(doc => ({
@@ -71,15 +72,7 @@ export default function AdminProductsPage() {
             ...serializeFirestoreData(doc.data()),
         } as Product));
         setProducts(fetchedProducts);
-        
-        // Only set loading to false after the first fetch
-        if (loading) {
-            getVendors().then(fetchedVendors => {
-                const vendorMap = new Map(fetchedVendors.map(vendor => [vendor.id, vendor]));
-                setVendors(vendorMap);
-                setLoading(false);
-            });
-        }
+        setProductsLoading(false);
     }, (error) => {
       const permissionError = new FirestorePermissionError({
         path: 'products',
@@ -92,11 +85,40 @@ export default function AdminProductsPage() {
           title: "Permission Denied",
           description: "Could not load product data."
       });
-      setLoading(false);
+      setProductsLoading(false);
     });
     
     return () => unsubscribe();
-  }, [loading, toast]);
+  }, [toast]);
+
+  useEffect(() => {
+    setVendorsLoading(true);
+    const q = query(collection(db, 'vendors'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const vendorMap = new Map<string, Vendor>();
+        snapshot.forEach((doc) => {
+            vendorMap.set(doc.id, { id: doc.id, ...serializeFirestoreData(doc.data()) } as Vendor);
+        });
+        setVendors(vendorMap);
+        setVendorsLoading(false);
+    }, (error) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'vendors',
+            operation: 'list'
+        }, error);
+        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error fetching vendors: ", error);
+        toast({
+            variant: "destructive",
+            title: "Permission Denied",
+            description: "Could not load vendor data."
+        });
+        setVendorsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
 
   const filteredProducts = useMemo(() => {
     if (filter === 'all') return products;
