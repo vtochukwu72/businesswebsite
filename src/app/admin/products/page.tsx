@@ -3,6 +3,8 @@ import { File, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState, useMemo, useTransition } from 'react';
 import * as XLSX from 'xlsx';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,13 +30,16 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { getProducts } from '@/services/product-service';
 import { getVendors } from '@/services/vendor-service';
 import type { Product, Vendor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { toggleFeaturedProduct } from './actions';
+import { serializeFirestoreData } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 function ProductRowSkeleton() {
   return (
@@ -61,19 +66,41 @@ export default function AdminProductsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      const [fetchedProducts, fetchedVendors] = await Promise.all([
-        getProducts(),
-        getVendors()
-      ]);
-      setProducts(fetchedProducts);
-      const vendorMap = new Map(fetchedVendors.map(vendor => [vendor.id, vendor]));
-      setVendors(vendorMap);
+    setLoading(true);
+
+    const q = query(collection(db, 'products'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedProducts = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...serializeFirestoreData(doc.data()),
+        } as Product));
+        setProducts(fetchedProducts);
+        
+        // Only set loading to false after the first fetch
+        if (loading) {
+            getVendors().then(fetchedVendors => {
+                const vendorMap = new Map(fetchedVendors.map(vendor => [vendor.id, vendor]));
+                setVendors(vendorMap);
+                setLoading(false);
+            });
+        }
+    }, (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: 'products',
+        operation: 'list'
+      }, error);
+      errorEmitter.emit('permission-error', permissionError);
+      console.error("Error fetching products: ", error);
+      toast({
+          variant: "destructive",
+          title: "Permission Denied",
+          description: "Could not load product data."
+      });
       setLoading(false);
-    }
-    fetchData();
-  }, []);
+    });
+    
+    return () => unsubscribe();
+  }, [loading, toast]);
 
   const filteredProducts = useMemo(() => {
     if (filter === 'all') return products;
@@ -111,8 +138,6 @@ export default function AdminProductsPage() {
                 title: 'Success',
                 description: result.message,
             });
-            // Optimistically update UI or refetch
-            setProducts(prev => prev.map(p => p.id === product.id ? {...p, isFeatured: !p.isFeatured} : p));
         } else {
             toast({
                 variant: 'destructive',
