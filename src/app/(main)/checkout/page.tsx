@@ -15,12 +15,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, CreditCard, Home, Mail, User, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-declare global {
-  interface Window {
-    PaystackPop: any;
-  }
-}
-
 export default function CheckoutPage() {
     const { user, userData, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -50,13 +44,14 @@ export default function CheckoutPage() {
                 } else {
                     router.push('/cart'); 
                 }
-            }).catch(error => {
+            }).catch((error) => {
                 console.error("Error fetching enriched cart items:", error);
                 toast({
                     variant: 'destructive',
                     title: 'Error Loading Cart',
                     description: 'There was a problem loading your cart details.'
                 });
+                 router.push('/cart');
             }).finally(() => {
                 setCartLoading(false);
             });
@@ -76,69 +71,26 @@ export default function CheckoutPage() {
         return unpayableItems.length === 0;
     }, [cartItems, unpayableItems]);
 
-    const handlePaystackPayment = () => {
-        if (typeof window.PaystackPop === 'undefined') {
+    const handlePayment = () => {
+        if (!user) {
             toast({
                 variant: 'destructive',
-                title: "Payment Gateway Error",
-                description: "Could not connect to Paystack. Please check your internet connection and try again.",
-            });
-            return;
-        }
-        if (!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || !user) {
-            toast({
-                variant: 'destructive',
-                title: "Configuration Error",
-                description: "Paystack public key is not configured or user is not logged in.",
+                title: "Not Authenticated",
+                description: "You must be logged in to make a payment.",
             });
             return;
         }
 
         startTransition(async () => {
-             const prepResult = await prepareSplitTransaction(user.uid);
+             const result = await prepareSplitTransaction(user.uid);
 
-             if (!prepResult.success || !prepResult.transactionDetails) {
-                 toast({ variant: 'destructive', title: 'Checkout Error', description: prepResult.message || 'Could not prepare transaction.' });
+             if (!result.success || !result.authorization_url) {
+                 toast({ variant: 'destructive', title: 'Checkout Error', description: result.message || 'Could not initialize transaction.' });
                  return;
              }
              
-             const { amount, email, ref, subaccounts } = prepResult.transactionDetails;
-
-            const handler = window.PaystackPop.setup({
-                key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-                email: email,
-                amount: amount, // Amount in kobo from server
-                ref: ref, // Unique ref from server
-                subaccounts: subaccounts,
-                bearer: 'subaccount', // The subaccounts bear the transaction charges
-                onClose: function(){
-                    toast({
-                        variant: 'destructive',
-                        title: 'Payment window closed.',
-                        description: "Your order was not placed."
-                    });
-                },
-                callback: async function(response: { reference: string }) {
-                    const payload: OrderPayload = {
-                        userId: user!.uid,
-                        shippingAddress: userData.shippingAddress,
-                        customerName: userData.displayName || '',
-                        customerEmail: user!.email || '',
-                    };
-                    const result = await verifyPaymentAndCreateOrder(payload, response.reference);
-
-                    if (result.success) {
-                        toast({
-                            title: 'Payment Successful!',
-                            description: 'Your order has been placed. Redirecting to your orders page.'
-                        });
-                        router.push(`/account/orders`);
-                    } else {
-                        router.push(`/checkout/error?message=${encodeURIComponent(result.message || 'Payment verification failed.')}`);
-                    }
-                }
-            });
-            handler.openIframe();
+             // Redirect to Paystack's checkout page
+             router.push(result.authorization_url);
         });
     };
 
@@ -258,7 +210,7 @@ export default function CheckoutPage() {
                          <Button 
                             className="w-full" 
                             size="lg" 
-                            onClick={handlePaystackPayment}
+                            onClick={handlePayment}
                             disabled={isPlacingOrder || loading || cartItems.length === 0 || !canPay}
                         >
                             {isPlacingOrder ? 'Processing...' : `Pay ₦${total.toFixed(2)}`}

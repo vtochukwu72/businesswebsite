@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirestore, writeBatch, FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -14,6 +15,17 @@ export async function prepareSplitTransaction(userId: string) {
     if (!userId) {
         return { success: false, message: 'User not authenticated.' };
     }
+    
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+    if (!PAYSTACK_SECRET_KEY) {
+        return { success: false, message: 'Server payment configuration error. Administrator needs to set PAYSTACK_SECRET_KEY.' };
+    }
+
+    const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!NEXT_PUBLIC_BASE_URL) {
+        return { success: false, message: 'Server configuration error. Administrator needs to set NEXT_PUBLIC_BASE_URL.' };
+    }
+
 
     try {
         const db = getFirestore(getAdminApp());
@@ -77,9 +89,26 @@ export async function prepareSplitTransaction(userId: string) {
             amount: Math.round(grandTotal * 100), // Total amount in kobo
             ref: `DEALZA-${userId.slice(0,5)}-${Date.now()}`,
             subaccounts,
+            callback_url: `${NEXT_PUBLIC_BASE_URL}/checkout/verify`,
+            bearer: 'subaccount'
         };
+
+        const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(transactionDetails),
+        });
+
+        const paystackData = await paystackResponse.json();
+
+        if (!paystackData.status) {
+            return { success: false, message: `Paystack Error: ${paystackData.message}` };
+        }
         
-        return { success: true, transactionDetails };
+        return { success: true, authorization_url: paystackData.data.authorization_url };
 
     } catch (error: any) {
         console.error('Error preparing split transaction:', error);

@@ -16,6 +16,8 @@ Create a `.env` file if it doesn't exist and add your Paystack test keys:
 # .env
 NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 PAYSTACK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# The full URL of your development environment (e.g., http://localhost:9002)
+NEXT_PUBLIC_BASE_URL=http://localhost:9002
 ```
 **Important:** Do not use your live keys for local development.
 
@@ -65,6 +67,11 @@ FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"...","private_k
 5. Convert to single-line JSON (remove newlines)
 6. Paste as the value for the `FIREBASE_SERVICE_ACCOUNT` environment variable.
 
+### Site Configuration
+```
+# The full URL of your deployed site (e.g., https://your-project.vercel.app)
+NEXT_PUBLIC_BASE_URL=https://your-project-name.vercel.app
+```
 
 ### Paystack Payment Gateway (LIVE Keys):
 ```
@@ -105,6 +112,7 @@ The app uses these settings (already configured):
 - Add Vercel domain to Firebase authorized domains
 
 ### Payments Not Working
+- Verify `NEXT_PUBLIC_BASE_URL` is set to your production URL in Vercel.
 - Verify both `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY` are set correctly in Vercel for production.
 - For local development, ensure they are set in the `.env` file.
 - Live keys may not work on non-HTTPS or non-whitelisted domains. Use test keys for development.
